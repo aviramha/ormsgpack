@@ -178,6 +178,7 @@ def test_default_func_bytes():
         ran = True
     assert ran
 
+
 def test_default_func_invalid_str():
     """
     packb() default function errors on invalid str
@@ -190,12 +191,16 @@ def test_default_func_invalid_str():
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(ref, default=default)
 
+
 def test_default_lambda_ok():
     """
     packb() default lambda
     """
     ref = Custom()
-    assert ormsgpack.packb(ref, default=lambda x: str(x)) == msgpack.packb(ref, default=lambda x: str(x))
+    assert ormsgpack.packb(ref, default=lambda x: str(x)) == msgpack.packb(
+        ref, default=lambda x: str(x)
+    )
+
 
 def test_default_callable_ok():
     """
@@ -214,7 +219,10 @@ def test_default_callable_ok():
     ref_obj = Custom()
     ref_bytes = str(ref_obj)
     for obj in [ref_obj] * 100:
-        assert ormsgpack.packb(obj, default=CustomSerializer()) == msgpack.packb(ref_bytes)
+        assert ormsgpack.packb(obj, default=CustomSerializer()) == msgpack.packb(
+            ref_bytes
+        )
+
 
 def test_default_recursion():
     """
@@ -222,14 +230,19 @@ def test_default_recursion():
     """
     assert ormsgpack.packb(Recursive(254), default=default) == msgpack.packb(0)
 
+
 def test_default_recursion_reset():
     """
     packb() default recursion limit reset
     """
-    assert  ormsgpack.packb(
+    assert (
+        ormsgpack.packb(
             [Recursive(254), {"a": "b"}, Recursive(254), Recursive(254)],
             default=default,
-        ) == msgpack.packb([0,{"a":"b"},0,0])
+        )
+        == msgpack.packb([0, {"a": "b"}, 0, 0])
+    )
+
 
 def test_default_recursion_infinite():
     """
