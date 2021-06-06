@@ -4,5 +4,3 @@ isort
 maturin
 mypy
 -r test/requirements.txt
--r bench/requirements.txt
--r integration/requirements.txt

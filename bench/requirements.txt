@@ -1,7 +1,0 @@
-matplotlib
-memory-profiler
-pytest-benchmark
-python-rapidjson
-simplejson
-tabulate
-ujson
