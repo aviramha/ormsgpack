@@ -216,20 +216,20 @@ pub unsafe extern "C" fn packb(
             if arg == typeref::DEFAULT {
                 if unlikely!(num_args & 2 == 2) {
                     return raise_packb_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'default'",
+                        "packb() got multiple values for argument: 'default'",
                     ));
                 }
                 default = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
             } else if arg == typeref::OPTION {
                 if unlikely!(num_args & 3 == 3) {
                     return raise_packb_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'option'",
+                        "packb() got multiple values for argument: 'option'",
                     ));
                 }
                 optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
             } else {
                 return raise_packb_exception(Cow::Borrowed(
-                    "dumps() got an unexpected keyword argument",
+                    "packb() got an unexpected keyword argument",
                 ));
             }
         }
@@ -254,7 +254,7 @@ pub unsafe extern "C" fn packb(
 
 #[cfg(not(python37))]
 #[no_mangle]
-pub unsafe extern "C" fn dumps(
+pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
     args: *mut PyObject,
     kwds: *mut PyObject,
@@ -267,7 +267,7 @@ pub unsafe extern "C" fn dumps(
     let num_args = PyTuple_GET_SIZE(args);
     if unlikely!(num_args == 0) {
         return raise_packb_exception(Cow::Borrowed(
-            "dumps() missing 1 required positional argument: 'obj'",
+            "packb() missing 1 required positional argument: 'obj'",
         ));
     }
     if num_args & 2 == 2 {
@@ -287,14 +287,14 @@ pub unsafe extern "C" fn dumps(
             if arg == typeref::DEFAULT {
                 if unlikely!(num_args & 2 == 2) {
                     return raise_packb_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'default'",
+                        "packb() got multiple values for argument: 'default'",
                     ));
                 }
                 default = Some(NonNull::new_unchecked(val));
             } else if arg == typeref::OPTION {
                 if unlikely!(num_args & 3 == 3) {
                     return raise_packb_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'option'",
+                        "packb() got multiple values for argument: 'option'",
                     ));
                 }
                 optsptr = Some(NonNull::new_unchecked(val));
@@ -302,7 +302,7 @@ pub unsafe extern "C" fn dumps(
                 break;
             } else {
                 return raise_packb_exception(Cow::Borrowed(
-                    "dumps() got an unexpected keyword argument",
+                    "packb() got an unexpected keyword argument",
                 ));
             }
         }
