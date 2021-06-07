@@ -31,10 +31,6 @@ impl<'p> Serialize for IntSerializer {
         let val = ffi!(PyLong_AsLongLong(self.ptr));
         if unlikely!(val == -1) && !ffi!(PyErr_Occurred()).is_null() {
             return UIntSerializer::new(self.ptr).serialize(serializer);
-        } else if unlikely!(self.opts & STRICT_INTEGER != 0)
-            && (val > STRICT_INT_MAX || val < STRICT_INT_MIN)
-        {
-            err!("Integer exceeds 53-bit range")
         }
         serializer.serialize_i64(val)
     }

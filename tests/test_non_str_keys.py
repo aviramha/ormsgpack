@@ -4,16 +4,11 @@ import dataclasses
 import datetime
 import uuid
 
+import msgpack
 import pytest
 import pytz
 
 import ormsgpack
-import msgpack
-
-try:
-    import numpy
-except ImportError:
-    numpy = None
 
 
 class SubStr(str):
@@ -39,19 +34,6 @@ def test_dict_keys_substr_passthrough():
     )
 
 
-def test_dict_keys_strict():
-    """
-    OPT_NON_STR_KEYS does not respect OPT_STRICT_INTEGER
-    """
-    assert (
-        ormsgpack.packb(
-            {9223372036854775807: True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_STRICT_INTEGER,
-        )
-        == msgpack.packb({9223372036854775807: True})
-    )
-
-
 def test_dict_keys_int_range_valid_i64():
     """
     OPT_NON_STR_KEYS has a i64 range for int, valid
@@ -59,21 +41,21 @@ def test_dict_keys_int_range_valid_i64():
     assert (
         ormsgpack.packb(
             {9223372036854775807: True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_STRICT_INTEGER,
+            option=ormsgpack.OPT_NON_STR_KEYS,
         )
         == msgpack.packb({9223372036854775807: True})
     )
     assert (
         ormsgpack.packb(
             {-9223372036854775807: True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_STRICT_INTEGER,
+            option=ormsgpack.OPT_NON_STR_KEYS,
         )
         == msgpack.packb({-9223372036854775807: True})
     )
     assert (
         ormsgpack.packb(
             {9223372036854775809: True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_STRICT_INTEGER,
+            option=ormsgpack.OPT_NON_STR_KEYS,
         )
         == msgpack.packb({9223372036854775809: True})
     )
@@ -86,7 +68,7 @@ def test_dict_keys_int_range_valid_u64():
     assert (
         ormsgpack.packb(
             {0: True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_STRICT_INTEGER,
+            option=ormsgpack.OPT_NON_STR_KEYS,
         )
         == msgpack.packb({0: True})
     )
@@ -94,7 +76,7 @@ def test_dict_keys_int_range_valid_u64():
     assert (
         ormsgpack.packb(
             {18446744073709551615: True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_STRICT_INTEGER,
+            option=ormsgpack.OPT_NON_STR_KEYS,
         )
         == msgpack.packb({18446744073709551615: True})
     )
@@ -226,7 +208,9 @@ def test_dict_keys_time_err():
 
 
 def test_dict_keys_str():
-    assert ormsgpack.packb({"1": True}, option=ormsgpack.OPT_NON_STR_KEYS) == msgpack.packb({"1":True})
+    assert ormsgpack.packb(
+        {"1": True}, option=ormsgpack.OPT_NON_STR_KEYS
+    ) == msgpack.packb({"1": True})
 
 
 def test_dict_keys_type():
@@ -236,7 +220,6 @@ def test_dict_keys_type():
     val = Obj()
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb({val: True}, option=ormsgpack.OPT_NON_STR_KEYS)
-
 
 
 def test_dict_keys_dataclass_hash():
@@ -250,7 +233,6 @@ def test_dict_keys_dataclass_hash():
     obj = {Dataclass("a"): True}
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj, option=ormsgpack.OPT_NON_STR_KEYS)
-
 
 
 def test_dict_keys_tuple():

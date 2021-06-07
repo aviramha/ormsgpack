@@ -1,15 +1,14 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-
+import msgpack
 import pytest
 
 import ormsgpack
-import msgpack
 
 try:
     import numpy
 except ImportError:
-    numpy = None
+    numpy = None  # type: ignore
     pytestmark = pytest.mark.skip
 
 
@@ -101,9 +100,9 @@ def test_numpy_array_d1_f32():
     array = numpy.array([1.0, 3.4028235e38], numpy.float32)
     py_array = [float(x) for x in array]
     ormsgpacked = ormsgpack.packb(
-            array,
-            option=ormsgpack.OPT_SERIALIZE_NUMPY,
-        )
+        array,
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    )
     original_msgpacked = msgpack.packb(py_array)
     assert ormsgpack.unpackb(ormsgpacked) == msgpack.unpackb(original_msgpacked)
 
@@ -450,9 +449,12 @@ def test_numpy_scalar_uint64():
 
 
 def test_numpy_scalar_float32():
-    assert ormsgpack.unpackb(ormsgpack.packb(
-        numpy.float32(1.0), option=ormsgpack.OPT_SERIALIZE_NUMPY
-    )) == 1.0
+    assert (
+        ormsgpack.unpackb(
+            ormsgpack.packb(numpy.float32(1.0), option=ormsgpack.OPT_SERIALIZE_NUMPY)
+        )
+        == 1.0
+    )
 
 
 def test_numpy_scalar_float64():

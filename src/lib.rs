@@ -131,7 +131,6 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         opt::PASSTHROUGH_SUBCLASS
     );
     opt!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
-    opt!(mptr, "OPT_STRICT_INTEGER\0", opt::STRICT_INTEGER);
     opt!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
     typeref::init_typerefs();

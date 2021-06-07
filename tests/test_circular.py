@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 import pytest
+
 import ormsgpack
 
 
@@ -12,6 +13,7 @@ def test_circular_dict():
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj)
 
+
 def test_circular_list():
     """
     packb() circular reference list
@@ -20,6 +22,7 @@ def test_circular_list():
     obj.append(obj)
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj)
+
 
 def test_circular_nested():
     """

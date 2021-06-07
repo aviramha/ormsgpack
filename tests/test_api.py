@@ -3,10 +3,11 @@
 import datetime
 import inspect
 import re
+
+import msgpack
 import pytest
 
 import ormsgpack
-import msgpack
 
 SIMPLE_TYPES = (1, 1.0, -1, None, "str", True, False)
 
@@ -105,7 +106,7 @@ def test_opts_multiple():
     assert (
         ormsgpack.packb(
             [1, datetime.datetime(2000, 1, 1, 2, 3, 4)],
-            option=ormsgpack.OPT_STRICT_INTEGER | ormsgpack.OPT_NAIVE_UTC,
+            option=ormsgpack.OPT_SERIALIZE_NUMPY | ormsgpack.OPT_NAIVE_UTC,
         )
         == msgpack.packb([1, "2000-01-01T02:03:04+00:00"])
     )
@@ -177,16 +178,20 @@ def test_packb_signature():
     """
     packb() valid __text_signature__
     """
-    assert str(inspect.signature(ormsgpack.packb)) == "(obj, /, default=None, option=None)"
+    assert (
+        str(inspect.signature(ormsgpack.packb)) == "(obj, /, default=None, option=None)"
+    )
     inspect.signature(ormsgpack.packb).bind("str")
     inspect.signature(ormsgpack.packb).bind("str", default=default, option=1)
+
 
 def test_unpackb_signature():
     """
     unpackb() valid __text_signature__
     """
-    assert str(inspect.signature(ormsgpack.unpackb)) ==  "(obj, /)"
+    assert str(inspect.signature(ormsgpack.unpackb)) == "(obj, /)"
     inspect.signature(ormsgpack.unpackb).bind("[]")
+
 
 def test_packb_module_str():
     """
@@ -194,11 +199,13 @@ def test_packb_module_str():
     """
     assert ormsgpack.packb.__module__ == "ormsgpack"
 
+
 def test_unpackb_module_str():
     """
     ormsgpack.unpackb.__module__ is a str
     """
     assert ormsgpack.unpackb.__module__ == "ormsgpack"
+
 
 def test_bytes_buffer():
     """
@@ -207,4 +214,4 @@ def test_bytes_buffer():
     a = "a" * 900
     b = "b" * 4096
     c = "c" * 4096 * 4096
-    assert  ormsgpack.packb([a, b, c]) == msgpack.packb([a,b,c])
+    assert ormsgpack.packb([a, b, c]) == msgpack.packb([a, b, c])

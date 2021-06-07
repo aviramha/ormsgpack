@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import pytest
 import uuid
 
-import ormsgpack
 import msgpack
+import pytest
+
+import ormsgpack
 
 
 class Custom:

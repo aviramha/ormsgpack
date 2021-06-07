@@ -2,12 +2,13 @@
 
 import datetime
 import sys
+
+import msgpack
 import pytest
 import pytz
 from dateutil import tz
 
 import ormsgpack
-import msgpack
 
 try:
     import pendulum

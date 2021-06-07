@@ -5,9 +5,10 @@ from dataclasses import InitVar, asdict, dataclass, field
 from enum import Enum
 from typing import ClassVar, Dict, Optional
 
-import pytest
-import ormsgpack
 import msgpack
+import pytest
+
+import ormsgpack
 
 
 class AnEnum(Enum):
