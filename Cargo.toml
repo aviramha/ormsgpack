@@ -14,14 +14,11 @@ include = [
     ".cargo",
     "Cargo.toml",
     "CHANGELOG.md",
-    "data/*",
     "LICENSE-APACHE",
     "LICENSE-MIT",
     "pyproject.toml",
     "README.md",
     "src/*",
-    "test/*.py",
-    "test/requirements.txt",
 ]
 
 [lib]

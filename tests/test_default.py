@@ -100,7 +100,7 @@ def test_default_func_exc():
         ormsgpack.packb(Custom(), default=default)
     except Exception as err:
         assert isinstance(err, ormsgpack.MsgpackEncodeError)
-        assert str(err) == "Type is not JSON serializable: Custom"
+        assert str(err) == "Type is not msgpack serializable: Custom"
         ran = True
     assert ran
 
@@ -175,7 +175,7 @@ def test_default_func_bytes():
         ormsgpack.packb(ref, default=default)
     except Exception as err:
         assert isinstance(err, ormsgpack.MsgpackEncodeError)
-        assert str(err) == "Type is not JSON serializable: Custom"
+        assert str(err) == "Type is not msgpack serializable: Custom"
         ran = True
     assert ran
 
