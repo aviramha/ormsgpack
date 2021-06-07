@@ -26,9 +26,9 @@ pub fn deserialize(
     } else if is_type!(obj_type_ptr, MEMORYVIEW_TYPE) {
         let membuf = unsafe { PyMemoryView_GET_BUFFER(ptr) };
         if unsafe { pyo3::ffi::PyBuffer_IsContiguous(membuf, b'C' as c_char) == 0 } {
-            return Err(DeserializeError::new(
-                Cow::Borrowed("Input type memoryview must be a C contiguous buffer")
-            ));
+            return Err(DeserializeError::new(Cow::Borrowed(
+                "Input type memoryview must be a C contiguous buffer",
+            )));
         }
         buffer = unsafe { (*membuf).buf as *const u8 };
         length = unsafe { (*membuf).len as usize };
@@ -36,9 +36,9 @@ pub fn deserialize(
         buffer = ffi!(PyByteArray_AsString(ptr)) as *const u8;
         length = ffi!(PyByteArray_Size(ptr)) as usize;
     } else {
-        return Err(DeserializeError::new(
-            Cow::Borrowed("Input must be bytes, bytearray, memoryview")
-        ));
+        return Err(DeserializeError::new(Cow::Borrowed(
+            "Input must be bytes, bytearray, memoryview",
+        )));
     }
     contents = unsafe { std::slice::from_raw_parts(buffer, length) };
 
@@ -46,12 +46,8 @@ pub fn deserialize(
 
     let seed = JsonValue {};
     match seed.deserialize(&mut deserializer) {
-        Ok(obj) => {
-            Ok(obj)
-        }
-        Err(e) => Err(DeserializeError::new(
-            Cow::Owned(e.to_string())
-        )),
+        Ok(obj) => Ok(obj),
+        Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
     }
 }
 
