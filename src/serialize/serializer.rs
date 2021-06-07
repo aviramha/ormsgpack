@@ -177,7 +177,7 @@ impl<'p> Serialize for PyObjectSerializer {
             ObType::Str => StrSerializer::new(self.ptr).serialize(serializer),
             ObType::Bytes => BytesSerializer::new(self.ptr).serialize(serializer),
             ObType::StrSubclass => StrSubclassSerializer::new(self.ptr).serialize(serializer),
-            ObType::Int => IntSerializer::new(self.ptr, self.opts).serialize(serializer),
+            ObType::Int => IntSerializer::new(self.ptr).serialize(serializer),
             ObType::None => serializer.serialize_unit(),
             ObType::Float => serializer.serialize_f64(ffi!(PyFloat_AS_DOUBLE(self.ptr))),
             ObType::Bool => serializer.serialize_bool(unsafe { self.ptr == TRUE }),

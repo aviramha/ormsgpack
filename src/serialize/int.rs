@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::opt::*;
 use serde::ser::{Serialize, Serializer};
 
 // https://tools.ietf.org/html/rfc7159#section-6
 // "[-(2**53)+1, (2**53)-1]"
-const STRICT_INT_MIN: i64 = -9007199254740991;
-const STRICT_INT_MAX: i64 = 9007199254740991;
+
 
 pub struct IntSerializer {
     ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
 }
 
 impl IntSerializer {
-    pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Self {
+    pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
         IntSerializer {
             ptr: ptr,
-            opts: opts,
         }
     }
 }
