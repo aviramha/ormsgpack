@@ -130,7 +130,6 @@ pub fn init_typerefs() {
     });
 }
 
-
 #[cold]
 unsafe fn look_up_numpy_type(numpy_module: *mut PyObject, np_type: &str) -> *mut PyTypeObject {
     let mod_dict = PyObject_GenericGetDict(numpy_module, std::ptr::null_mut());

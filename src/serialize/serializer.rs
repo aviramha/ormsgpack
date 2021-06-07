@@ -3,6 +3,7 @@
 use crate::exc::*;
 use crate::ffi::{PyDict_GET_SIZE, PyTypeObject};
 use crate::opt::*;
+use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
 use crate::serialize::datetime::*;
 use crate::serialize::default::*;
@@ -13,7 +14,6 @@ use crate::serialize::numpy::*;
 use crate::serialize::str::*;
 use crate::serialize::tuple::*;
 use crate::serialize::uuid::*;
-use crate::serialize::bytes::*;
 use crate::serialize::writer::*;
 use crate::typeref::*;
 use serde::ser::{Serialize, SerializeMap, SerializeSeq, Serializer};
@@ -32,9 +32,7 @@ pub fn serialize(
     let mut ser = rmp_serde::Serializer::new(&mut buf);
     res = obj.serialize(&mut ser);
     match res {
-        Ok(_) => {
-            Ok(buf.finish())
-        }
+        Ok(_) => Ok(buf.finish()),
         Err(err) => {
             ffi!(_Py_Dealloc(buf.finish().as_ptr()));
             Err(err.to_string())
