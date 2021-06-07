@@ -2,12 +2,12 @@
 
 use crate::exc::*;
 use crate::ffi::PyDict_GET_SIZE;
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::datetime::*;
 use crate::serialize::serializer::pyobject_to_obtype;
 use crate::serialize::serializer::*;
 use crate::serialize::uuid::*;
-use crate::ffi::*;
 use crate::typeref::*;
 use crate::unicode::*;
 use inlinable_string::InlinableString;
@@ -26,7 +26,11 @@ pub struct Dict {
 #[derive(Clone)]
 enum Key<'p> {
     String(InlinableString),
-    Bytes(&'p[u8]),
+    Bytes(&'p [u8]),
+    Bool(bool),
+    UInt(u64),
+    SInt(i64),
+    Float(f64),
 }
 
 impl Dict {
@@ -92,7 +96,6 @@ impl<'p> Serialize for Dict {
     }
 }
 
-
 enum NonStrError {
     DatetimeLibraryUnsupported,
     IntegerRange,
@@ -134,13 +137,8 @@ impl DictNonStrKey {
         match pyobject_to_obtype(key, opts) {
             ObType::None => Ok(Key::String(InlinableString::from("null"))),
             ObType::Bool => {
-                let key_as_str: &str;
-                if unsafe { key == TRUE } {
-                    key_as_str = "true";
-                } else {
-                    key_as_str = "false";
-                }
-                Ok(Key::String(InlinableString::from(key_as_str)))
+                let key = unsafe { key == TRUE };
+                Ok(Key::Bool(key))
             }
             ObType::Int => {
                 let ival = ffi!(PyLong_AsLongLong(key));
@@ -150,18 +148,14 @@ impl DictNonStrKey {
                     if unlikely!(uval == u64::MAX) && !ffi!(PyErr_Occurred()).is_null() {
                         return Err(NonStrError::IntegerRange);
                     }
-                    Ok(Key::String(InlinableString::from(itoa::Buffer::new().format(uval))))
+                    Ok(Key::UInt(uval))
                 } else {
-                    Ok(Key::String(InlinableString::from(itoa::Buffer::new().format(ival))))
+                    Ok(Key::SInt(ival))
                 }
             }
             ObType::Float => {
                 let val = ffi!(PyFloat_AS_DOUBLE(key));
-                if !val.is_finite() {
-                    Ok(Key::String(InlinableString::from("null")))
-                } else {
-                    Ok(Key::String(InlinableString::from(ryu::Buffer::new().format_finite(val))))
-                }
+                Ok(Key::Float(val))
             }
             ObType::Datetime => {
                 let mut buf: DateTimeBuffer = smallvec::SmallVec::with_capacity(32);
@@ -205,13 +199,17 @@ impl DictNonStrKey {
                 if unlikely!(uni.is_null()) {
                     Err(NonStrError::InvalidStr)
                 } else {
-                    Ok(Key::String(InlinableString::from(str_from_slice!(uni, str_size))))
+                    Ok(Key::String(InlinableString::from(str_from_slice!(
+                        uni, str_size
+                    ))))
                 }
             }
             ObType::Bytes => {
                 let buffer = unsafe { PyBytes_AS_STRING(key) as *const u8 };
                 let length = unsafe { PyBytes_GET_SIZE(key) as usize };
-                Ok(Key::Bytes(unsafe { std::slice::from_raw_parts(buffer, length) }))
+                Ok(Key::Bytes(unsafe {
+                    std::slice::from_raw_parts(buffer, length)
+                }))
             }
             ObType::StrSubclass => {
                 let mut str_size: pyo3::ffi::Py_ssize_t = 0;
@@ -219,7 +217,9 @@ impl DictNonStrKey {
                 if unlikely!(uni.is_null()) {
                     Err(NonStrError::InvalidStr)
                 } else {
-                    Ok(Key::String(InlinableString::from(str_from_slice!(uni, str_size))))
+                    Ok(Key::String(InlinableString::from(str_from_slice!(
+                        uni, str_size
+                    ))))
                 }
             }
             ObType::Tuple
@@ -287,22 +287,67 @@ impl<'p> Serialize for DictNonStrKey {
         let mut map = serializer.serialize_map(None).unwrap();
         for (key, val) in items.iter() {
             match key {
-                Key::String(k) => map.serialize_entry(str_from_slice!(k.as_ptr(), k.len()), &PyObjectSerializer::new(
-                    *val,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion + 1,
-                    self.default,
-                ),)?,
-                Key::Bytes(k) => map.serialize_entry(k, &PyObjectSerializer::new(
-                    *val,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion + 1,
-                    self.default,
-                ),)?,
+                Key::String(k) => map.serialize_entry(
+                    str_from_slice!(k.as_ptr(), k.len()),
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Bytes(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::SInt(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::UInt(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Float(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Bool(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
             }
-
         }
         map.end()
     }

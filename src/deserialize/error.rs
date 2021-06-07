@@ -10,9 +10,6 @@ pub struct DeserializeError<'a> {
 impl<'a> DeserializeError<'a> {
     #[cold]
     pub fn new(message: Cow<'a, str>) -> Self {
-        DeserializeError {
-            message,
-        }
+        DeserializeError { message }
     }
-
 }
