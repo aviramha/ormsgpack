@@ -27,7 +27,7 @@ jobs:
         if: ${{ runner.os != 'Windows' }}
       - run: maturin build --no-sdist --release --strip --manylinux off -i $pythonLocation"python.exe"
         if: ${{ runner.os == 'Windows' }}
-      - run: pip install --force $(find target/wheels -name "*cp3*")
+      - run: pip install --force target/wheels/*.whl
       - run: pytest
 
   fmt:
