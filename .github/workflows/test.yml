@@ -22,8 +22,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r requirements.txt
-      - run: echo
-      - run: maturin build --no-sdist --release --strip --manylinux off -i $pythonLocation/python
         if: ${{ runner.os != 'Windows' }}
       - run: maturin build --no-sdist --release --strip --manylinux off -i $pythonLocation\python.exe
         if: ${{ runner.os == 'Windows' }}
