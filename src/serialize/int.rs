@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::opt::*;
 use serde::ser::{Serialize, Serializer};
 
 // https://tools.ietf.org/html/rfc7159#section-6
 // "[-(2**53)+1, (2**53)-1]"
-const STRICT_INT_MIN: i64 = -9007199254740991;
-const STRICT_INT_MAX: i64 = 9007199254740991;
+
 
 pub struct IntSerializer {
     ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
 }
 
 impl IntSerializer {
-    pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Self {
+    pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
         IntSerializer {
             ptr: ptr,
-            opts: opts,
         }
     }
 }
@@ -31,10 +27,6 @@ impl<'p> Serialize for IntSerializer {
         let val = ffi!(PyLong_AsLongLong(self.ptr));
         if unlikely!(val == -1) && !ffi!(PyErr_Occurred()).is_null() {
             return UIntSerializer::new(self.ptr).serialize(serializer);
-        } else if unlikely!(self.opts & STRICT_INTEGER != 0)
-            && (val > STRICT_INT_MAX || val < STRICT_INT_MIN)
-        {
-            err!("Integer exceeds 53-bit range")
         }
         serializer.serialize_i64(val)
     }

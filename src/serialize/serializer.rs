@@ -3,6 +3,7 @@
 use crate::exc::*;
 use crate::ffi::{PyDict_GET_SIZE, PyTypeObject};
 use crate::opt::*;
+use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
 use crate::serialize::datetime::*;
 use crate::serialize::default::*;
@@ -16,7 +17,6 @@ use crate::serialize::uuid::*;
 use crate::serialize::writer::*;
 use crate::typeref::*;
 use serde::ser::{Serialize, SerializeMap, SerializeSeq, Serializer};
-use std::io::Write;
 use std::ptr::NonNull;
 
 pub const RECURSION_LIMIT: u8 = 255;
@@ -29,18 +29,10 @@ pub fn serialize(
     let mut buf = BytesWriter::new();
     let obj = PyObjectSerializer::new(ptr, opts, 0, 0, default);
     let res;
-    if opts & INDENT_2 != INDENT_2 {
-        res = serde_json::to_writer(&mut buf, &obj);
-    } else {
-        res = serde_json::to_writer_pretty(&mut buf, &obj);
-    }
+    let mut ser = rmp_serde::Serializer::new(&mut buf);
+    res = obj.serialize(&mut ser);
     match res {
-        Ok(_) => {
-            if opts & APPEND_NEWLINE != 0 {
-                let _ = buf.write(b"\n");
-            }
-            Ok(buf.finish())
-        }
+        Ok(_) => Ok(buf.finish()),
         Err(err) => {
             ffi!(_Py_Dealloc(buf.finish().as_ptr()));
             Err(err.to_string())
@@ -51,6 +43,7 @@ pub fn serialize(
 #[derive(Copy, Clone)]
 pub enum ObType {
     Str,
+    Bytes,
     Int,
     Bool,
     None,
@@ -75,6 +68,8 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
         let ob_type = ob_type!(obj);
         if ob_type == STR_TYPE {
             ObType::Str
+        } else if ob_type == BYTES_TYPE {
+            ObType::Bytes
         } else if ob_type == INT_TYPE {
             ObType::Int
         } else if ob_type == BOOL_TYPE {
@@ -180,8 +175,9 @@ impl<'p> Serialize for PyObjectSerializer {
     {
         match self.obtype {
             ObType::Str => StrSerializer::new(self.ptr).serialize(serializer),
+            ObType::Bytes => BytesSerializer::new(self.ptr).serialize(serializer),
             ObType::StrSubclass => StrSubclassSerializer::new(self.ptr).serialize(serializer),
-            ObType::Int => IntSerializer::new(self.ptr, self.opts).serialize(serializer),
+            ObType::Int => IntSerializer::new(self.ptr).serialize(serializer),
             ObType::None => serializer.serialize_unit(),
             ObType::Float => serializer.serialize_f64(ffi!(PyFloat_AS_DOUBLE(self.ptr))),
             ObType::Bool => serializer.serialize_bool(unsafe { self.ptr == TRUE }),
@@ -198,7 +194,7 @@ impl<'p> Serialize for PyObjectSerializer {
                 }
                 if unlikely!(unsafe { PyDict_GET_SIZE(self.ptr) as usize } == 0) {
                     serializer.serialize_map(Some(0)).unwrap().end()
-                } else if likely!(self.opts & SORT_OR_NON_STR_KEYS == 0) {
+                } else if likely!(self.opts & NON_STR_KEYS == 0) {
                     Dict::new(
                         self.ptr,
                         self.opts,
@@ -207,17 +203,8 @@ impl<'p> Serialize for PyObjectSerializer {
                         self.default,
                     )
                     .serialize(serializer)
-                } else if self.opts & NON_STR_KEYS != 0 {
-                    DictNonStrKey::new(
-                        self.ptr,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
                 } else {
-                    DictSortedKey::new(
+                    DictNonStrKey::new(
                         self.ptr,
                         self.opts,
                         self.default_calls,

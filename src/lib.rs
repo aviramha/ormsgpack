@@ -23,9 +23,9 @@ use std::borrow::Cow;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 
-const DUMPS_DOC: &str =
-    "dumps(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to JSON.\0";
-const LOADS_DOC: &str = "loads(obj, /)\n--\n\nDeserialize JSON to Python objects.\0";
+const PACKB_DOC: &str =
+    "packb(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to msgpack.\0";
+const UNPACKB_DOC: &str = "unpackb(obj, /)\n--\n\nDeserialize msgpack to Python objects.\0";
 
 macro_rules! opt {
     ($mptr:expr, $name:expr, $opt:expr) => {
@@ -41,9 +41,9 @@ macro_rules! opt {
 #[allow(non_snake_case)]
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn PyInit_orjson() -> *mut PyObject {
+pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     let mut init = PyModuleDef_INIT;
-    init.m_name = "orjson\0".as_ptr() as *const c_char;
+    init.m_name = "ormsgpack\0".as_ptr() as *const c_char;
     let mptr = PyModule_Create(Box::into_raw(Box::new(init)));
 
     let version = env!("CARGO_PKG_VERSION");
@@ -55,65 +55,63 @@ pub unsafe extern "C" fn PyInit_orjson() -> *mut PyObject {
         )
     };
 
-    let wrapped_dumps: PyMethodDef;
+    let wrapped_packb: PyMethodDef;
 
     #[cfg(python37)]
     {
-        wrapped_dumps = PyMethodDef {
-            ml_name: "dumps\0".as_ptr() as *const c_char,
+        wrapped_packb = PyMethodDef {
+            ml_name: "packb\0".as_ptr() as *const c_char,
             ml_meth: Some(unsafe {
-                std::mem::transmute::<pyo3::ffi::_PyCFunctionFastWithKeywords, PyCFunction>(dumps)
+                std::mem::transmute::<pyo3::ffi::_PyCFunctionFastWithKeywords, PyCFunction>(packb)
             }),
             ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
-            ml_doc: DUMPS_DOC.as_ptr() as *const c_char,
+            ml_doc: PACKB_DOC.as_ptr() as *const c_char,
         };
     }
 
     #[cfg(not(python37))]
     {
-        wrapped_dumps = PyMethodDef {
-            ml_name: "dumps\0".as_ptr() as *const c_char,
+        wrapped_packb = PyMethodDef {
+            ml_name: "packb\0".as_ptr() as *const c_char,
             ml_meth: Some(unsafe {
-                std::mem::transmute::<PyCFunctionWithKeywords, PyCFunction>(dumps)
+                std::mem::transmute::<PyCFunctionWithKeywords, PyCFunction>(packb)
             }),
             ml_flags: METH_VARARGS | METH_KEYWORDS,
-            ml_doc: DUMPS_DOC.as_ptr() as *const c_char,
+            ml_doc: PACKB_DOC.as_ptr() as *const c_char,
         };
     }
 
     unsafe {
         PyModule_AddObject(
             mptr,
-            "dumps\0".as_ptr() as *const c_char,
+            "packb\0".as_ptr() as *const c_char,
             PyCFunction_NewEx(
-                Box::into_raw(Box::new(wrapped_dumps)),
+                Box::into_raw(Box::new(wrapped_packb)),
                 std::ptr::null_mut(),
-                PyUnicode_InternFromString("orjson\0".as_ptr() as *const c_char),
+                PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char),
             ),
         )
     };
 
-    let wrapped_loads = PyMethodDef {
-        ml_name: "loads\0".as_ptr() as *const c_char,
-        ml_meth: Some(loads),
+    let wrapped_unpackb = PyMethodDef {
+        ml_name: "unpackb\0".as_ptr() as *const c_char,
+        ml_meth: Some(unpackb),
         ml_flags: METH_O,
-        ml_doc: LOADS_DOC.as_ptr() as *const c_char,
+        ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
     };
 
     unsafe {
         PyModule_AddObject(
             mptr,
-            "loads\0".as_ptr() as *const c_char,
+            "unpackb\0".as_ptr() as *const c_char,
             PyCFunction_NewEx(
-                Box::into_raw(Box::new(wrapped_loads)),
+                Box::into_raw(Box::new(wrapped_unpackb)),
                 std::ptr::null_mut(),
-                PyUnicode_InternFromString("orjson\0".as_ptr() as *const c_char),
+                PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char),
             ),
         )
     };
 
-    opt!(mptr, "OPT_APPEND_NEWLINE\0", opt::APPEND_NEWLINE);
-    opt!(mptr, "OPT_INDENT_2\0", opt::INDENT_2);
     opt!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
     opt!(mptr, "OPT_NON_STR_KEYS\0", opt::NON_STR_KEYS);
     opt!(mptr, "OPT_OMIT_MICROSECONDS\0", opt::OMIT_MICROSECONDS);
@@ -132,11 +130,7 @@ pub unsafe extern "C" fn PyInit_orjson() -> *mut PyObject {
         "OPT_PASSTHROUGH_SUBCLASS\0",
         opt::PASSTHROUGH_SUBCLASS
     );
-    opt!(mptr, "OPT_SERIALIZE_DATACLASS\0", opt::SERIALIZE_DATACLASS);
     opt!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
-    opt!(mptr, "OPT_SERIALIZE_UUID\0", opt::SERIALIZE_UUID);
-    opt!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
-    opt!(mptr, "OPT_STRICT_INTEGER\0", opt::STRICT_INTEGER);
     opt!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
     typeref::init_typerefs();
@@ -144,13 +138,13 @@ pub unsafe extern "C" fn PyInit_orjson() -> *mut PyObject {
     unsafe {
         PyModule_AddObject(
             mptr,
-            "JSONDecodeError\0".as_ptr() as *const c_char,
-            typeref::JsonDecodeError,
+            "MsgpackDecodeError\0".as_ptr() as *const c_char,
+            typeref::MsgpackDecodeError,
         );
         PyModule_AddObject(
             mptr,
-            "JSONEncodeError\0".as_ptr() as *const c_char,
-            typeref::JsonEncodeError,
+            "MsgpackEncodeError\0".as_ptr() as *const c_char,
+            typeref::MsgpackEncodeError,
         )
     };
 
@@ -159,20 +153,14 @@ pub unsafe extern "C" fn PyInit_orjson() -> *mut PyObject {
 
 #[cold]
 #[inline(never)]
-fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
-    let pos = err.pos() as i64;
+fn raise_unpackb_exception(err: deserialize::DeserializeError) -> *mut PyObject {
     let msg = err.message;
-    let doc = err.data;
     unsafe {
         let err_msg =
             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
-        let args = PyTuple_New(3);
-        let doc = PyUnicode_FromStringAndSize(doc.as_ptr() as *const c_char, doc.len() as isize);
-        let pos = PyLong_FromLongLong(pos);
+        let args = PyTuple_New(1);
         PyTuple_SET_ITEM(args, 0, err_msg);
-        PyTuple_SET_ITEM(args, 1, doc);
-        PyTuple_SET_ITEM(args, 2, pos);
-        PyErr_SetObject(typeref::JsonDecodeError, args);
+        PyErr_SetObject(typeref::MsgpackDecodeError, args);
         Py_DECREF(args);
     };
     std::ptr::null_mut()
@@ -180,27 +168,27 @@ fn raise_loads_exception(err: deserialize::DeserializeError) -> *mut PyObject {
 
 #[cold]
 #[inline(never)]
-fn raise_dumps_exception(msg: Cow<str>) -> *mut PyObject {
+fn raise_packb_exception(msg: Cow<str>) -> *mut PyObject {
     unsafe {
         let err_msg =
             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
-        PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+        PyErr_SetObject(typeref::MsgpackEncodeError, err_msg);
         Py_DECREF(err_msg);
     };
     std::ptr::null_mut()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn loads(_self: *mut PyObject, obj: *mut PyObject) -> *mut PyObject {
+pub unsafe extern "C" fn unpackb(_self: *mut PyObject, obj: *mut PyObject) -> *mut PyObject {
     match crate::deserialize::deserialize(obj) {
         Ok(val) => val.as_ptr(),
-        Err(err) => raise_loads_exception(err),
+        Err(err) => raise_unpackb_exception(err),
     }
 }
 
 #[cfg(python37)]
 #[no_mangle]
-pub unsafe extern "C" fn dumps(
+pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
     args: *const *mut PyObject,
     nargs: Py_ssize_t,
@@ -211,8 +199,8 @@ pub unsafe extern "C" fn dumps(
 
     let num_args = pyo3::ffi::PyVectorcall_NARGS(nargs as usize);
     if unlikely!(num_args == 0) {
-        return raise_dumps_exception(Cow::Borrowed(
-            "dumps() missing 1 required positional argument: 'obj'",
+        return raise_packb_exception(Cow::Borrowed(
+            "packb() missing 1 required positional argument: 'obj'",
         ));
     }
     if num_args & 2 == 2 {
@@ -226,21 +214,21 @@ pub unsafe extern "C" fn dumps(
             let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
             if arg == typeref::DEFAULT {
                 if unlikely!(num_args & 2 == 2) {
-                    return raise_dumps_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'default'",
+                    return raise_packb_exception(Cow::Borrowed(
+                        "packb() got multiple values for argument: 'default'",
                     ));
                 }
                 default = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
             } else if arg == typeref::OPTION {
                 if unlikely!(num_args & 3 == 3) {
-                    return raise_dumps_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'option'",
+                    return raise_packb_exception(Cow::Borrowed(
+                        "packb() got multiple values for argument: 'option'",
                     ));
                 }
                 optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
             } else {
-                return raise_dumps_exception(Cow::Borrowed(
-                    "dumps() got an unexpected keyword argument",
+                return raise_packb_exception(Cow::Borrowed(
+                    "packb() got an unexpected keyword argument",
                 ));
             }
         }
@@ -249,23 +237,23 @@ pub unsafe extern "C" fn dumps(
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
         if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_dumps_exception(Cow::Borrowed("Invalid opts"));
+            return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
         if !(0..=opt::MAX_OPT).contains(&optsbits) {
-            return raise_dumps_exception(Cow::Borrowed("Invalid opts"));
+            return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
     }
 
     match crate::serialize::serialize(*args, default, optsbits as opt::Opt) {
         Ok(val) => val.as_ptr(),
-        Err(err) => raise_dumps_exception(Cow::Borrowed(&err)),
+        Err(err) => raise_packb_exception(Cow::Borrowed(&err)),
     }
 }
 
 #[cfg(not(python37))]
 #[no_mangle]
-pub unsafe extern "C" fn dumps(
+pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
     args: *mut PyObject,
     kwds: *mut PyObject,
@@ -277,8 +265,8 @@ pub unsafe extern "C" fn dumps(
 
     let num_args = PyTuple_GET_SIZE(args);
     if unlikely!(num_args == 0) {
-        return raise_dumps_exception(Cow::Borrowed(
-            "dumps() missing 1 required positional argument: 'obj'",
+        return raise_packb_exception(Cow::Borrowed(
+            "packb() missing 1 required positional argument: 'obj'",
         ));
     }
     if num_args & 2 == 2 {
@@ -297,23 +285,23 @@ pub unsafe extern "C" fn dumps(
             unsafe { _PyDict_Next(kwds, &mut pos, &mut arg, &mut val, std::ptr::null_mut()) };
             if arg == typeref::DEFAULT {
                 if unlikely!(num_args & 2 == 2) {
-                    return raise_dumps_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'default'",
+                    return raise_packb_exception(Cow::Borrowed(
+                        "packb() got multiple values for argument: 'default'",
                     ));
                 }
                 default = Some(NonNull::new_unchecked(val));
             } else if arg == typeref::OPTION {
                 if unlikely!(num_args & 3 == 3) {
-                    return raise_dumps_exception(Cow::Borrowed(
-                        "dumps() got multiple values for argument: 'option'",
+                    return raise_packb_exception(Cow::Borrowed(
+                        "packb() got multiple values for argument: 'option'",
                     ));
                 }
                 optsptr = Some(NonNull::new_unchecked(val));
             } else if arg.is_null() {
                 break;
             } else {
-                return raise_dumps_exception(Cow::Borrowed(
-                    "dumps() got an unexpected keyword argument",
+                return raise_packb_exception(Cow::Borrowed(
+                    "packb() got an unexpected keyword argument",
                 ));
             }
         }
@@ -322,16 +310,16 @@ pub unsafe extern "C" fn dumps(
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
         if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_dumps_exception(Cow::Borrowed("Invalid opts"));
+            return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
         if optsbits < 0 || optsbits > opt::MAX_OPT {
-            return raise_dumps_exception(Cow::Borrowed("Invalid opts"));
+            return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
     }
 
     match crate::serialize::serialize(obj, default, optsbits as opt::Opt) {
         Ok(val) => val.as_ptr(),
-        Err(err) => raise_dumps_exception(Cow::Owned(err)),
+        Err(err) => raise_packb_exception(Cow::Owned(err)),
     }
 }

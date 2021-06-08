@@ -2,6 +2,7 @@
 
 use crate::exc::*;
 use crate::ffi::PyDict_GET_SIZE;
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::datetime::*;
 use crate::serialize::serializer::pyobject_to_obtype;
@@ -20,6 +21,16 @@ pub struct Dict {
     default_calls: u8,
     recursion: u8,
     default: Option<NonNull<pyo3::ffi::PyObject>>,
+}
+
+#[derive(Clone)]
+enum Key<'p> {
+    String(InlinableString),
+    Bytes(&'p [u8]),
+    Bool(bool),
+    UInt(u64),
+    SInt(i64),
+    Float(f64),
 }
 
 impl Dict {
@@ -85,84 +96,6 @@ impl<'p> Serialize for Dict {
     }
 }
 
-pub struct DictSortedKey {
-    ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl DictSortedKey {
-    pub fn new(
-        ptr: *mut pyo3::ffi::PyObject,
-        opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
-    ) -> Self {
-        DictSortedKey {
-            ptr: ptr,
-            opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
-            default: default,
-        }
-    }
-}
-
-impl<'p> Serialize for DictSortedKey {
-    #[inline(never)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let len = unsafe { PyDict_GET_SIZE(self.ptr) as usize };
-        let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
-            SmallVec::with_capacity(len);
-        let mut pos = 0isize;
-        let mut str_size: pyo3::ffi::Py_ssize_t = 0;
-        let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        for _ in 0..=len - 1 {
-            unsafe {
-                pyo3::ffi::_PyDict_Next(
-                    self.ptr,
-                    &mut pos,
-                    &mut key,
-                    &mut value,
-                    std::ptr::null_mut(),
-                )
-            };
-            if unlikely!(unsafe { ob_type!(key) != STR_TYPE }) {
-                err!("Dict key must be str")
-            }
-            let data = read_utf8_from_str(key, &mut str_size);
-            if unlikely!(data.is_null()) {
-                err!(INVALID_STR)
-            }
-            items.push((str_from_slice!(data, str_size), value));
-        }
-
-        items.sort_unstable_by(|a, b| a.0.cmp(b.0));
-
-        let mut map = serializer.serialize_map(None).unwrap();
-        for (key, val) in items.iter() {
-            map.serialize_entry(
-                key,
-                &PyObjectSerializer::new(
-                    *val,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion + 1,
-                    self.default,
-                ),
-            )?;
-        }
-        map.end()
-    }
-}
-
 enum NonStrError {
     DatetimeLibraryUnsupported,
     IntegerRange,
@@ -200,17 +133,12 @@ impl DictNonStrKey {
         &self,
         key: *mut pyo3::ffi::PyObject,
         opts: crate::opt::Opt,
-    ) -> Result<InlinableString, NonStrError> {
+    ) -> Result<Key, NonStrError> {
         match pyobject_to_obtype(key, opts) {
-            ObType::None => Ok(InlinableString::from("null")),
+            ObType::None => Ok(Key::String(InlinableString::from("null"))),
             ObType::Bool => {
-                let key_as_str: &str;
-                if unsafe { key == TRUE } {
-                    key_as_str = "true";
-                } else {
-                    key_as_str = "false";
-                }
-                Ok(InlinableString::from(key_as_str))
+                let key = unsafe { key == TRUE };
+                Ok(Key::Bool(key))
             }
             ObType::Int => {
                 let ival = ffi!(PyLong_AsLongLong(key));
@@ -220,18 +148,14 @@ impl DictNonStrKey {
                     if unlikely!(uval == u64::MAX) && !ffi!(PyErr_Occurred()).is_null() {
                         return Err(NonStrError::IntegerRange);
                     }
-                    Ok(InlinableString::from(itoa::Buffer::new().format(uval)))
+                    Ok(Key::UInt(uval))
                 } else {
-                    Ok(InlinableString::from(itoa::Buffer::new().format(ival)))
+                    Ok(Key::SInt(ival))
                 }
             }
             ObType::Float => {
                 let val = ffi!(PyFloat_AS_DOUBLE(key));
-                if !val.is_finite() {
-                    Ok(InlinableString::from("null"))
-                } else {
-                    Ok(InlinableString::from(ryu::Buffer::new().format_finite(val)))
-                }
+                Ok(Key::Float(val))
             }
             ObType::Datetime => {
                 let mut buf: DateTimeBuffer = smallvec::SmallVec::with_capacity(32);
@@ -240,20 +164,20 @@ impl DictNonStrKey {
                     return Err(NonStrError::DatetimeLibraryUnsupported);
                 }
                 let key_as_str = str_from_slice!(buf.as_ptr(), buf.len());
-                Ok(InlinableString::from(key_as_str))
+                Ok(Key::String(InlinableString::from(key_as_str)))
             }
             ObType::Date => {
                 let mut buf: DateTimeBuffer = smallvec::SmallVec::with_capacity(32);
                 Date::new(key).write_buf(&mut buf);
                 let key_as_str = str_from_slice!(buf.as_ptr(), buf.len());
-                Ok(InlinableString::from(key_as_str))
+                Ok(Key::String(InlinableString::from(key_as_str)))
             }
             ObType::Time => match Time::new(key, opts) {
                 Ok(val) => {
                     let mut buf: DateTimeBuffer = smallvec::SmallVec::with_capacity(32);
                     val.write_buf(&mut buf);
                     let key_as_str = str_from_slice!(buf.as_ptr(), buf.len());
-                    Ok(InlinableString::from(key_as_str))
+                    Ok(Key::String(InlinableString::from(key_as_str)))
                 }
                 Err(TimeError::HasTimezone) => Err(NonStrError::TimeTzinfo),
             },
@@ -261,7 +185,7 @@ impl DictNonStrKey {
                 let mut buf: UUIDBuffer = smallvec::SmallVec::with_capacity(64);
                 UUID::new(key).write_buf(&mut buf);
                 let key_as_str = str_from_slice!(buf.as_ptr(), buf.len());
-                Ok(InlinableString::from(key_as_str))
+                Ok(Key::String(InlinableString::from(key_as_str)))
             }
             ObType::Enum => {
                 let value = ffi!(PyObject_GetAttr(key, VALUE_STR));
@@ -275,8 +199,17 @@ impl DictNonStrKey {
                 if unlikely!(uni.is_null()) {
                     Err(NonStrError::InvalidStr)
                 } else {
-                    Ok(InlinableString::from(str_from_slice!(uni, str_size)))
+                    Ok(Key::String(InlinableString::from(str_from_slice!(
+                        uni, str_size
+                    ))))
                 }
+            }
+            ObType::Bytes => {
+                let buffer = unsafe { PyBytes_AS_STRING(key) as *const u8 };
+                let length = unsafe { PyBytes_GET_SIZE(key) as usize };
+                Ok(Key::Bytes(unsafe {
+                    std::slice::from_raw_parts(buffer, length)
+                }))
             }
             ObType::StrSubclass => {
                 let mut str_size: pyo3::ffi::Py_ssize_t = 0;
@@ -284,7 +217,9 @@ impl DictNonStrKey {
                 if unlikely!(uni.is_null()) {
                     Err(NonStrError::InvalidStr)
                 } else {
-                    Ok(InlinableString::from(str_from_slice!(uni, str_size)))
+                    Ok(Key::String(InlinableString::from(str_from_slice!(
+                        uni, str_size
+                    ))))
                 }
             }
             ObType::Tuple
@@ -305,7 +240,7 @@ impl<'p> Serialize for DictNonStrKey {
         S: Serializer,
     {
         let len = unsafe { PyDict_GET_SIZE(self.ptr) as usize };
-        let mut items: SmallVec<[(InlinableString, *mut pyo3::ffi::PyObject); 8]> =
+        let mut items: SmallVec<[(Key, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         let mut pos = 0isize;
         let mut str_size: pyo3::ffi::Py_ssize_t = 0;
@@ -328,7 +263,7 @@ impl<'p> Serialize for DictNonStrKey {
                     err!(INVALID_STR)
                 }
                 items.push((
-                    InlinableString::from(str_from_slice!(data, str_size)),
+                    Key::String(InlinableString::from(str_from_slice!(data, str_size))),
                     value,
                 ));
             } else {
@@ -349,22 +284,70 @@ impl<'p> Serialize for DictNonStrKey {
             }
         }
 
-        if opts & SORT_KEYS != 0 {
-            items.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-        }
-
         let mut map = serializer.serialize_map(None).unwrap();
         for (key, val) in items.iter() {
-            map.serialize_entry(
-                str_from_slice!(key.as_ptr(), key.len()),
-                &PyObjectSerializer::new(
-                    *val,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion + 1,
-                    self.default,
-                ),
-            )?;
+            match key {
+                Key::String(k) => map.serialize_entry(
+                    str_from_slice!(k.as_ptr(), k.len()),
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Bytes(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::SInt(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::UInt(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Float(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Bool(k) => map.serialize_entry(
+                    k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+            }
         }
         map.end()
     }

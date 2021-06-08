@@ -1,6 +1,6 @@
 [project]
-name = "orjson"
-repository = "https://github.com/ijl/orjson"
+name = "ormsgpack"
+repository = "https://github.com/aviramha/ormsgpack"
 
 [build-system]
 build-backend = "maturin"
