@@ -14,8 +14,6 @@ Its features and drawbacks compared to other Python msgpack libraries:
 * serializes `datetime`, `date`, and `time` instances to RFC 3339 format,
 e.g., "1970-01-01T00:00:00+00:00"
 * serializes `numpy.ndarray` instances natively and faster.
-* serializes `str` without escaping unicode to ASCII, e.g., "好" rather than
-"\\\u597d"
 * serializes arbitrary types using a `default` hook
 
 ormsgpack supports CPython 3.6, 3.7, 3.8, 3.9, and 3.10. It distributes x86_64/amd64
