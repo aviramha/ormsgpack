@@ -5,16 +5,13 @@ use serde::ser::{Serialize, Serializer};
 // https://tools.ietf.org/html/rfc7159#section-6
 // "[-(2**53)+1, (2**53)-1]"
 
-
 pub struct IntSerializer {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
 impl IntSerializer {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        IntSerializer {
-            ptr: ptr,
-        }
+        IntSerializer { ptr: ptr }
     }
 }
 
