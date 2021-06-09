@@ -87,3 +87,29 @@ jobs:
       - run: pip install ormsgpack -f target/wheels
       - run: pytest
       - run: twine upload --non-interactive --skip-existing targets/wheels/*
+  release_sdist:
+    name: Release sdist
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9']
+    env:
+      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
+      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -U pip wheel twine maturin
+      - run: pip install -r requirements.txt
+      - run: maturin sdist
+      - run: pip install ormsgpack -f target/wheels
+      - run: pytest
+      - run: twine upload --non-interactive --skip-existing targets/wheels/*
