@@ -8,7 +8,7 @@ requires = ["maturin>=0.10.6,<0.11"]
 
 [tool.maturin]
 manylinux = "off"
-sdist-include = ["Cargo.lock"]
+sdist-include = ["Cargo.lock", "setup.py"]
 strip = "on"
 
 [tool.black]
