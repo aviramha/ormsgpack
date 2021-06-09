@@ -26,6 +26,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
+      - run: yum install -y libffi libffi-devel
       - run: /opt/python/${{ matrix.python-path }}/bin/python -m venv .venv
       - run: .venv/bin/pip install -U pip wheel twine maturin
       - run: .venv/bin/pip install -r requirements.txt
