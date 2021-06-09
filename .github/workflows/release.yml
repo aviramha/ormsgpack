@@ -30,7 +30,7 @@ jobs:
       - run: /opt/python/${{ matrix.python-path }}/bin/python -m venv .venv
       - run: .venv/bin/pip install -U pip wheel twine maturin
       - run: .venv/bin/pip install -r requirements.txt
-      - run: .venv/bin/maturin build --no-sdist --release --strip --manylinux on -i $pythonLocation/python --target x86_64-unknown-linux-gnu
+      - run: .venv/bin/maturin build --no-sdist --release --strip --manylinux 2010 -i $pythonLocation/python --target x86_64-unknown-linux-gnu
       - run: .venv/bin/pip install ormsgpack -f target/wheels
       - run: .venv/bin/pytest
       - run: .venv/bin/twine upload --non-interactive --skip-existing targets/wheels/*
@@ -59,7 +59,7 @@ jobs:
       - run: maturin build --no-sdist --release --strip -i $pythonLocation"python.exe"
       - run: pip install ormsgpack -f target/wheels
       - run: pytest
-      - run: twine upload --non-interactive --skip-existing targets/wheels/*
+      - run: twine upload --non-interactive --skip-existing targets\wheels\*
 
   release_macos:
     name: Release macOS
@@ -107,6 +107,4 @@ jobs:
       - run: pip install -U pip wheel twine maturin
       - run: pip install -r requirements.txt
       - run: maturin sdist
-      - run: pip install ormsgpack -f target/wheels
-      - run: pytest
       - run: twine upload --non-interactive --skip-existing targets/wheels/*
