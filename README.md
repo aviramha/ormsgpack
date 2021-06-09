@@ -16,9 +16,7 @@ e.g., "1970-01-01T00:00:00+00:00"
 * serializes `numpy.ndarray` instances natively and faster.
 * serializes arbitrary types using a `default` hook
 
-ormsgpack supports CPython 3.6, 3.7, 3.8, 3.9, and 3.10. It distributes x86_64/amd64
-and aarch64/armv8 wheels for Linux and macOS. It distributes x86_64/amd64 wheels
-for Windows. ormsgpack does not support PyPy. Releases follow semantic
+ormsgpack supports CPython 3.6, 3.7, 3.8, 3.9, and 3.10. ormsgpack does not support PyPy. Releases follow semantic
 versioning and serializing a new object type without an opt-in flag is
 considered a breaking change.
 
