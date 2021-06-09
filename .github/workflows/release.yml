@@ -1,9 +1,11 @@
 
 name: Release
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*.*.*'
+
 
 jobs:
   release_manylinux:
@@ -11,11 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+        python-path: ['cp36-cp36m', 'cp37-cp37m', 'cp38-cp38', 'cp39-cp39', 'cp310-cp310']
     container: quay.io/pypa/manylinux2014_x86_64:latest
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -23,16 +26,13 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: pip install -U pip wheel twine maturin
-      - run: pip install -r requirements.txt
-      - run: maturin build --no-sdist --release --strip --manylinux on -i $pythonLocation/python --target x86_64-unknown-linux-gnu
-      - run: pip install ormsgpack -f target/wheels
-      - run: pytest
-      - run: twine upload --non-interactive --skip-existing targets/wheels/*
+      - run: /opt/python/${{ matrix.python-path }}/bin/python -m venv .venv
+      - run: .venv/bin/pip install -U pip wheel twine maturin
+      - run: .venv/bin/pip install -r requirements.txt
+      - run: .venv/bin/maturin build --no-sdist --release --strip --manylinux on -i $pythonLocation/python --target x86_64-unknown-linux-gnu
+      - run: .venv/bin/pip install ormsgpack -f target/wheels
+      - run: .venv/bin/pytest
+      - run: .venv/bin/twine upload --non-interactive --skip-existing targets/wheels/*
   release_windows:
     name: Release windows
     runs-on: windows-latest
@@ -55,7 +55,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -U pip wheel twine maturin
       - run: pip install -r requirements.txt
-      - run: maturin build --no-sdist --release --strip -i $pythonLocation/python
+      - run: maturin build --no-sdist --release --strip -i $pythonLocation"python.exe"
       - run: pip install ormsgpack -f target/wheels
       - run: pytest
       - run: twine upload --non-interactive --skip-existing targets/wheels/*
@@ -65,8 +65,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.6', '3.7', '3.8', '3.9']
-        os: [macos-10.15, macos-11.0]
-    runs-on:  ${{ matrix.os }}
+    runs-on: macos-latest
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
@@ -90,9 +89,6 @@ jobs:
   release_sdist:
     name: Release sdist
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
@@ -106,7 +102,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.8
       - run: pip install -U pip wheel twine maturin
       - run: pip install -r requirements.txt
       - run: maturin sdist
