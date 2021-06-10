@@ -35,7 +35,7 @@ enum Key<'p> {
 
 #[repr(transparent)]
 pub struct BytesKeySerializer<'p> {
-    buf: &'p [u8]
+    buf: &'p [u8],
 }
 
 impl<'p> BytesKeySerializer<'p> {
@@ -52,7 +52,6 @@ impl<'p> Serialize for BytesKeySerializer<'p> {
         serializer.serialize_bytes(self.buf)
     }
 }
-
 
 impl Dict {
     pub fn new(
