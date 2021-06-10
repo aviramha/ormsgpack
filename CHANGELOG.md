@@ -1,6 +1,6 @@
 # Changelog
 ## Next Version
-
+## 0.2.0 - 10/6/2021
 ### Added
 - Add support for serializing pydantic's `BaseModel` instances using `ormsgpack.OPT_SERIALIZE_PYDANTIC`.
 ### Fixed
