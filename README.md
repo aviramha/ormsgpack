@@ -14,6 +14,7 @@ Its features and drawbacks compared to other Python msgpack libraries:
 * serializes `datetime`, `date`, and `time` instances to RFC 3339 format,
 e.g., "1970-01-01T00:00:00+00:00"
 * serializes `numpy.ndarray` instances natively and faster.
+* serializes `pydantic.BaseModel` instances natively (disregards the configuration ATM).
 * serializes arbitrary types using a `default` hook
 
 ormsgpack supports CPython 3.6, 3.7, 3.8, 3.9, and 3.10. ormsgpack does not support PyPy. Releases follow semantic
@@ -330,6 +331,9 @@ OPT_NON_STR_KEYS.
 Serialize `numpy.ndarray` instances. For more, see
 [numpy](https://github.com/aviramha/ormsgpack#numpy).
 
+##### OPT_SERIALIZE_PYDANTIC
+Serialize `pydantic.BaseModel` instances. Right now it ignores the config (str transformations), support might be added
+later.
 ##### OPT_UTC_Z
 
 Serialize a UTC timezone on `datetime.datetime` instances as `Z` instead
