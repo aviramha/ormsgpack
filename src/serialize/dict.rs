@@ -33,6 +33,7 @@ enum Key<'p> {
     Float(f64),
 }
 
+// serialize_entry() when T is &[u8] serializes it into a byte array/tuple, where desired behavior is bytes.
 #[repr(transparent)]
 pub struct BytesKeySerializer<'p> {
     buf: &'p [u8],
