@@ -257,3 +257,11 @@ def test_dict_keys_no_str_call():
     val = Obj()
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb({val: True}, option=ormsgpack.OPT_NON_STR_KEYS)
+
+
+def test_dict_keys_bytes():
+    data = {b"test": b"lala"}
+    assert (
+        msgpack.unpackb(ormsgpack.packb(data, option=ormsgpack.OPT_NON_STR_KEYS))
+        == data
+    )

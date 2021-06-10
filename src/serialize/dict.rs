@@ -33,6 +33,27 @@ enum Key<'p> {
     Float(f64),
 }
 
+#[repr(transparent)]
+pub struct BytesKeySerializer<'p> {
+    buf: &'p [u8]
+}
+
+impl<'p> BytesKeySerializer<'p> {
+    pub fn new(buf: &'p [u8]) -> Self {
+        BytesKeySerializer { buf: buf }
+    }
+}
+
+impl<'p> Serialize for BytesKeySerializer<'p> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(self.buf)
+    }
+}
+
+
 impl Dict {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
@@ -298,7 +319,7 @@ impl<'p> Serialize for DictNonStrKey {
                     ),
                 )?,
                 Key::Bytes(k) => map.serialize_entry(
-                    k,
+                    &BytesKeySerializer::new(k),
                     &PyObjectSerializer::new(
                         *val,
                         self.opts,
