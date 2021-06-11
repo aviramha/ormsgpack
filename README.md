@@ -353,8 +353,6 @@ b'"1970-01-01T00:00:00Z"'
 ```
 
 ### Deserialize
-**WARNING: Currently there's no recursion limit, meaning this can cause stack overflow and crash your app!
-Pending fix here: https://github.com/3Hren/msgpack-rust/issues/276**
 ```python
 def unpackb(__obj: Union[bytes, bytearray, memoryview]) -> Any: ...
 ```
