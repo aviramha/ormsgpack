@@ -41,7 +41,6 @@ def test_unpackb_type():
             ormsgpack.unpackb(val)
 
 
-@pytest.mark.skip(reason="https://github.com/3Hren/msgpack-rust/issues/276")
 def test_loads_recursion():
     """
     unpackb() recursion limit
