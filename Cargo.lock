@@ -138,7 +138,7 @@ checksum = "af8b08b04175473088b46763e51ee54da5f9a164bc162f615b91bc179dbf15a3"
 
 [[package]]
 name = "ormsgpack"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "ahash",
  "associative-cache",
