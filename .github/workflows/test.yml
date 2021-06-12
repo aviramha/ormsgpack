@@ -32,7 +32,7 @@ jobs:
       - run: maturin build --no-sdist --release --strip --manylinux off -i $pythonLocation"python.exe"
         if: ${{ runner.os == 'Windows' }}
       - run: pip install ormsgpack --no-index -f target/wheels
-      - run: pytest
+      - run: pytest tests/
 
   fmt:
     name: Rustfmt
