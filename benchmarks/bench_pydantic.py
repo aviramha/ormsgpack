@@ -30,10 +30,12 @@ def default(__obj):
 
 
 def test_pydantic_msgpack(benchmark):
+    benchmark.group = "pydantic"
     benchmark(msgpack.packb, objects_as_pydantic, default=default)
 
 
 def test_pydantic_ormsgpack(benchmark):
+    benchmark.group = "pydantic"
     benchmark(
         ormsgpack.packb, objects_as_pydantic, option=ormsgpack.OPT_SERIALIZE_PYDANTIC
     )

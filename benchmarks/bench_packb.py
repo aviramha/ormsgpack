@@ -16,11 +16,11 @@ DATASETS_DATA = {
 
 @pytest.mark.parametrize("dataset", DATASETS)
 def test_msgpack_packb(benchmark, dataset):
-    benchmark.group = dataset
+    benchmark.group = f"{dataset} packb"
     benchmark(msgpack.packb, DATASETS_DATA[dataset])
 
 
 @pytest.mark.parametrize("dataset", DATASETS)
 def test_ormsgpack_packb(benchmark, dataset):
-    benchmark.group = dataset
+    benchmark.group = f"{dataset} packb"
     benchmark(ormsgpack.packb, DATASETS_DATA[dataset])

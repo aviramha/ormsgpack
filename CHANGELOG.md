@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+### Misc
+- Grouped benchmarks in a pattern that should make more sense.
 ## 0.2.1 - 12/6/2021
 ### Fixed
 - Depth limit is now enforced for `ormsgpack.unpackb` - function should be safe for use now.

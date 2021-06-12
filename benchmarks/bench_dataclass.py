@@ -4,8 +4,6 @@ import msgpack
 import ormsgpack
 import pytest
 
-
-
 @dataclasses.dataclass
 class Member:
     id: int
@@ -30,7 +28,9 @@ def default(__obj):
         return dataclasses.asdict(__obj)
 
 def test_dataclass_msgpack(benchmark):
+    benchmark.group = "dataclass"
     benchmark(msgpack.packb, objects_as_dataclass, default=default)
 
 def test_dataclass_ormsgpack(benchmark):
+    benchmark.group = "dataclass"
     benchmark(ormsgpack.packb, objects_as_dataclass)
