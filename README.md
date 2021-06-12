@@ -1,11 +1,13 @@
 # ormsgpack
-
+![PyPI](https://img.shields.io/pypi/v/ormsgpack)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/ormsgpack)
 ormsgpack is a fast msgpack library for Python. It is a fork/reboot of [orjson](https://github.com/ijl/orjson)
 It serializes faster than [msgpack-python](https://github.com/msgpack/msgpack-python) and deserializes a bit slower (right now).
 It supports serialization of:
 [dataclass](https://github.com/aviramha/ormsgpack#dataclass),
 [datetime](https://github.com/aviramha/ormsgpack#datetime),
-[numpy](https://github.com/aviramha/ormsgpack#numpy), and
+[numpy](https://github.com/aviramha/ormsgpack#numpy),
+[pydantic](https://github.com/avirmaha/ormsgpack#OPT_SERIALIZE_PYDANTIC) and
 [UUID](https://github.com/aviramha/ormsgpack#uuid) instances natively.
 
 Its features and drawbacks compared to other Python msgpack libraries:
