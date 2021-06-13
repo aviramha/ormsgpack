@@ -65,13 +65,10 @@ def test_dict_keys_int_range_valid_u64():
     """
     OPT_NON_STR_KEYS has a u64 range for int, valid
     """
-    assert (
-        ormsgpack.packb(
-            {0: True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({0: True})
-    )
+    obj = {0: True}
+    packed = ormsgpack.packb(obj, option=ormsgpack.OPT_NON_STR_KEYS)
+    assert packed == msgpack.packb(obj)
+    assert obj == ormsgpack.unpackb(packed, option=ormsgpack.OPT_NON_STR_KEYS)
 
     assert (
         ormsgpack.packb(
@@ -93,9 +90,10 @@ def test_dict_keys_int_range_invalid():
 
 
 def test_dict_keys_float():
-    assert ormsgpack.packb(
-        {1.1: True, 2.2: False}, option=ormsgpack.OPT_NON_STR_KEYS
-    ) == msgpack.packb({1.1: True, 2.2: False})
+    obj = {1.1: True, 2.2: False}
+    packed = ormsgpack.packb(obj, option=ormsgpack.OPT_NON_STR_KEYS)
+    assert packed == msgpack.packb(obj)
+    assert obj == ormsgpack.unpackb(packed, option=ormsgpack.OPT_NON_STR_KEYS)
 
 
 def test_dict_keys_inf():
@@ -114,9 +112,10 @@ def test_dict_keys_nan():
 
 
 def test_dict_keys_bool():
-    assert ormsgpack.packb(
-        {True: True, False: False}, option=ormsgpack.OPT_NON_STR_KEYS
-    ) == msgpack.packb({True: True, False: False})
+    obj = {True: True, False: False}
+    packed = ormsgpack.packb(obj, option=ormsgpack.OPT_NON_STR_KEYS)
+    assert packed == msgpack.packb(obj)
+    assert ormsgpack.unpackb(packed, option=ormsgpack.OPT_NON_STR_KEYS) == obj
 
 
 def test_dict_keys_datetime():
@@ -238,7 +237,17 @@ def test_dict_keys_dataclass_hash():
 def test_dict_keys_tuple():
     obj = {(): True}
     with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(obj, option=ormsgpack.OPT_NON_STR_KEYS)
+        ormsgpack.packb(obj)
+    packed = ormsgpack.packb(obj, option=ormsgpack.OPT_NON_STR_KEYS)
+    with pytest.raises(ormsgpack.MsgpackDecodeError):
+        ormsgpack.unpackb(packed)
+    assert (
+        ormsgpack.unpackb(
+            packed,
+            option=ormsgpack.OPT_NON_STR_KEYS,
+        )
+        == obj
+    )
 
 
 def test_dict_keys_unknown():
@@ -262,6 +271,9 @@ def test_dict_keys_no_str_call():
 def test_dict_keys_bytes():
     data = {b"test": b"lala"}
     assert (
-        msgpack.unpackb(ormsgpack.packb(data, option=ormsgpack.OPT_NON_STR_KEYS))
+        ormsgpack.unpackb(
+            ormsgpack.packb(data, option=ormsgpack.OPT_NON_STR_KEYS),
+            option=ormsgpack.OPT_NON_STR_KEYS,
+        )
         == data
     )
