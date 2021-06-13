@@ -1,5 +1,6 @@
 # Changelog
 ## Next Version
+## 0.3.0 - 13/6/2021
 ### Added
 - `unpackb` now accepts keyword argument `option` with argument `OPT_NON_STR_KEYS`. This option will let ormsgpack
     unpack dictionaries with non-str keys.
