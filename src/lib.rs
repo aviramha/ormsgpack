@@ -25,7 +25,8 @@ use std::ptr::NonNull;
 
 const PACKB_DOC: &str =
     "packb(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to msgpack.\0";
-const UNPACKB_DOC: &str = "unpackb(obj, /, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
+const UNPACKB_DOC: &str =
+    "unpackb(obj, /, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
 
 macro_rules! opt {
     ($mptr:expr, $name:expr, $opt:expr) => {
@@ -93,7 +94,6 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
             ),
         )
     };
-
 
     #[cfg(python37)]
     {
@@ -198,7 +198,6 @@ fn raise_packb_exception(msg: Cow<str>) -> *mut PyObject {
     std::ptr::null_mut()
 }
 
-
 #[cfg(python37)]
 #[no_mangle]
 pub unsafe extern "C" fn unpackb(
@@ -213,14 +212,9 @@ pub unsafe extern "C" fn unpackb(
     if unlikely!(num_args != 1) {
         let msg;
         if num_args > 1 {
-            msg = Cow::Borrowed(
-                "unpackb() accepts only 1 positional argument",
-            );
-        }
-        else {
-            msg = Cow::Borrowed(
-                "unpackb() missing 1 required positional argument: 'obj'",
-            )
+            msg = Cow::Borrowed("unpackb() accepts only 1 positional argument");
+        } else {
+            msg = Cow::Borrowed("unpackb() missing 1 required positional argument: 'obj'")
         }
         return raise_unpackb_exception(deserialize::DeserializeError::new(msg));
     }
@@ -240,11 +234,15 @@ pub unsafe extern "C" fn unpackb(
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
         if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed("Invalid opts")));
+            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
+                "Invalid opts",
+            )));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
         if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
-            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed("Invalid opts")));
+            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
+                "Invalid opts",
+            )));
         }
     }
 
@@ -269,16 +267,11 @@ pub unsafe extern "C" fn unpackb(
     if unlikely!(num_args != 1) {
         let msg;
         if num_args > 1 {
-            msg = Cow::Borrowed(
-                "unpackb() accepts only 1 positional argument",
-            );
+            msg = Cow::Borrowed("unpackb() accepts only 1 positional argument");
+        } else {
+            msg = Cow::Borrowed("unpackb() missing 1 required positional argument: 'obj'")
         }
-        else {
-            msg = Cow::Borrowed(
-                "unpackb() missing 1 required positional argument: 'obj'",
-            )
-        }
-        return raise_unpackb_exception(msg);
+        return raise_unpackb_exception(deserialize::DeserializeError::new(msg));
     }
 
     if !kwds.is_null() {
@@ -294,8 +287,8 @@ pub unsafe extern "C" fn unpackb(
                 break;
             } else {
                 return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
-                    "unpackb() got an unexpected keyword argument")
-                ));
+                    "unpackb() got an unexpected keyword argument",
+                )));
             }
         }
     }
@@ -303,21 +296,23 @@ pub unsafe extern "C" fn unpackb(
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
         if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed("Invalid opts")));
+            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
+                "Invalid opts",
+            )));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
         if optsbits < 0 || optsbits > opt::MAX_UNPACKB_OPT {
-            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed("Invalid opts")));
+            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
+                "Invalid opts",
+            )));
         }
     }
 
-    match crate::deserialize::deserialize(obj,optsbits as opt::Opt) {
+    match crate::deserialize::deserialize(obj, optsbits as opt::Opt) {
         Ok(val) => val.as_ptr(),
-        Err(err) => raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Owned(err))),
+        Err(err) => raise_unpackb_exception(err),
     }
 }
-
-
 
 #[cfg(python37)]
 #[no_mangle]

@@ -2,8 +2,8 @@
 
 use crate::deserialize::cache::*;
 use crate::deserialize::DeserializeError;
-use crate::opt::*;
 use crate::ffi::*;
+use crate::opt::*;
 use crate::typeref::*;
 use crate::unicode::*;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
@@ -12,7 +12,6 @@ use std::borrow::Cow;
 use std::fmt;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
-
 
 pub fn deserialize(
     ptr: *mut pyo3::ffi::PyObject,
@@ -59,7 +58,6 @@ pub fn deserialize(
             Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
         }
     }
-
 }
 
 #[derive(Clone, Copy)]
