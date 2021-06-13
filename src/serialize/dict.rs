@@ -31,6 +31,7 @@ enum Key<'p> {
     UInt(u64),
     SInt(i64),
     Float(f64),
+    Tuple(*mut pyo3::ffi::PyObject),
 }
 
 // serialize_entry() when T is &[u8] serializes it into a byte array/tuple, where desired behavior is bytes.
@@ -243,8 +244,8 @@ impl DictNonStrKey {
                     ))))
                 }
             }
-            ObType::Tuple
-            | ObType::NumpyScalar
+            ObType::Tuple => Ok(Key::Tuple(key)),
+            ObType::NumpyScalar
             | ObType::NumpyArray
             | ObType::Dict
             | ObType::List
@@ -361,6 +362,22 @@ impl<'p> Serialize for DictNonStrKey {
                 )?,
                 Key::Bool(k) => map.serialize_entry(
                     k,
+                    &PyObjectSerializer::new(
+                        *val,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
+                )?,
+                Key::Tuple(k) => map.serialize_entry(
+                    &PyObjectSerializer::new(
+                        *k,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion + 1,
+                        self.default,
+                    ),
                     &PyObjectSerializer::new(
                         *val,
                         self.opts,

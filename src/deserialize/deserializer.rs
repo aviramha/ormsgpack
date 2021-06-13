@@ -47,16 +47,12 @@ pub fn deserialize(
     let mut deserializer = rmp_serde::Deserializer::new(contents);
     if (opts & NON_STR_KEYS) != 0 {
         let seed = MsgpackNonStrDictValue {};
-        match seed.deserialize(&mut deserializer) {
-            Ok(obj) => Ok(obj),
-            Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
-        }
+        seed.deserialize(&mut deserializer)
+            .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
     } else {
         let seed = MsgpackValue {};
-        match seed.deserialize(&mut deserializer) {
-            Ok(obj) => Ok(obj),
-            Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
-        }
+        seed.deserialize(&mut deserializer)
+            .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
     }
 }
 
@@ -438,5 +434,28 @@ impl<'de> Visitor<'de> for MsgpackKey {
         let ptr = v.as_ptr() as *const c_char;
         let len = v.len() as pyo3::ffi::Py_ssize_t;
         Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        match seq.next_element_seed(self) {
+            Ok(None) => Ok(nonnull!(ffi!(PyTuple_New(0)))),
+            Ok(Some(elem)) => {
+                let mut elements: SmallVec<[*mut pyo3::ffi::PyObject; 8]> =
+                    SmallVec::with_capacity(8);
+                elements.push(elem.as_ptr());
+                while let Some(elem) = seq.next_element_seed(self)? {
+                    elements.push(elem.as_ptr());
+                }
+                let ptr = ffi!(PyTuple_New(elements.len() as pyo3::ffi::Py_ssize_t));
+                for (i, &obj) in elements.iter().enumerate() {
+                    ffi!(PyTuple_SET_ITEM(ptr, i as pyo3::ffi::Py_ssize_t, obj));
+                }
+                Ok(nonnull!(ptr))
+            }
+            Err(err) => std::result::Result::Err(err),
+        }
     }
 }
