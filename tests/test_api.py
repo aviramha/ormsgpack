@@ -68,34 +68,41 @@ def test_valueerror():
 
 def test_option_not_int():
     """
-    packb() option not int or None
+    packb/unpackb() option not int or None
     """
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(True, option=True)
+    with pytest.raises(ormsgpack.MsgpackDecodeError):
+        ormsgpack.unpackb(b"\x00", option=True)
 
 
 def test_option_invalid_int():
     """
-    packb() option invalid 64-bit number
+    packb/unpackb() option invalid 64-bit number
     """
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(True, option=9223372036854775809)
+    with pytest.raises(ormsgpack.MsgpackDecodeError):
+        ormsgpack.unpackb(b"\x00", option=9223372036854775809)
 
 
 def test_option_range_low():
     """
-    packb() option out of range low
+    packb/unpackb() option out of range low
     """
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(True, option=-1)
-
+    with pytest.raises(ormsgpack.MsgpackDecodeError):
+        ormsgpack.unpackb("\x00", option=-1)
 
 def test_option_range_high():
     """
-    packb() option out of range high
+    packb/unpackb() option out of range high
     """
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(True, option=1 << 12)
+    with pytest.raises(ormsgpack.MsgpackDecodeError):
+        ormsgpack.unpackb("\x00", option=1 << 12)
 
 
 def test_opts_multiple():
@@ -127,13 +134,16 @@ def test_default_unknown_kwarg():
     """
     with pytest.raises(TypeError):
         ormsgpack.packb({}, zxc=default)
+    with pytest.raises(ValueError):
+        ormsgpack.unpackb("\x00", zxc=default)
 
 
 def test_default_empty_kwarg():
     """
-    packb() empty kwarg
+    unpackb/packb() empty kwarg
     """
     assert ormsgpack.packb(None, **{}) == b"\xc0"
+    assert ormsgpack.unpackb(b'\xc0', **{}) is None
 
 
 def test_default_twice():
@@ -188,7 +198,7 @@ def test_unpackb_signature():
     """
     unpackb() valid __text_signature__
     """
-    assert str(inspect.signature(ormsgpack.unpackb)) == "(obj, /)"
+    assert str(inspect.signature(ormsgpack.unpackb)) == "(obj, /, option=None)"
     inspect.signature(ormsgpack.unpackb).bind("[]")
 
 

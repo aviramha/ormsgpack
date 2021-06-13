@@ -1,5 +1,11 @@
 # Changelog
 ## Next Version
+### Added
+- `unpackb` now accepts keyword argument `option` with argument `OPT_NON_STR_KEYS`. This option will let ormsgpack
+    unpack dictionaries with non-str keys.
+    Be aware that this option is considered unsafe and disabled by default in msgpack due to possibility of HashDoS.
+- `packb` now is able to pack dictionaries with tuples as keys. `unpackb` is able to unpack such dictionaries. Both requires
+    `OPT_NON_STR_KEYS`.
 ### Misc
 - Grouped benchmarks in a pattern that should make more sense.
 - Added pydantic docs to `README.md`
