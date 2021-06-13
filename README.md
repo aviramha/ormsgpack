@@ -359,7 +359,7 @@ b'"1970-01-01T00:00:00Z"'
 
 ### Deserialize
 ```python
-def unpackb(__obj: Union[bytes, bytearray, memoryview]) -> Any: ...
+def unpackb(__obj: Union[bytes, bytearray, memoryview], / , option=None) -> Any: ...
 ```
 
 `unpackb()` deserializes msgpack to Python objects. It deserializes to `dict`,
@@ -377,6 +377,10 @@ It raises `MsgpackDecodeError` if given an invalid type or invalid
 msgpack.
 
 `MsgpackDecodeError` is a subclass of `ValueError`.
+
+#### option
+`unpackb()` supports the `OPT_NON_STR_KEYS` option, that is similar to original msgpack's `strict_map_keys=False`.
+Be aware that this option is considered unsafe and disabled by default in msgpack due to possibility of HashDoS.
 
 ## Types
 

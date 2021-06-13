@@ -2,6 +2,7 @@
 
 use crate::deserialize::cache::*;
 use crate::deserialize::DeserializeError;
+use crate::opt::*;
 use crate::ffi::*;
 use crate::typeref::*;
 use crate::unicode::*;
@@ -12,8 +13,10 @@ use std::fmt;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 
+
 pub fn deserialize(
     ptr: *mut pyo3::ffi::PyObject,
+    opts: Opt,
 ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
     let obj_type_ptr = ob_type!(ptr);
     let contents: &[u8];
@@ -43,18 +46,26 @@ pub fn deserialize(
     contents = unsafe { std::slice::from_raw_parts(buffer, length) };
 
     let mut deserializer = rmp_serde::Deserializer::new(contents);
-
-    let seed = JsonValue {};
-    match seed.deserialize(&mut deserializer) {
-        Ok(obj) => Ok(obj),
-        Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
+    if (opts & NON_STR_KEYS) != 0 {
+        let seed = MsgpackNonStrDictValue {};
+        match seed.deserialize(&mut deserializer) {
+            Ok(obj) => Ok(obj),
+            Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
+        }
+    } else {
+        let seed = MsgpackValue {};
+        match seed.deserialize(&mut deserializer) {
+            Ok(obj) => Ok(obj),
+            Err(e) => Err(DeserializeError::new(Cow::Owned(e.to_string()))),
+        }
     }
+
 }
 
 #[derive(Clone, Copy)]
-struct JsonValue;
+struct MsgpackValue;
 
-impl<'de> DeserializeSeed<'de> for JsonValue {
+impl<'de> DeserializeSeed<'de> for MsgpackValue {
     type Value = NonNull<pyo3::ffi::PyObject>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -65,7 +76,7 @@ impl<'de> DeserializeSeed<'de> for JsonValue {
     }
 }
 
-impl<'de> Visitor<'de> for JsonValue {
+impl<'de> Visitor<'de> for MsgpackValue {
     type Value = NonNull<pyo3::ffi::PyObject>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -207,5 +218,227 @@ impl<'de> Visitor<'de> for JsonValue {
             ffi!(Py_DECREF(value.as_ptr()));
         }
         Ok(nonnull!(dict_ptr))
+    }
+}
+
+// Implemntation of MsgpackValue that can deserialize non-str keys also.
+#[derive(Clone, Copy)]
+struct MsgpackNonStrDictValue;
+
+impl<'de> DeserializeSeed<'de> for MsgpackNonStrDictValue {
+    type Value = NonNull<pyo3::ffi::PyObject>;
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(self)
+    }
+}
+
+impl<'de> Visitor<'de> for MsgpackNonStrDictValue {
+    type Value = NonNull<pyo3::ffi::PyObject>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("msgpack")
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E> {
+        ffi!(Py_INCREF(NONE));
+        Ok(nonnull!(NONE))
+    }
+
+    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if value {
+            ffi!(Py_INCREF(TRUE));
+            Ok(nonnull!(TRUE))
+        } else {
+            ffi!(Py_INCREF(FALSE));
+            Ok(nonnull!(FALSE))
+        }
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
+    }
+
+    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(unicode_from_str(value.as_str())))
+    }
+
+    fn visit_borrowed_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(unicode_from_str(value)))
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(unicode_from_str(value)))
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        let ptr = v.as_ptr() as *const c_char;
+        let len = v.len() as pyo3::ffi::Py_ssize_t;
+        Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        match seq.next_element_seed(self) {
+            Ok(None) => Ok(nonnull!(ffi!(PyList_New(0)))),
+            Ok(Some(elem)) => {
+                let mut elements: SmallVec<[*mut pyo3::ffi::PyObject; 8]> =
+                    SmallVec::with_capacity(8);
+                elements.push(elem.as_ptr());
+                while let Some(elem) = seq.next_element_seed(self)? {
+                    elements.push(elem.as_ptr());
+                }
+                let ptr = ffi!(PyList_New(elements.len() as pyo3::ffi::Py_ssize_t));
+                for (i, &obj) in elements.iter().enumerate() {
+                    ffi!(PyList_SET_ITEM(ptr, i as pyo3::ffi::Py_ssize_t, obj));
+                }
+                Ok(nonnull!(ptr))
+            }
+            Err(err) => std::result::Result::Err(err),
+        }
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let dict_ptr = ffi!(PyDict_New());
+        while let Some((key, value)) = map.next_entry_seed(MsgpackKey {}, self)? {
+            let ret = ffi!(PyDict_SetItem(dict_ptr, key.as_ptr(), value.as_ptr()));
+            if unlikely!(ret == -1) {
+                return Err(de::Error::custom("PyDict_SetItem failed"));
+            }
+            ffi!(Py_DECREF(key.as_ptr()));
+            ffi!(Py_DECREF(value.as_ptr()));
+        }
+        Ok(nonnull!(dict_ptr))
+    }
+}
+
+#[derive(Clone, Copy)]
+struct MsgpackKey;
+
+impl<'de> DeserializeSeed<'de> for MsgpackKey {
+    type Value = NonNull<pyo3::ffi::PyObject>;
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(self)
+    }
+}
+
+impl<'de> Visitor<'de> for MsgpackKey {
+    type Value = NonNull<pyo3::ffi::PyObject>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("msgpack")
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E> {
+        ffi!(Py_INCREF(NONE));
+        Ok(nonnull!(NONE))
+    }
+
+    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if value {
+            ffi!(Py_INCREF(TRUE));
+            Ok(nonnull!(TRUE))
+        } else {
+            ffi!(Py_INCREF(FALSE));
+            Ok(nonnull!(FALSE))
+        }
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
+    }
+
+    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(unicode_from_str(value.as_str())))
+    }
+
+    fn visit_borrowed_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(unicode_from_str(value)))
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(nonnull!(unicode_from_str(value)))
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        let ptr = v.as_ptr() as *const c_char;
+        let len = v.len() as pyo3::ffi::Py_ssize_t;
+        Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
     }
 }
