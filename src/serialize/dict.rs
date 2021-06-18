@@ -79,12 +79,13 @@ impl<'p> Serialize for Dict {
     where
         S: Serializer,
     {
-        let mut map = serializer.serialize_map(None).unwrap();
+        let len = unsafe { PyDict_GET_SIZE(self.ptr) as usize };
+        let mut map = serializer.serialize_map(Some(len)).unwrap();
         let mut pos = 0isize;
         let mut str_size: pyo3::ffi::Py_ssize_t = 0;
         let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        for _ in 0..=unsafe { PyDict_GET_SIZE(self.ptr) as usize } - 1 {
+        for _ in 0..=len - 1 {
             unsafe {
                 pyo3::ffi::_PyDict_Next(
                     self.ptr,
