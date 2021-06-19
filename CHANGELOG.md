@@ -1,5 +1,10 @@
 # Changelog
 ## Next Version
+## 0.3.1 - 19/6/2021
+### Changed
+- `packb` of maps and sequences is now almost 2x faster as it leverages known size. PR [#18](https://github.com/aviramha/ormsgpack/pull/18) by [@ijl](https://github.com/ijl).
+### Misc
+- Added `scripts/bench_target.py` and `scripts/profile.sh` for easily benchmarking and profiling. Works only on Linux. PR [#17](https://github.com/aviramha/ormsgpack/pull/17) by [@ijl](https://github.com/ijl).
 ## 0.3.0 - 13/6/2021
 ### Added
 - `unpackb` now accepts keyword argument `option` with argument `OPT_NON_STR_KEYS`. This option will let ormsgpack
