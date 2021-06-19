@@ -11,7 +11,10 @@ in a loop on fixtures from files containing messagepack data. Example usage:
 import os
 import sys
 
-os.sched_setaffinity(os.getpid(), {0, 1})
+try:
+    os.sched_setaffinity(os.getpid(), {0, 1})
+except AttributeError:
+    print("sched affinity not available for this platform.")
 
 from ormsgpack import packb, unpackb
 
