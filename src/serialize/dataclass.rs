@@ -47,6 +47,7 @@ impl<'p> Serialize for DataclassFastSerializer {
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
+        // length is unknown without further work because attributes are filtered below
         let mut map = serializer.serialize_map(None).unwrap();
         let mut pos = 0isize;
         let mut str_size: pyo3::ffi::Py_ssize_t = 0;
@@ -128,6 +129,7 @@ impl<'p> Serialize for DataclassFallbackSerializer {
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
+        // length is unknown without further work because attributes are filtered below
         let mut map = serializer.serialize_map(None).unwrap();
         let mut pos = 0isize;
         let mut str_size: pyo3::ffi::Py_ssize_t = 0;
