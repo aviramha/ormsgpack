@@ -1,6 +1,8 @@
 import os.path
-import pytest
+
 import msgpack
+import pytest
+
 import ormsgpack
 
 DATASETS = ("canada", "citm_catalog", "github", "twitter")

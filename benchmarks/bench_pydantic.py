@@ -1,8 +1,9 @@
-from pydantic import BaseModel
 from typing import List
+
 import msgpack
+from pydantic import BaseModel
+
 import ormsgpack
-import pytest
 
 
 class Member(BaseModel):

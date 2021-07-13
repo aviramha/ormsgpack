@@ -1,5 +1,9 @@
 # Changelog
 ## Next Version
+### Changed
+- Update dependencies, PyO3 -> 0.14.1.
+### Misc
+- Setup dependabot.
 ## 0.3.1 - 19/6/2021
 ### Changed
 - `packb` of maps and sequences is now almost 2x faster as it leverages known size. PR [#18](https://github.com/aviramha/ormsgpack/pull/18) by [@ijl](https://github.com/ijl).

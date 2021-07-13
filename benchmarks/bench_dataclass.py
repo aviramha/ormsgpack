@@ -1,8 +1,10 @@
 import dataclasses
 from typing import List
+
 import msgpack
+
 import ormsgpack
-import pytest
+
 
 @dataclasses.dataclass
 class Member:
@@ -27,9 +29,11 @@ def default(__obj):
     if dataclasses.is_dataclass(__obj):
         return dataclasses.asdict(__obj)
 
+
 def test_dataclass_msgpack(benchmark):
     benchmark.group = "dataclass"
     benchmark(msgpack.packb, objects_as_dataclass, default=default)
+
 
 def test_dataclass_ormsgpack(benchmark):
     benchmark.group = "dataclass"
