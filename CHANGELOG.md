@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+### Fixed
+- Fix memory leak serializing `datetime.datetime` with `tzinfo`. (Copied from orjson)
 ### Changed
 - Update dependencies, PyO3 -> 0.14.1.
 ### Misc
