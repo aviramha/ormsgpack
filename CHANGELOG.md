@@ -1,5 +1,6 @@
 # Changelog
 ## Next Version
+## 0.3.2 - 13/7/2021
 ### Fixed
 - Fix memory leak serializing `datetime.datetime` with `tzinfo`. (Copied from orjson)
 ### Changed
