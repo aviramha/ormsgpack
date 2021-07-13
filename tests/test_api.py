@@ -95,6 +95,7 @@ def test_option_range_low():
     with pytest.raises(ormsgpack.MsgpackDecodeError):
         ormsgpack.unpackb("\x00", option=-1)
 
+
 def test_option_range_high():
     """
     packb/unpackb() option out of range high
@@ -143,7 +144,7 @@ def test_default_empty_kwarg():
     unpackb/packb() empty kwarg
     """
     assert ormsgpack.packb(None, **{}) == b"\xc0"
-    assert ormsgpack.unpackb(b'\xc0', **{}) is None
+    assert ormsgpack.unpackb(b"\xc0", **{}) is None
 
 
 def test_default_twice():

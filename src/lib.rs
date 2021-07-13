@@ -43,8 +43,18 @@ macro_rules! opt {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
-    let mut init = PyModuleDef_INIT;
-    init.m_name = "ormsgpack\0".as_ptr() as *const c_char;
+    let init = PyModuleDef {
+        m_base: PyModuleDef_HEAD_INIT,
+        m_name: "ormsgpack\0".as_ptr() as *const c_char,
+        m_doc: std::ptr::null(),
+        m_size: 0,
+        m_methods: std::ptr::null_mut(),
+        m_slots: std::ptr::null_mut(),
+        m_traverse: None,
+        m_clear: None,
+        m_free: None,
+    };
+
     let mptr = PyModule_Create(Box::into_raw(Box::new(init)));
 
     let version = env!("CARGO_PKG_VERSION");
@@ -219,14 +229,17 @@ pub unsafe extern "C" fn unpackb(
         return raise_unpackb_exception(deserialize::DeserializeError::new(msg));
     }
     if !kwnames.is_null() {
-        for i in 0..=PyTuple_GET_SIZE(kwnames) - 1 {
-            let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
-            if arg == typeref::OPTION {
-                optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
-            } else {
-                return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
-                    "unpackb() got an unexpected keyword argument",
-                )));
+        let tuple_size = PyTuple_GET_SIZE(kwnames);
+        if tuple_size > 0 {
+            for i in 0..=tuple_size - 1 {
+                let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
+                if arg == typeref::OPTION {
+                    optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+                } else {
+                    return raise_unpackb_exception(deserialize::DeserializeError::new(
+                        Cow::Borrowed("unpackb() got an unexpected keyword argument"),
+                    ));
+                }
             }
         }
     }
@@ -338,26 +351,29 @@ pub unsafe extern "C" fn packb(
         optsptr = Some(NonNull::new_unchecked(*args.offset(2)));
     }
     if !kwnames.is_null() {
-        for i in 0..=PyTuple_GET_SIZE(kwnames) - 1 {
-            let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
-            if arg == typeref::DEFAULT {
-                if unlikely!(num_args & 2 == 2) {
+        let tuple_size = PyTuple_GET_SIZE(kwnames);
+        if tuple_size > 0 {
+            for i in 0..=tuple_size - 1 {
+                let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
+                if arg == typeref::DEFAULT {
+                    if unlikely!(num_args & 2 == 2) {
+                        return raise_packb_exception(Cow::Borrowed(
+                            "packb() got multiple values for argument: 'default'",
+                        ));
+                    }
+                    default = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+                } else if arg == typeref::OPTION {
+                    if unlikely!(num_args & 3 == 3) {
+                        return raise_packb_exception(Cow::Borrowed(
+                            "packb() got multiple values for argument: 'option'",
+                        ));
+                    }
+                    optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+                } else {
                     return raise_packb_exception(Cow::Borrowed(
-                        "packb() got multiple values for argument: 'default'",
+                        "packb() got an unexpected keyword argument",
                     ));
                 }
-                default = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
-            } else if arg == typeref::OPTION {
-                if unlikely!(num_args & 3 == 3) {
-                    return raise_packb_exception(Cow::Borrowed(
-                        "packb() got multiple values for argument: 'option'",
-                    ));
-                }
-                optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
-            } else {
-                return raise_packb_exception(Cow::Borrowed(
-                    "packb() got an unexpected keyword argument",
-                ));
             }
         }
     }
