@@ -1,8 +1,7 @@
 autoflake
 black
 isort
-# until https://github.com/PyO3/maturin/issues/591 is resolved
-maturin==0.10.6
+maturin
 mypy
 -r tests/requirements.txt
 -r benchmarks/requirements.txt

@@ -28,8 +28,24 @@ const PACKB_DOC: &str =
 const UNPACKB_DOC: &str =
     "unpackb(obj, /, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
 
+macro_rules! export {
+    ($array:expr, $name:expr) => {
+        $array.push(PyUnicode_InternFromString($name.as_ptr() as *const c_char));
+    };
+}
+
+macro_rules! module_add {
+    ($array: expr, $name: expr, $mptr: expr, $object:expr) => {
+        export!($array, $name);
+        unsafe {
+            PyModule_AddObject($mptr, $name.as_ptr() as *const c_char, $object);
+        };
+    };
+}
+
 macro_rules! opt {
-    ($mptr:expr, $name:expr, $opt:expr) => {
+    ($array:expr, $mptr:expr, $name:expr, $opt:expr) => {
+        export!($array, $name);
         unsafe {
             #[cfg(not(target_os = "windows"))]
             PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i64);
@@ -56,15 +72,14 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     };
 
     let mptr = PyModule_Create(Box::into_raw(Box::new(init)));
-
+    let mut exported_objects = Vec::new();
     let version = env!("CARGO_PKG_VERSION");
-    unsafe {
-        PyModule_AddObject(
-            mptr,
-            "__version__\0".as_ptr() as *const c_char,
-            PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize),
-        )
-    };
+    module_add!(
+        exported_objects,
+        "__version__\0",
+        mptr,
+        PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
+    );
 
     let wrapped_packb: PyMethodDef;
     let wrapped_unpackb: PyMethodDef;
@@ -92,18 +107,16 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
             ml_doc: PACKB_DOC.as_ptr() as *const c_char,
         };
     }
-
-    unsafe {
-        PyModule_AddObject(
-            mptr,
-            "packb\0".as_ptr() as *const c_char,
-            PyCFunction_NewEx(
-                Box::into_raw(Box::new(wrapped_packb)),
-                std::ptr::null_mut(),
-                PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char),
-            ),
+    module_add!(
+        exported_objects,
+        "packb\0",
+        mptr,
+        PyCFunction_NewEx(
+            Box::into_raw(Box::new(wrapped_packb)),
+            std::ptr::null_mut(),
+            PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char),
         )
-    };
+    );
 
     #[cfg(python37)]
     {
@@ -129,55 +142,84 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         };
     }
 
-    unsafe {
-        PyModule_AddObject(
-            mptr,
-            "unpackb\0".as_ptr() as *const c_char,
-            PyCFunction_NewEx(
-                Box::into_raw(Box::new(wrapped_unpackb)),
-                std::ptr::null_mut(),
-                PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char),
-            ),
+    module_add!(
+        exported_objects,
+        "unpackb\0",
+        mptr,
+        PyCFunction_NewEx(
+            Box::into_raw(Box::new(wrapped_unpackb)),
+            std::ptr::null_mut(),
+            PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char)
         )
-    };
+    );
 
-    opt!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
-    opt!(mptr, "OPT_NON_STR_KEYS\0", opt::NON_STR_KEYS);
-    opt!(mptr, "OPT_OMIT_MICROSECONDS\0", opt::OMIT_MICROSECONDS);
+    opt!(exported_objects, mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
     opt!(
+        exported_objects,
+        mptr,
+        "OPT_NON_STR_KEYS\0",
+        opt::NON_STR_KEYS
+    );
+    opt!(
+        exported_objects,
+        mptr,
+        "OPT_OMIT_MICROSECONDS\0",
+        opt::OMIT_MICROSECONDS
+    );
+    opt!(
+        exported_objects,
         mptr,
         "OPT_PASSTHROUGH_DATACLASS\0",
         opt::PASSTHROUGH_DATACLASS
     );
     opt!(
+        exported_objects,
         mptr,
         "OPT_PASSTHROUGH_DATETIME\0",
         opt::PASSTHROUGH_DATETIME
     );
     opt!(
+        exported_objects,
         mptr,
         "OPT_PASSTHROUGH_SUBCLASS\0",
         opt::PASSTHROUGH_SUBCLASS
     );
-    opt!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
-    opt!(mptr, "OPT_SERIALIZE_PYDANTIC\0", opt::SERIALIZE_PYDANTIC);
-    opt!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
+    opt!(
+        exported_objects,
+        mptr,
+        "OPT_SERIALIZE_NUMPY\0",
+        opt::SERIALIZE_NUMPY
+    );
+    opt!(
+        exported_objects,
+        mptr,
+        "OPT_SERIALIZE_PYDANTIC\0",
+        opt::SERIALIZE_PYDANTIC
+    );
+    opt!(exported_objects, mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
     typeref::init_typerefs();
 
-    unsafe {
-        PyModule_AddObject(
-            mptr,
-            "MsgpackDecodeError\0".as_ptr() as *const c_char,
-            typeref::MsgpackDecodeError,
-        );
-        PyModule_AddObject(
-            mptr,
-            "MsgpackEncodeError\0".as_ptr() as *const c_char,
-            typeref::MsgpackEncodeError,
-        )
-    };
+    module_add!(
+        exported_objects,
+        "MsgpackDecodeError\0",
+        mptr,
+        typeref::MsgpackDecodeError
+    );
+    module_add!(
+        exported_objects,
+        "MsgpackEncodeError\0",
+        mptr,
+        typeref::MsgpackEncodeError
+    );
 
+    let exported = ffi!(PyList_New(exported_objects.len() as pyo3::ffi::Py_ssize_t));
+    for (i, &obj) in exported_objects.iter().enumerate() {
+        ffi!(PyList_SET_ITEM(exported, i as pyo3::ffi::Py_ssize_t, obj));
+    }
+    unsafe {
+        PyModule_AddObject(mptr, "__all__\0".as_ptr() as *const c_char, exported);
+    }
     mptr
 }
 
