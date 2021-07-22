@@ -356,7 +356,7 @@ pub unsafe extern "C" fn unpackb(
             )));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if optsbits < 0 || optsbits > opt::MAX_UNPACKB_OPT {
+        if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
             return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
                 "Invalid opts",
             )));
@@ -499,7 +499,7 @@ pub unsafe extern "C" fn packb(
             return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if optsbits < 0 || optsbits > opt::MAX_PACKB_OPT {
+        if !(0..=opt::MAX_PACKB_OPT).contains(&optsbits) {
             return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
     }
