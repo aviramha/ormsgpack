@@ -84,7 +84,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     let wrapped_packb: PyMethodDef;
     let wrapped_unpackb: PyMethodDef;
 
-    #[cfg(python37)]
+    #[cfg(Py_3_7)]
     {
         wrapped_packb = PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         };
     }
 
-    #[cfg(not(python37))]
+    #[cfg(not(Py_3_7))]
     {
         wrapped_packb = PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
@@ -118,7 +118,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         )
     );
 
-    #[cfg(python37)]
+    #[cfg(Py_3_7)]
     {
         wrapped_unpackb = PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         };
     }
 
-    #[cfg(not(python37))]
+    #[cfg(not(Py_3_7))]
     {
         wrapped_unpackb = PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
@@ -250,7 +250,7 @@ fn raise_packb_exception(msg: Cow<str>) -> *mut PyObject {
     std::ptr::null_mut()
 }
 
-#[cfg(python37)]
+#[cfg(Py_3_7)]
 #[no_mangle]
 pub unsafe extern "C" fn unpackb(
     _self: *mut PyObject,
@@ -307,7 +307,7 @@ pub unsafe extern "C" fn unpackb(
     }
 }
 
-#[cfg(not(python37))]
+#[cfg(not(Py_3_7))]
 #[no_mangle]
 pub unsafe extern "C" fn unpackb(
     _self: *mut PyObject,
@@ -356,7 +356,7 @@ pub unsafe extern "C" fn unpackb(
             )));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if optsbits < 0 || optsbits > opt::MAX_UNPACKB_OPT {
+        if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
             return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
                 "Invalid opts",
             )));
@@ -369,7 +369,7 @@ pub unsafe extern "C" fn unpackb(
     }
 }
 
-#[cfg(python37)]
+#[cfg(Py_3_7)]
 #[no_mangle]
 pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
@@ -437,7 +437,7 @@ pub unsafe extern "C" fn packb(
     }
 }
 
-#[cfg(not(python37))]
+#[cfg(not(Py_3_7))]
 #[no_mangle]
 pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
@@ -499,7 +499,7 @@ pub unsafe extern "C" fn packb(
             return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
         optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if optsbits < 0 || optsbits > opt::MAX_PACKB_OPT {
+        if !(0..=opt::MAX_PACKB_OPT).contains(&optsbits) {
             return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
     }
