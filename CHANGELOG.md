@@ -1,9 +1,11 @@
 # Changelog
 ## Next Version
+## 0.3.3 - 23/7/2021
 ### Misc
 - Refactored adding objects to the module, creating a `__all__` object similar to the way PyO3 creates. This solves an issue with upgrading to new maturin version.
 - Changed < Py3.7 implementation to use automatic range inclusion.
 - Added test to validate correct Python method flags are used on declare.
+- Changed to use PyO3 configurations instead of our own.
 ## 0.3.2 - 13/7/2021
 ### Fixed
 - Fix memory leak serializing `datetime.datetime` with `tzinfo`. (Copied from orjson)
