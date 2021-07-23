@@ -84,7 +84,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     let wrapped_packb: PyMethodDef;
     let wrapped_unpackb: PyMethodDef;
 
-    #[cfg(Py_3_7)]
+    #[cfg(Py_3_8)]
     {
         wrapped_packb = PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         };
     }
 
-    #[cfg(not(Py_3_7))]
+    #[cfg(not(Py_3_8))]
     {
         wrapped_packb = PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
@@ -118,7 +118,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         )
     );
 
-    #[cfg(Py_3_7)]
+    #[cfg(Py_3_8)]
     {
         wrapped_unpackb = PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         };
     }
 
-    #[cfg(not(Py_3_7))]
+    #[cfg(not(Py_3_8))]
     {
         wrapped_unpackb = PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
@@ -250,7 +250,7 @@ fn raise_packb_exception(msg: Cow<str>) -> *mut PyObject {
     std::ptr::null_mut()
 }
 
-#[cfg(Py_3_7)]
+#[cfg(Py_3_8)]
 #[no_mangle]
 pub unsafe extern "C" fn unpackb(
     _self: *mut PyObject,
@@ -307,7 +307,7 @@ pub unsafe extern "C" fn unpackb(
     }
 }
 
-#[cfg(not(Py_3_7))]
+#[cfg(not(Py_3_8))]
 #[no_mangle]
 pub unsafe extern "C" fn unpackb(
     _self: *mut PyObject,
@@ -369,7 +369,7 @@ pub unsafe extern "C" fn unpackb(
     }
 }
 
-#[cfg(Py_3_7)]
+#[cfg(Py_3_8)]
 #[no_mangle]
 pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
@@ -437,7 +437,7 @@ pub unsafe extern "C" fn packb(
     }
 }
 
-#[cfg(not(Py_3_7))]
+#[cfg(not(Py_3_8))]
 #[no_mangle]
 pub unsafe extern "C" fn packb(
     _self: *mut PyObject,
