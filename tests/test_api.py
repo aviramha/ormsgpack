@@ -3,6 +3,8 @@
 import datetime
 import inspect
 import re
+import ctypes
+import sys
 
 import msgpack
 import pytest
@@ -225,3 +227,20 @@ def test_bytes_buffer():
     b = "b" * 4096
     c = "c" * 4096 * 4096
     assert ormsgpack.packb([a, b, c]) == msgpack.packb([a, b, c])
+
+def test_function_flags():
+    """
+    Make sure we use fastcall when possible
+    """
+    FASTCALL = 0x0080
+    KEYWORDS = 0x0002
+    VARARGS = 0x0001
+    ctypes.pythonapi.PyCFunction_GetFlags.argtypes =[ctypes.py_object]
+    packb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.packb)
+    unpackb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.unpackb)
+    if sys.version_info.minor > 6:
+        flags = FASTCALL | KEYWORDS
+    else:
+        flags = KEYWORDS | VARARGS
+    assert packb_flags & flags == flags
+    assert unpackb_flags & flags == flags
