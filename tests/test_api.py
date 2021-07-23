@@ -238,7 +238,7 @@ def test_function_flags():
     ctypes.pythonapi.PyCFunction_GetFlags.argtypes =[ctypes.py_object]
     packb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.packb)
     unpackb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.unpackb)
-    if sys.version_info.minor > 6:
+    if sys.version_info.minor > 7:
         flags = FASTCALL | KEYWORDS
     else:
         flags = KEYWORDS | VARARGS
