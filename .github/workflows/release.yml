@@ -55,7 +55,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -U pip wheel twine maturin
+      - run: pip install --user -U pip wheel twine maturin
       - run: pip install -r requirements.txt
       - run: maturin build --no-sdist --release --strip -i $pythonLocation"python.exe"
       - run: pip install ormsgpack --no-index -f target/wheels
