@@ -1,5 +1,8 @@
 # Changelog
 ## Next Version
+## 0.3.4 - 23/7/2021
+### Fixed
+- Fixed `ormsgpack.pyi` support of str as input for `unpackb`.
 ## 0.3.3 - 23/7/2021
 ### Misc
 - Refactored adding objects to the module, creating a `__all__` object similar to the way PyO3 creates. This solves an issue with upgrading to new maturin version.
