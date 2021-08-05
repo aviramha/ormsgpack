@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+### Fixed
+- Fixed clippy warnings for semicolon in macro.
 ## 0.3.4 - 23/7/2021
 ### Fixed
 - Fixed `ormsgpack.pyi` support of str as input for `unpackb`.
