@@ -1,7 +1,10 @@
 # Changelog
 ## Next Version
+## 0.3.5 - 5/8/2021
 ### Fixed
 - Fixed clippy warnings for semicolon in macro.
+### Misc
+- Bumped serde.rs
 ## 0.3.4 - 23/7/2021
 ### Fixed
 - Fixed `ormsgpack.pyi` support of str as input for `unpackb`.
