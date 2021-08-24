@@ -1,5 +1,8 @@
 # Changelog
 ## Next Version
+## 0.3.6 - 24/8/2021
+### Misc
+- Update dependencies.
 ## 0.3.5 - 5/8/2021
 ### Fixed
 - Fixed clippy warnings for semicolon in macro.
