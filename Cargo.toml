@@ -44,7 +44,7 @@ rmp-serde = {version = "^0.15.4"}
 encoding_rs = { version = "0.8", default_features = false, features = ["simd-accel"] }
 
 [build-dependencies]
-pyo3-build-config = { version = "^0.14.1" }
+pyo3-build-config = { version = "^0.14.4" }
 
 [profile.release]
 codegen-units = 1
