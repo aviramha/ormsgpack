@@ -18,15 +18,17 @@ macro_rules! err {
     };
 }
 
+#[cfg(feature = "unstable-simd")]
 macro_rules! unlikely {
     ($exp:expr) => {
-        std::intrinsics::unlikely($exp)
+        core::intrinsics::unlikely($exp)
     };
 }
 
-macro_rules! likely {
+#[cfg(not(feature = "unstable-simd"))]
+macro_rules! unlikely {
     ($exp:expr) => {
-        std::intrinsics::likely($exp)
+        $exp
     };
 }
 

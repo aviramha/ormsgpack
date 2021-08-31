@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+### Changed
+-  Aligned to orjson's flags and features of SIMD. Didn't include the stable compilation part as seems unnecessary.
 ### Misc
 - Bumped serde, pyo3.
 - Fixed pyproject.toml to work with newest maturin version.

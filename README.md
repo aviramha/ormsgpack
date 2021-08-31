@@ -735,8 +735,8 @@ The latency results can be reproduced using `./scripts/benchmark.sh` and graphs 
 
 ### Why can't I install it from PyPI?
 
-Probably `pip` needs to be upgraded. `pip` added support for `manylinux2014`
-in 2019.
+Probably `pip` needs to be upgraded to version 20.3 or later to support
+the latest manylinux_x_y or universal2 wheel formats.
 
 ### Will it deserialize to dataclasses, UUIDs, decimals, etc or support object_hook?
 
@@ -768,6 +768,7 @@ This is an example of building a wheel using the repository as source,
 ```sh
 pip install maturin
 curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2021-05-25 --profile minimal -y
+export RUSTFLAGS="-C target-cpu=k8"
 maturin build --no-sdist --release --strip --manylinux off
 ls -1 target/wheels
 ```
