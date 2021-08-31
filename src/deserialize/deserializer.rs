@@ -178,7 +178,10 @@ impl<'de> Visitor<'de> for MsgpackValue {
             let value = map.next_value_seed(self)?;
             let pykey: *mut pyo3::ffi::PyObject;
             let pyhash: pyo3::ffi::Py_hash_t;
-            if likely!(key.len() <= 64) {
+            if unlikely!(key.len() > 64) {
+                pykey = unicode_from_str(&key);
+                pyhash = hash_str(pykey);
+            } else {
                 let hash = cache_hash(key.as_bytes());
                 {
                     let map = unsafe {
@@ -197,9 +200,6 @@ impl<'de> Visitor<'de> for MsgpackValue {
                     pykey = entry.get();
                     pyhash = unsafe { (*pykey.cast::<PyASCIIObject>()).hash }
                 }
-            } else {
-                pykey = unicode_from_str(&key);
-                pyhash = hash_str(pykey);
             }
             let _ = ffi!(_PyDict_SetItem_KnownHash(
                 dict_ptr,

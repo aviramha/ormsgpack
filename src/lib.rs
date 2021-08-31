@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-#![feature(core_intrinsics)]
+#![cfg_attr(feature = "unstable-simd", feature(core_intrinsics))]
 #![allow(unused_unsafe)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::redundant_field_names)]
@@ -330,11 +330,11 @@ pub unsafe extern "C" fn unpackb(
     }
 
     if !kwds.is_null() {
-        let len = unsafe { crate::ffi::PyDict_GET_SIZE(kwds) as usize };
+        let len = unsafe { crate::ffi::PyDict_GET_SIZE(kwds) };
         let mut pos = 0isize;
         let mut arg: *mut PyObject = std::ptr::null_mut();
         let mut val: *mut PyObject = std::ptr::null_mut();
-        for _ in 0..=len - 1 {
+        for _ in 0..=len.saturating_sub(1) {
             unsafe { _PyDict_Next(kwds, &mut pos, &mut arg, &mut val, std::ptr::null_mut()) };
             if arg == typeref::OPTION {
                 optsptr = Some(NonNull::new_unchecked(val));

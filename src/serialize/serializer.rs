@@ -197,9 +197,9 @@ impl<'p> Serialize for PyObjectSerializer {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                if unlikely!(unsafe { PyDict_GET_SIZE(self.ptr) as usize } == 0) {
+                if unlikely!(unsafe { PyDict_GET_SIZE(self.ptr) } == 0) {
                     serializer.serialize_map(Some(0)).unwrap().end()
-                } else if likely!(self.opts & NON_STR_KEYS == 0) {
+                } else if self.opts & NON_STR_KEYS == 0 {
                     Dict::new(
                         self.ptr,
                         self.opts,
@@ -223,7 +223,7 @@ impl<'p> Serialize for PyObjectSerializer {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                if unlikely!(ffi!(PyList_GET_SIZE(self.ptr)) as usize == 0) {
+                if unlikely!(ffi!(PyList_GET_SIZE(self.ptr)) == 0) {
                     serializer.serialize_seq(Some(0)).unwrap().end()
                 } else {
                     ListSerializer::new(
@@ -249,10 +249,10 @@ impl<'p> Serialize for PyObjectSerializer {
                     err!(RECURSION_LIMIT_REACHED)
                 }
                 let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
-                if likely!(!dict.is_null()) {
-                    ffi!(Py_DECREF(dict));
-                    DataclassFastSerializer::new(
-                        dict,
+                if unlikely!(dict.is_null()) {
+                    unsafe { pyo3::ffi::PyErr_Clear() };
+                    DataclassFallbackSerializer::new(
+                        self.ptr,
                         self.opts,
                         self.default_calls,
                         self.recursion,
@@ -260,9 +260,9 @@ impl<'p> Serialize for PyObjectSerializer {
                     )
                     .serialize(serializer)
                 } else {
-                    unsafe { pyo3::ffi::PyErr_Clear() };
-                    DataclassFallbackSerializer::new(
-                        self.ptr,
+                    ffi!(Py_DECREF(dict));
+                    DataclassFastSerializer::new(
+                        dict,
                         self.opts,
                         self.default_calls,
                         self.recursion,
@@ -276,7 +276,9 @@ impl<'p> Serialize for PyObjectSerializer {
                     err!(RECURSION_LIMIT_REACHED)
                 }
                 let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
-                if likely!(!dict.is_null()) {
+                if unlikely!(dict.is_null()) {
+                    err!(PYDANTIC_MUST_HAVE_DICT)
+                } else {
                     ffi!(Py_DECREF(dict));
                     DataclassFastSerializer::new(
                         dict,
@@ -286,8 +288,6 @@ impl<'p> Serialize for PyObjectSerializer {
                         self.default,
                     )
                     .serialize(serializer)
-                } else {
-                    err!(PYDANTIC_MUST_HAVE_DICT)
                 }
             }
             ObType::Enum => {
