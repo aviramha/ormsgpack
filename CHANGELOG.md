@@ -1,5 +1,8 @@
 # Changelog
 ## Next Version
+### Misc
+- Bumped serde, pyo3.
+- Fixed pyproject.toml to work with newest maturin version.
 ## 0.3.6 - 24/8/2021
 ### Misc
 - Update dependencies.
