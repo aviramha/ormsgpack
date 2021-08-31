@@ -28,7 +28,7 @@ requires = ["maturin>=0.10.6,<0.11"]
 
 [tool.maturin]
 sdist-include = ["Cargo.lock", "setup.py"]
-strip = "on"
+strip = true
 
 [tool.black]
 line-length = 88
