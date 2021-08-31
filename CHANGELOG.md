@@ -1,5 +1,6 @@
 # Changelog
 ## Next Version
+## 1.0.0 - 31/8/2021
 ### Changed
 -  Aligned to orjson's flags and features of SIMD. Didn't include the stable compilation part as seems unnecessary.
 ### Misc
