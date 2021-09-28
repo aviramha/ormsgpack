@@ -48,7 +48,7 @@ pyo3 = { version = "^0.14.1", default_features = false, features = ["extension-m
 ryu = { version = "1", default_features = false }
 serde = { version = "1", default_features = false }
 simdutf8 = { version = "0.1", default_features = false, features = ["std"] }
-smallvec = { version = "^1.6", default_features = false, features = ["union", "write"] }
+smallvec = { version = "^1.7", default_features = false, features = ["union", "write"] }
 rmp = { version = "^0.8.10"}
 rmp-serde = {version = "^0.15.4"}
 
