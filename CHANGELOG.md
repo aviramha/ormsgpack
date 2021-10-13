@@ -1,5 +1,12 @@
 # Changelog
 ## Next Version
+## 1.0.1 - 13/10/2021
+### Fixed
+- Decrement refcount for numpy `PyArrayInterface`. by [@ilj](https://github.com/ijl/orjson/commit/4c312a82f5215ff71eed5bd09d28fa004999299b).
+- Fix serialization of dataclass inheriting from `abc.ABC` and using `__slots__`. by [@ilj](https://github.com/ijl/orjson/commit/4c312a82f5215ff71eed5bd09d28fa004999299b)
+### Changed
+- Updated dependencies.
+- `find_str_kind` test for 4-byte before latin1. by [@ilj](https://github.com/ijl/orjson/commit/05860e1a2ea3e8f90823d6a59e5fc9929a8692b5)
 ## 1.0.0 - 31/8/2021
 ### Changed
 -  Aligned to orjson's flags and features of SIMD. Didn't include the stable compilation part as seems unnecessary.

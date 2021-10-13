@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
-
+import abc
 import uuid
 from dataclasses import InitVar, asdict, dataclass, field
 from enum import Enum
@@ -95,6 +95,22 @@ class InitDataclass:
     def __post_init__(self, a: str, b: str):
         self._other = 1
         self.ab = f"{a} {b}"
+
+class AbstractBase(abc.ABC):
+    @abc.abstractmethod
+    def key(self):
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class ConcreteAbc(AbstractBase):
+
+    __slots__ = ("attr",)
+
+    attr: float
+
+    def key(self):
+        return "dkjf"
 
 
 def test_dataclass():
@@ -260,3 +276,8 @@ def test_dataclass_passthrough_default():
     assert ormsgpack.packb(
         obj, option=ormsgpack.OPT_PASSTHROUGH_DATACLASS, default=default
     ) == msgpack.packb({"name": "a", "number": 1})
+
+
+def test_dataclass_abc():
+    obj = ConcreteAbc(1.0)
+    assert ormsgpack.packb(obj) == msgpack.packb({"attr": 1.0})

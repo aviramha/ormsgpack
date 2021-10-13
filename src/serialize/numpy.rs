@@ -207,7 +207,8 @@ impl<'a> NumpyArray {
 impl Drop for NumpyArray {
     fn drop(&mut self) {
         if self.depth == 0 {
-            ffi!(Py_XDECREF(self.capsule as *mut pyo3::ffi::PyObject))
+            ffi!(Py_DECREF(self.array as *mut pyo3::ffi::PyObject));
+            ffi!(Py_DECREF(self.capsule as *mut pyo3::ffi::PyObject));
         }
     }
 }
