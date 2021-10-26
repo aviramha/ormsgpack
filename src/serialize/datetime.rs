@@ -271,7 +271,7 @@ impl<'p> Serialize for DateTime {
     {
         let mut buf: DateTimeBuffer = smallvec::SmallVec::with_capacity(32);
         self.write_buf(&mut buf)
-            .map_err(|_| err!(DATETIME_LIBRARY_UNSUPPORTED))?;
+            .map_err(|_| -> S::Error { err!(DATETIME_LIBRARY_UNSUPPORTED) })?;
         serializer.serialize_str(str_from_slice!(buf.as_ptr(), buf.len()))
     }
 }
