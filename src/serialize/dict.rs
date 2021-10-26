@@ -183,7 +183,8 @@ impl DictNonStrKey {
             ObType::Datetime => {
                 let mut buf: DateTimeBuffer = smallvec::SmallVec::with_capacity(32);
                 let dt = DateTime::new(key, opts);
-                dt.write_buf(&mut buf).map_err(|_| NonStrError::DatetimeLibraryUnsupported)?;
+                dt.write_buf(&mut buf)
+                    .map_err(|_| NonStrError::DatetimeLibraryUnsupported)?;
                 let key_as_str = str_from_slice!(buf.as_ptr(), buf.len());
                 Ok(Key::String(InlinableString::from(key_as_str)))
             }
