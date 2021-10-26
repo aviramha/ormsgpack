@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+## 1.0.2 - 26/10/2021
+- Update dependencies
 ## 1.0.1 - 13/10/2021
 ### Fixed
 - Decrement refcount for numpy `PyArrayInterface`. by [@ilj](https://github.com/ijl/orjson/commit/4c312a82f5215ff71eed5bd09d28fa004999299b).
