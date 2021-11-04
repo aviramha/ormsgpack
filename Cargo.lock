@@ -148,7 +148,7 @@ dependencies = [
  "itoa",
  "once_cell",
  "pyo3",
- "pyo3-build-config",
+ "pyo3-build-config 0.14.5",
  "rmp",
  "rmp-serde",
  "ryu",
@@ -194,14 +194,14 @@ dependencies = [
 
 [[package]]
 name = "pyo3"
-version = "0.14.5"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35100f9347670a566a67aa623369293703322bb9db77d99d7df7313b575ae0c8"
+checksum = "64664505ce285a59b8b7e940fbe54ad65b1758a0810eddc5bc26df6f6ec8c557"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "parking_lot",
- "pyo3-build-config",
+ "pyo3-build-config 0.15.0",
 ]
 
 [[package]]
@@ -209,6 +209,15 @@ name = "pyo3-build-config"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d12961738cacbd7f91b7c43bc25cfeeaa2698ad07a04b3be0aa88b950865738f"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
+name = "pyo3-build-config"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f1e4a72de84cdcd69f62211b62f62753d0c11b7b5715f3467f3754dab22a7ca"
 dependencies = [
  "once_cell",
 ]
