@@ -1,6 +1,6 @@
 [package]
 name = "ormsgpack"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Aviram Hassan <aviramyhassan@gmail.com>"]
 description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
 edition = "2018"
