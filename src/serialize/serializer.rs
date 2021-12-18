@@ -28,9 +28,8 @@ pub fn serialize(
 ) -> Result<NonNull<pyo3::ffi::PyObject>, String> {
     let mut buf = BytesWriter::new();
     let obj = PyObjectSerializer::new(ptr, opts, 0, 0, default);
-    let res;
     let mut ser = rmp_serde::Serializer::new(&mut buf);
-    res = obj.serialize(&mut ser);
+    let res = obj.serialize(&mut ser);
     match res {
         Ok(_) => Ok(buf.finish()),
         Err(err) => {
