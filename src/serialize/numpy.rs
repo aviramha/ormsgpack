@@ -163,14 +163,13 @@ impl<'a> NumpyArray {
     fn build(&mut self) {
         if self.depth < self.dimensions() - 1 {
             for i in 0..=self.shape()[self.depth] - 1 {
-                let mut position: Vec<isize> = self.position.iter().copied().collect();
+                let mut position: Vec<isize> = self.position.to_vec();
                 position[self.depth] = i;
-                let num_children: usize;
-                if self.depth < self.dimensions() - 2 {
-                    num_children = self.shape()[self.depth + 1] as usize;
+                let num_children: usize = if self.depth < self.dimensions() - 2 {
+                    self.shape()[self.depth + 1] as usize
                 } else {
-                    num_children = 0;
-                }
+                    0
+                };
                 self.children.push(self.from_parent(position, num_children))
             }
         }

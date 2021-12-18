@@ -18,7 +18,6 @@ pub fn deserialize(
     opts: Opt,
 ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
     let obj_type_ptr = ob_type!(ptr);
-    let contents: &[u8];
     let buffer: *const u8;
     let length: usize;
 
@@ -42,7 +41,7 @@ pub fn deserialize(
             "Input must be bytes, bytearray, memoryview",
         )));
     }
-    contents = unsafe { std::slice::from_raw_parts(buffer, length) };
+    let contents: &[u8] = unsafe { std::slice::from_raw_parts(buffer, length) };
 
     let mut deserializer = rmp_serde::Deserializer::new(contents);
     if (opts & NON_STR_KEYS) != 0 {

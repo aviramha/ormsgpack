@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+## 1.0.3 - 18/12/2021
+- Update dependencies
 ## 1.0.2 - 26/10/2021
 - Update dependencies
 ## 1.0.1 - 13/10/2021
