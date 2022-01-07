@@ -4,6 +4,8 @@
 - `opt` parameter can be `None`.
 ### Misc
 - Updated dependencies.
+- Dropped 3.6 CI/CD.
+- Added macOS universal builds (M1)
 ## 1.0.3 - 18/12/2021
 - Update dependencies
 ## 1.0.2 - 26/10/2021
