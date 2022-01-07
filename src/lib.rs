@@ -287,13 +287,15 @@ pub unsafe extern "C" fn unpackb(
 
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
-        if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
-                "Invalid opts",
-            )));
-        }
-        optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
+        let ob_type = (*opts.as_ptr()).ob_type;
+        if ob_type == typeref::INT_TYPE {
+            optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
+            if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
+                return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
+                    "Invalid opts",
+                )));
+            }
+        } else if ob_type != typeref::NONE_TYPE {
             return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
                 "Invalid opts",
             )));
@@ -349,13 +351,15 @@ pub unsafe extern "C" fn unpackb(
 
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
-        if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
-                "Invalid opts",
-            )));
-        }
-        optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
+        let ob_type = (*opts.as_ptr()).ob_type;
+        if ob_type == typeref::INT_TYPE {
+            optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
+            if !(0..=opt::MAX_UNPACKB_OPT).contains(&optsbits) {
+                return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
+                    "Invalid opts",
+                )));
+            }
+        } else if ob_type != typeref::NONE_TYPE {
             return raise_unpackb_exception(deserialize::DeserializeError::new(Cow::Borrowed(
                 "Invalid opts",
             )));
@@ -421,11 +425,13 @@ pub unsafe extern "C" fn packb(
 
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
-        if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_packb_exception(Cow::Borrowed("Invalid opts"));
-        }
-        optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if !(0..=opt::MAX_PACKB_OPT).contains(&optsbits) {
+        let ob_type = (*opts.as_ptr()).ob_type;
+        if ob_type == typeref::INT_TYPE {
+            optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
+            if !(0..=opt::MAX_PACKB_OPT).contains(&optsbits) {
+                return raise_packb_exception(Cow::Borrowed("Invalid opts"));
+            }
+        } else if ob_type != typeref::NONE_TYPE {
             return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
     }
@@ -494,11 +500,13 @@ pub unsafe extern "C" fn packb(
 
     let mut optsbits: i32 = 0;
     if let Some(opts) = optsptr {
-        if (*opts.as_ptr()).ob_type != typeref::INT_TYPE {
-            return raise_packb_exception(Cow::Borrowed("Invalid opts"));
-        }
-        optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
-        if !(0..=opt::MAX_PACKB_OPT).contains(&optsbits) {
+        let ob_type = (*opts.as_ptr()).ob_type;
+        if ob_type == typeref::INT_TYPE {
+            optsbits = PyLong_AsLong(optsptr.unwrap().as_ptr()) as i32;
+            if !(0..=opt::MAX_PACKB_OPT).contains(&optsbits) {
+                return raise_packb_exception(Cow::Borrowed("Invalid opts"));
+            }
+        } else if ob_type != typeref::NONE_TYPE {
             return raise_packb_exception(Cow::Borrowed("Invalid opts"));
         }
     }
