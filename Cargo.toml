@@ -42,7 +42,7 @@ associative-cache = { version = "1" }
 bytecount = { version = "^0.6.2", default_features = false, features = ["runtime-dispatch-simd"] }
 encoding_rs = { version = "0.8", default_features = false }
 inlinable_string = { version = "0.1" }
-itoa = { version = "0.4", default_features = false }
+itoa = { version = "1", default_features = false }
 once_cell = { version = "1", default_features = false }
 pyo3 = { version = "^0.15.1", default_features = false, features = ["extension-module"]}
 ryu = { version = "1", default_features = false }
