@@ -23,7 +23,7 @@ def test_simple_msgpack():
     packb() equivalent to msgpack on simple types
     """
     for obj in SIMPLE_TYPES:
-        assert ormsgpack.packb(obj) == msgpack.packb(obj)
+        assert ormsgpack.packb(obj, option=None) == msgpack.packb(obj)
 
 
 def test_simple_round_trip():
@@ -31,7 +31,7 @@ def test_simple_round_trip():
     packb(), unpackb() round trip on simple types
     """
     for obj in SIMPLE_TYPES:
-        assert ormsgpack.unpackb(ormsgpack.packb(obj)) == obj
+        assert ormsgpack.unpackb(ormsgpack.packb(obj, option=None), option=None) == obj
 
 
 def test_unpackb_type():

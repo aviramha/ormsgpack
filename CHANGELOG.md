@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+### Changed
+- `opt` parameter can be `None`.
 ## 1.0.3 - 18/12/2021
 - Update dependencies
 ## 1.0.2 - 26/10/2021

@@ -5,7 +5,7 @@ __version__: str
 def packb(
     obj: Any,
     default: Optional[Callable[[Any], Any]] = ...,
-    option: Optional[int] = ...,
+    option: Optional[int] = None,
 ) -> bytes: ...
 def unpackb(
     __obj: Union[str, bytes, bytearray, memoryview], option: Optional[int] = ...
