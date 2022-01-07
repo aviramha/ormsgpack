@@ -41,7 +41,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9']
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
@@ -64,11 +64,11 @@ jobs:
       - run: pytest
       - run: twine upload --non-interactive --skip-existing target\wheels\*
 
-  release_macos:
-    name: Release macOS
+  release_macos_x64:
+    name: Release macOS (x86_64)
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9']
     runs-on: macos-latest
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
@@ -90,6 +90,31 @@ jobs:
       - run: maturin build --no-sdist --release --strip --manylinux off -i $pythonLocation/python --target x86_64-apple-darwin
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
+      - run: twine upload --non-interactive --skip-existing target/wheels/*
+
+  release_macos_universal:
+    name: Release macOS (universal)
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9']
+    runs-on: macos-latest
+    env:
+      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
+      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          target: aarch64-apple-darwin
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -U pip wheel twine maturin
+      - run: PATH=$HOME/.cargo/bin:$PATH PYO3_CROSS_LIB_DIR=$(python -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))") maturin build --no-sdist --release --strip --cargo-extra-args="--features=unstable-simd" --universal2
       - run: twine upload --non-interactive --skip-existing target/wheels/*
   release_sdist:
     name: Release sdist
