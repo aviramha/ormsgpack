@@ -1,5 +1,6 @@
 # Changelog
 ## Next Version
+## 1.1.0 - 8/1/2022
 ### Added
 - Add optional passthrough for tuples. by [@TariqTNO](https://github.com/aviramha/ormsgpack/pull/64)
 - Add optional passthrough for ints, that do not fit into an i64. by [@TariqTNO](https://github.com/aviramha/ormsgpack/pull/64)
