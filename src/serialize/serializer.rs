@@ -70,7 +70,9 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
             ObType::Str
         } else if ob_type == BYTES_TYPE {
             ObType::Bytes
-        } else if ob_type == INT_TYPE {
+        } else if ob_type == INT_TYPE
+            && (opts & PASSTHROUGH_BIG_INT == 0 || ffi!(_PyLong_NumBits(obj)) <= 63)
+        {
             ObType::Int
         } else if ob_type == BOOL_TYPE {
             ObType::Bool
@@ -104,7 +106,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
             ObType::Date
         } else if ob_type == TIME_TYPE && opts & PASSTHROUGH_DATETIME == 0 {
             ObType::Time
-        } else if ob_type == TUPLE_TYPE {
+        } else if ob_type == TUPLE_TYPE && opts & PASSTHROUGH_TUPLE == 0 {
             ObType::Tuple
         } else if ob_type == UUID_TYPE {
             ObType::Uuid
@@ -116,6 +118,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
             ObType::StrSubclass
         } else if opts & PASSTHROUGH_SUBCLASS == 0
             && is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS)
+            && (opts & PASSTHROUGH_BIG_INT == 0 || ffi!(_PyLong_NumBits(obj)) <= 63)
         {
             ObType::Int
         } else if opts & PASSTHROUGH_SUBCLASS == 0

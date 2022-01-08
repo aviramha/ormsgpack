@@ -103,9 +103,9 @@ def test_option_range_high():
     packb/unpackb() option out of range high
     """
     with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(True, option=1 << 12)
+        ormsgpack.packb(True, option=1 << 14)
     with pytest.raises(ormsgpack.MsgpackDecodeError):
-        ormsgpack.unpackb("\x00", option=1 << 12)
+        ormsgpack.unpackb("\x00", option=1 << 14)
 
 
 def test_opts_multiple():
