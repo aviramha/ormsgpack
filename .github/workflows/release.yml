@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-path: ['cp36-cp36m', 'cp37-cp37m', 'cp38-cp38', 'cp39-cp39', 'cp310-cp310']
+        python-path: ['cp37-cp37m', 'cp38-cp38', 'cp39-cp39', 'cp310-cp310']
     container: quay.io/pypa/manylinux2014_x86_64:latest
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
