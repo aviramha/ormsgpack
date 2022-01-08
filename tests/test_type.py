@@ -174,7 +174,7 @@ def test_int_64(value):
     assert ormsgpack.unpackb(ormsgpack.packb(value)) == value
 
 
-@pytest.mark.parametrize("value", (9223372036854775807, -9223372036854775807))
+@pytest.mark.parametrize("value", (9223372036854775808, 18446744073709551615))
 def test_uint_64(value):
     """
     uint 64-bit
@@ -188,6 +188,34 @@ def test_int_128(value):
     int 128-bit
     """
     pytest.raises(ormsgpack.MsgpackEncodeError, ormsgpack.packb, value)
+
+
+@pytest.mark.parametrize("value", (9223372036854775807, -9223372036854775807))
+def test_int_64_passthrough(value):
+    """
+    int 64-bit with passthrough
+    """
+    assert ormsgpack.unpackb(ormsgpack.packb(value, option=ormsgpack.OPT_PASSTHROUGH_BIG_INT)) == value
+
+
+@pytest.mark.parametrize("value", (9223372036854775808, 18446744073709551615))
+def test_uint_64_passthrough(value):
+    """
+    uint 64-bit with passthrough
+    """
+    result = ormsgpack.unpackb(ormsgpack.packb(value, option=ormsgpack.OPT_PASSTHROUGH_BIG_INT, default=lambda x: {"int": x.to_bytes(16, "little", signed=True)}))
+    assert list(result.keys()) == ["int"]
+    assert int.from_bytes(result["int"], "little", signed=True) == value
+
+
+@pytest.mark.parametrize("value", (18446744073709551616, -9223372036854775809))
+def test_int_128_passthrough(value):
+    """
+    int 128-bit with passthrough
+    """
+    result = ormsgpack.unpackb(ormsgpack.packb(value, option=ormsgpack.OPT_PASSTHROUGH_BIG_INT, default=lambda x: {"int": x.to_bytes(16, "little", signed=True)}))
+    assert list(result.keys()) == ["int"]
+    assert int.from_bytes(result["int"], "little", signed=True) == value
 
 
 @pytest.mark.parametrize(
@@ -280,6 +308,16 @@ def test_tuple():
     """
     obj = ("a", "😊", True, {"b": 1.1}, 2)
     assert ormsgpack.unpackb(ormsgpack.packb(obj)) == list(obj)
+
+
+def test_tuple_passthrough():
+    """
+    tuple with passthrough
+    """
+    obj = ("a", "😊", True, {"b": 1.1}, 2)
+    result = ormsgpack.unpackb(ormsgpack.packb(obj, option=ormsgpack.OPT_PASSTHROUGH_TUPLE, default=lambda x: {"tuple": list(x)}))
+    assert list(result.keys()) == ["tuple"]
+    assert tuple(result["tuple"]) == obj
 
 
 def test_dict():

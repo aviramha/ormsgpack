@@ -169,6 +169,12 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     opt!(
         exported_objects,
         mptr,
+        "OPT_PASSTHROUGH_BIG_INT\0",
+        opt::PASSTHROUGH_BIG_INT
+    );
+    opt!(
+        exported_objects,
+        mptr,
         "OPT_PASSTHROUGH_DATACLASS\0",
         opt::PASSTHROUGH_DATACLASS
     );
@@ -195,6 +201,12 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         mptr,
         "OPT_SERIALIZE_PYDANTIC\0",
         opt::SERIALIZE_PYDANTIC
+    );
+    opt!(
+        exported_objects,
+        mptr,
+        "OPT_PASSTHROUGH_TUPLE\0",
+        opt::PASSTHROUGH_TUPLE
     );
     opt!(exported_objects, mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
