@@ -245,6 +245,26 @@ Do not serialize the `microsecond` field on `datetime.datetime` and
     )
 ```
 
+##### OPT_PASSTHROUGH_BIG_INT
+
+Enables passthrough of big (Python) ints. By setting this option, one can set a `default` function for ints larger than 63 bits, smaller ints are still serialized efficiently.
+
+```python
+>>> import ormsgpack
+>>> ormsgpack.packb(
+        2**65,
+    )
+TypeError: Integer exceeds 64-bit range
+>>> ormsgpack.unpackb(
+        ormsgpack.packb(
+            2**65,
+            option=ormsgpack.OPT_PASSTHROUGH_BIG_INT,
+            default=lambda _: {"type": "bigint", "value": str(_) }
+        )
+    )
+{'type': 'bigint', 'value': '36893488147419103232'}
+```
+
 ##### OPT_PASSTHROUGH_DATACLASS
 
 Passthrough `dataclasses.dataclass` instances to `default`. This allows
@@ -330,6 +350,28 @@ b'\xa6******'
 
 This does not affect serializing subclasses as `dict` keys if using
 OPT_NON_STR_KEYS.
+
+##### OPT_PASSTHROUGH_TUPLE
+
+Passthrough tuples to `default`.
+
+```python
+>>> import ormsgpack
+>>> ormsgpack.unpackb(
+        ormsgpack.packb(
+            (9193, "test", 42),
+        )
+    )
+[9193, 'test', 42]
+>>> ormsgpack.unpackb(
+        ormsgpack.packb(
+            (9193, "test", 42),
+            option=ormsgpack.OPT_PASSTHROUGH_TUPLE,
+            default=lambda _: {"type": "tuple", "value": list(_)}
+        )
+    )
+{'type': 'tuple', 'value': [9193, 'test', 42]}
+```
 
 ##### OPT_SERIALIZE_NUMPY
 

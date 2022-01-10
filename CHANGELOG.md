@@ -1,5 +1,7 @@
 # Changelog
 ## Next Version
+### Misc
+- Updated README to include new options. by [@ThomasTNO](https://github.com/aviramha/ormsgpack/pull/70)
 ## 1.1.0 - 8/1/2022
 ### Added
 - Add optional passthrough for tuples. by [@TariqTNO](https://github.com/aviramha/ormsgpack/pull/64)
