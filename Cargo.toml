@@ -50,7 +50,7 @@ serde = { version = "1", default_features = false }
 simdutf8 = { version = "0.1", default_features = false, features = ["std"] }
 smallvec = { version = "^1.7", default_features = false, features = ["union", "write"] }
 rmp = { version = "^0.8.10"}
-rmp-serde = {version = "^0.15.4"}
+rmp-serde = {version = "^1.0.0"}
 
 
 [build-dependencies]
