@@ -147,7 +147,7 @@ impl<'a> NumpyArray {
         }
     }
 
-    fn from_parent(&self, position: Vec<isize>, num_children: usize) -> Self {
+    fn to_children(&self, position: Vec<isize>, num_children: usize) -> Self {
         let mut arr = NumpyArray {
             array: self.array,
             position: position,
@@ -170,7 +170,7 @@ impl<'a> NumpyArray {
                 } else {
                     0
                 };
-                self.children.push(self.from_parent(position, num_children))
+                self.children.push(self.to_children(position, num_children))
             }
         }
     }
