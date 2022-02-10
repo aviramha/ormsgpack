@@ -71,7 +71,14 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
         } else if ob_type == BYTES_TYPE {
             ObType::Bytes
         } else if ob_type == INT_TYPE
-            && (opts & PASSTHROUGH_BIG_INT == 0 || ffi!(_PyLong_NumBits(obj)) <= 63)
+            && (opts & PASSTHROUGH_BIG_INT == 0
+                || ffi!(_PyLong_NumBits(obj)) <= {
+                    if ffi!(Py_SIZE(obj)) > 0 {
+                        64
+                    } else {
+                        63
+                    }
+                })
         {
             ObType::Int
         } else if ob_type == BOOL_TYPE {
@@ -118,7 +125,14 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
             ObType::StrSubclass
         } else if opts & PASSTHROUGH_SUBCLASS == 0
             && is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS)
-            && (opts & PASSTHROUGH_BIG_INT == 0 || ffi!(_PyLong_NumBits(obj)) <= 63)
+            && (opts & PASSTHROUGH_BIG_INT == 0
+                || ffi!(_PyLong_NumBits(obj)) <= {
+                    if ffi!(Py_SIZE(obj)) > 0 {
+                        64
+                    } else {
+                        63
+                    }
+                })
         {
             ObType::Int
         } else if opts & PASSTHROUGH_SUBCLASS == 0
