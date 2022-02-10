@@ -203,9 +203,7 @@ def test_uint_64_passthrough(value):
     """
     uint 64-bit with passthrough
     """
-    result = ormsgpack.unpackb(ormsgpack.packb(value, option=ormsgpack.OPT_PASSTHROUGH_BIG_INT, default=lambda x: {"int": x.to_bytes(16, "little", signed=True)}))
-    assert list(result.keys()) == ["int"]
-    assert int.from_bytes(result["int"], "little", signed=True) == value
+    assert ormsgpack.unpackb(ormsgpack.packb(value, option=ormsgpack.OPT_PASSTHROUGH_BIG_INT)) == value
 
 
 @pytest.mark.parametrize("value", (18446744073709551616, -9223372036854775809))
