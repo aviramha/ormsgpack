@@ -1,10 +1,11 @@
 # Changelog
-## Next Version
+## 1.2.0 - 14/2/2022
+### Changed
+- Extended int passthrough to support u64. by [@pejter](https://github.com/aviramha/ormsgpack/pull/77)
 ### Misc
 - Updated README to include new options. by [@ThomasTNO](https://github.com/aviramha/ormsgpack/pull/70)
 - Updated dependencies
 - Renamed in `numpy.rs` `from_parent` to `to_children` to fix new lint rules
-- Extended int passthrough to support u64. by [@pejter](https://github.com/aviramha/ormsgpack/pull/77)
 ## 1.1.0 - 8/1/2022
 ### Added
 - Add optional passthrough for tuples. by [@TariqTNO](https://github.com/aviramha/ormsgpack/pull/64)
