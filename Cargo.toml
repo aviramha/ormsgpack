@@ -1,6 +1,6 @@
 [package]
 name = "ormsgpack"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["Aviram Hassan <aviramyhassan@gmail.com>"]
 description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
 edition = "2018"
@@ -44,7 +44,7 @@ encoding_rs = { version = "0.8", default_features = false }
 inlinable_string = { version = "0.1" }
 itoa = { version = "1", default_features = false }
 once_cell = { version = "1", default_features = false }
-pyo3 = { version = "^0.15.1", default_features = false, features = ["extension-module"]}
+pyo3 = { version = "^0.16.0", default_features = false, features = ["extension-module"]}
 ryu = { version = "1", default_features = false }
 serde = { version = "1", default_features = false }
 simdutf8 = { version = "0.1", default_features = false, features = ["std"] }
@@ -54,7 +54,7 @@ rmp-serde = {version = "1"}
 
 
 [build-dependencies]
-pyo3-build-config = { version = "^0.15.1" }
+pyo3-build-config = { version = "^0.16.0" }
 
 [profile.release]
 codegen-units = 1

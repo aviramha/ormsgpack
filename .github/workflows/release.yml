@@ -41,7 +41,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
@@ -68,7 +68,7 @@ jobs:
     name: Release macOS (x86_64)
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
     runs-on: macos-latest
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
@@ -96,7 +96,7 @@ jobs:
     name: Release macOS (universal)
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
     runs-on: macos-latest
     env:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
