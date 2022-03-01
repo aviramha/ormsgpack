@@ -88,9 +88,9 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     {
         wrapped_packb = PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
-            ml_meth: Some(unsafe {
-                std::mem::transmute::<pyo3::ffi::_PyCFunctionFastWithKeywords, PyCFunction>(packb)
-            }),
+            ml_meth: PyMethodDefPointer {
+                _PyCFunctionFastWithKeywords: packb,
+            },
             ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
             ml_doc: PACKB_DOC.as_ptr() as *const c_char,
         };
@@ -100,9 +100,9 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     {
         wrapped_packb = PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
-            ml_meth: Some(unsafe {
-                std::mem::transmute::<PyCFunctionWithKeywords, PyCFunction>(packb)
-            }),
+            ml_meth: PyMethodDefPointer {
+                PyCFunctionWithKeywords: packb,
+            },
             ml_flags: METH_VARARGS | METH_KEYWORDS,
             ml_doc: PACKB_DOC.as_ptr() as *const c_char,
         };
@@ -122,9 +122,9 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     {
         wrapped_unpackb = PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
-            ml_meth: Some(unsafe {
-                std::mem::transmute::<pyo3::ffi::_PyCFunctionFastWithKeywords, PyCFunction>(unpackb)
-            }),
+            ml_meth: PyMethodDefPointer {
+                _PyCFunctionFastWithKeywords: unpackb,
+            },
             ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
             ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
         };
@@ -134,9 +134,9 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     {
         wrapped_unpackb = PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
-            ml_meth: Some(unsafe {
-                std::mem::transmute::<PyCFunctionWithKeywords, PyCFunction>(unpackb)
-            }),
+            ml_meth: PyMethodDefPointer {
+                PyCFunctionWithKeywords: unpackb,
+            },
             ml_flags: METH_VARARGS | METH_KEYWORDS,
             ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
         };

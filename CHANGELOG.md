@@ -1,4 +1,8 @@
 # Changelog
+## 1.2.1 - 1/3/2022
+### Misc
+- Release 3.10 wheels
+- Update dependencies
 ## 1.2.0 - 14/2/2022
 ### Changed
 - Extended int passthrough to support u64. by [@pejter](https://github.com/aviramha/ormsgpack/pull/77)

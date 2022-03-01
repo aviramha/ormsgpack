@@ -203,7 +203,8 @@ unsafe fn look_up_uuid_type() -> *mut PyTypeObject {
 
 #[cold]
 unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
-    let datetime = (PyDateTimeAPI.DateTime_FromDateAndTime)(
+    let datetime_api = *PyDateTimeAPI();
+    let datetime = (datetime_api.DateTime_FromDateAndTime)(
         1970,
         1,
         1,
@@ -212,7 +213,7 @@ unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
         0,
         0,
         NONE,
-        PyDateTimeAPI.DateTimeType,
+        datetime_api.DateTimeType,
     );
     let ptr = (*datetime).ob_type;
     Py_DECREF(datetime);
@@ -221,7 +222,8 @@ unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
 
 #[cold]
 unsafe fn look_up_date_type() -> *mut PyTypeObject {
-    let date = (PyDateTimeAPI.Date_FromDate)(1970, 1, 1, PyDateTimeAPI.DateType);
+    let datetime_api = *PyDateTimeAPI();
+    let date = (datetime_api.Date_FromDate)(1970, 1, 1, datetime_api.DateType);
     let ptr = (*date).ob_type;
     Py_DECREF(date);
     ptr
@@ -229,7 +231,8 @@ unsafe fn look_up_date_type() -> *mut PyTypeObject {
 
 #[cold]
 unsafe fn look_up_time_type() -> *mut PyTypeObject {
-    let time = (PyDateTimeAPI.Time_FromTime)(0, 0, 0, 0, NONE, PyDateTimeAPI.TimeType);
+    let datetime_api = *PyDateTimeAPI();
+    let time = (datetime_api.Time_FromTime)(0, 0, 0, 0, NONE, datetime_api.TimeType);
     let ptr = (*time).ob_type;
     Py_DECREF(time);
     ptr
