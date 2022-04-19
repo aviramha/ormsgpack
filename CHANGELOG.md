@@ -1,4 +1,7 @@
 # Changelog
+## 1.2.2 - 19/4/2022
+### Misc
+- Update dependencies
 ## 1.2.1 - 1/3/2022
 ### Misc
 - Release 3.10 wheels
