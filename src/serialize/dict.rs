@@ -73,7 +73,7 @@ impl Dict {
     }
 }
 
-impl<'p> Serialize for Dict {
+impl Serialize for Dict {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -256,7 +256,7 @@ impl DictNonStrKey {
     }
 }
 
-impl<'p> Serialize for DictNonStrKey {
+impl Serialize for DictNonStrKey {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

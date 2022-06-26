@@ -333,12 +333,11 @@ pub unsafe extern "C" fn unpackb(
 
     let num_args = PyTuple_GET_SIZE(args);
     if unlikely!(num_args != 1) {
-        let msg;
-        if num_args > 1 {
-            msg = Cow::Borrowed("unpackb() accepts only 1 positional argument");
+        let msg = if num_args > 1 {
+            Cow::Borrowed("unpackb() accepts only 1 positional argument")
         } else {
-            msg = Cow::Borrowed("unpackb() missing 1 required positional argument: 'obj'")
-        }
+            Cow::Borrowed("unpackb() missing 1 required positional argument: 'obj'")
+        };
         return raise_unpackb_exception(deserialize::DeserializeError::new(msg));
     }
 

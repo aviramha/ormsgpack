@@ -111,7 +111,7 @@ pub struct NumpyArray {
     kind: ItemType,
 }
 
-impl<'a> NumpyArray {
+impl NumpyArray {
     #[inline(never)]
     pub fn new(ptr: *mut PyObject) -> Result<Self, PyArrayError> {
         let capsule = ffi!(PyObject_GetAttr(ptr, ARRAY_STRUCT_STR));
@@ -212,7 +212,7 @@ impl Drop for NumpyArray {
     }
 }
 
-impl<'p> Serialize for NumpyArray {
+impl Serialize for NumpyArray {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -296,7 +296,7 @@ struct DataTypeF32 {
     pub obj: f32,
 }
 
-impl<'p> Serialize for DataTypeF32 {
+impl Serialize for DataTypeF32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -310,7 +310,7 @@ pub struct DataTypeF64 {
     pub obj: f64,
 }
 
-impl<'p> Serialize for DataTypeF64 {
+impl Serialize for DataTypeF64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -324,7 +324,7 @@ pub struct DataTypeI8 {
     pub obj: i8,
 }
 
-impl<'p> Serialize for DataTypeI8 {
+impl Serialize for DataTypeI8 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -338,7 +338,7 @@ pub struct DataTypeI32 {
     pub obj: i32,
 }
 
-impl<'p> Serialize for DataTypeI32 {
+impl Serialize for DataTypeI32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -352,7 +352,7 @@ pub struct DataTypeI64 {
     pub obj: i64,
 }
 
-impl<'p> Serialize for DataTypeI64 {
+impl Serialize for DataTypeI64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -366,7 +366,7 @@ pub struct DataTypeU8 {
     pub obj: u8,
 }
 
-impl<'p> Serialize for DataTypeU8 {
+impl Serialize for DataTypeU8 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -380,7 +380,7 @@ pub struct DataTypeU32 {
     pub obj: u32,
 }
 
-impl<'p> Serialize for DataTypeU32 {
+impl Serialize for DataTypeU32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -394,7 +394,7 @@ pub struct DataTypeU64 {
     pub obj: u64,
 }
 
-impl<'p> Serialize for DataTypeU64 {
+impl Serialize for DataTypeU64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -408,7 +408,7 @@ pub struct DataTypeBOOL {
     pub obj: u8,
 }
 
-impl<'p> Serialize for DataTypeBOOL {
+impl Serialize for DataTypeBOOL {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -428,7 +428,7 @@ impl NumpyScalar {
     }
 }
 
-impl<'p> Serialize for NumpyScalar {
+impl Serialize for NumpyScalar {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -468,7 +468,7 @@ pub struct NumpyInt8 {
     pub value: i8,
 }
 
-impl<'p> Serialize for NumpyInt8 {
+impl Serialize for NumpyInt8 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -484,7 +484,7 @@ pub struct NumpyInt32 {
     pub value: i32,
 }
 
-impl<'p> Serialize for NumpyInt32 {
+impl Serialize for NumpyInt32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -500,7 +500,7 @@ pub struct NumpyInt64 {
     pub value: i64,
 }
 
-impl<'p> Serialize for NumpyInt64 {
+impl Serialize for NumpyInt64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -516,7 +516,7 @@ pub struct NumpyUint8 {
     pub value: u8,
 }
 
-impl<'p> Serialize for NumpyUint8 {
+impl Serialize for NumpyUint8 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -532,7 +532,7 @@ pub struct NumpyUint32 {
     pub value: u32,
 }
 
-impl<'p> Serialize for NumpyUint32 {
+impl Serialize for NumpyUint32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -548,7 +548,7 @@ pub struct NumpyUint64 {
     pub value: u64,
 }
 
-impl<'p> Serialize for NumpyUint64 {
+impl Serialize for NumpyUint64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -564,7 +564,7 @@ pub struct NumpyFloat32 {
     pub value: f32,
 }
 
-impl<'p> Serialize for NumpyFloat32 {
+impl Serialize for NumpyFloat32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -580,7 +580,7 @@ pub struct NumpyFloat64 {
     pub value: f64,
 }
 
-impl<'p> Serialize for NumpyFloat64 {
+impl Serialize for NumpyFloat64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -596,7 +596,7 @@ pub struct NumpyBool {
     pub value: bool,
 }
 
-impl<'p> Serialize for NumpyBool {
+impl Serialize for NumpyBool {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

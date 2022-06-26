@@ -16,7 +16,7 @@ impl StrSerializer {
     }
 }
 
-impl<'p> Serialize for StrSerializer {
+impl Serialize for StrSerializer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -41,7 +41,7 @@ impl StrSubclassSerializer {
     }
 }
 
-impl<'p> Serialize for StrSubclassSerializer {
+impl Serialize for StrSubclassSerializer {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

@@ -50,7 +50,7 @@ impl UUID {
         buf.extend_from_slice(&hexadecimal[20..]);
     }
 }
-impl<'p> Serialize for UUID {
+impl Serialize for UUID {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
