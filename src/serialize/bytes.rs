@@ -15,7 +15,7 @@ impl BytesSerializer {
     }
 }
 
-impl<'p> Serialize for BytesSerializer {
+impl Serialize for BytesSerializer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

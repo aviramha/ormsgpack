@@ -15,7 +15,7 @@ impl IntSerializer {
     }
 }
 
-impl<'p> Serialize for IntSerializer {
+impl Serialize for IntSerializer {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -40,7 +40,7 @@ impl UIntSerializer {
     }
 }
 
-impl<'p> Serialize for UIntSerializer {
+impl Serialize for UIntSerializer {
     #[cold]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

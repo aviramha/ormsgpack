@@ -41,7 +41,7 @@ impl DefaultSerializer {
     }
 }
 
-impl<'p> Serialize for DefaultSerializer {
+impl Serialize for DefaultSerializer {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

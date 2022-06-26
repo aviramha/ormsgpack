@@ -1,4 +1,10 @@
 # Changelog
+## 1.2.3 - 26/06/2022
+### Misc
+- Updated dependencies. partially by [@tilman19](https://github.com/aviramha/ormsgpack/pull/101)
+- Handle clippy warnings.
+
+
 ## 1.2.2 - 19/4/2022
 ### Misc
 - Update dependencies

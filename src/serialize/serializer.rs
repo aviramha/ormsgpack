@@ -189,7 +189,7 @@ impl PyObjectSerializer {
     }
 }
 
-impl<'p> Serialize for PyObjectSerializer {
+impl Serialize for PyObjectSerializer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
