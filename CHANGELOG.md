@@ -1,4 +1,9 @@
 # Changelog
+
+## 1.2.4 14/11/2022
+### Misc
+- Fix CI (upgrade maturin, warnings, etc.)
+
 ## 1.2.3 - 26/06/2022
 ### Misc
 - Updated dependencies. partially by [@tilman19](https://github.com/aviramha/ormsgpack/pull/101)

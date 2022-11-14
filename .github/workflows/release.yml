@@ -32,7 +32,7 @@ jobs:
       - run: .venv/bin/pip install -U pip wheel
       - run: .venv/bin/pip install -U twine maturin
       - run: .venv/bin/pip install -r requirements.txt
-      - run: .venv/bin/maturin build --no-sdist --release --strip --manylinux 2014 -i /opt/python/${{ matrix.python-path }}/bin/python --target x86_64-unknown-linux-gnu
+      - run: .venv/bin/maturin build --release --strip --manylinux 2014 -i /opt/python/${{ matrix.python-path }}/bin/python --target x86_64-unknown-linux-gnu
       - run: .venv/bin/pip install ormsgpack --no-index -f target/wheels
       - run: .venv/bin/pytest
       - run: .venv/bin/twine upload --non-interactive --skip-existing target/wheels/*
@@ -59,7 +59,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install --user -U pip wheel twine maturin
       - run: pip install -r requirements.txt
-      - run: maturin build --no-sdist --release --strip -i $pythonLocation"python.exe"
+      - run: maturin build --release --strip -i $pythonLocation"python.exe"
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
       - run: twine upload --non-interactive --skip-existing target\wheels\*
@@ -87,7 +87,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -U pip wheel twine maturin
       - run: pip install -r requirements.txt
-      - run: maturin build --no-sdist --release --strip --manylinux off -i $pythonLocation/python --target x86_64-apple-darwin
+      - run: maturin build --release --strip --manylinux off -i $pythonLocation/python --target x86_64-apple-darwin
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
       - run: twine upload --non-interactive --skip-existing target/wheels/*
@@ -114,7 +114,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -U pip wheel twine maturin
-      - run: PATH=$HOME/.cargo/bin:$PATH PYO3_CROSS_LIB_DIR=$(python -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))") maturin build --no-sdist --release --strip --cargo-extra-args="--features=unstable-simd" --universal2
+      - run: PATH=$HOME/.cargo/bin:$PATH PYO3_CROSS_LIB_DIR=$(python -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))") maturin build --release --strip --cargo-extra-args="--features=unstable-simd" --universal2
       - run: twine upload --non-interactive --skip-existing target/wheels/*
   release_sdist:
     name: Release sdist
