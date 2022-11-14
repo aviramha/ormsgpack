@@ -45,7 +45,7 @@ impl BytesWriter {
         unsafe {
             _PyBytes_Resize(
                 &mut self.bytes as *mut *mut PyBytesObject as *mut *mut PyObject,
-                len as isize,
+                len as _,
             );
         }
     }

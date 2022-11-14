@@ -153,7 +153,6 @@ impl DictNonStrKey {
     }
 
     fn pyobject_to_string(
-        &self,
         key: *mut pyo3::ffi::PyObject,
         opts: crate::opt::Opt,
     ) -> Result<Key, NonStrError> {
@@ -212,7 +211,7 @@ impl DictNonStrKey {
             ObType::Enum => {
                 let value = ffi!(PyObject_GetAttr(key, VALUE_STR));
                 ffi!(Py_DECREF(value));
-                self.pyobject_to_string(value, opts)
+                DictNonStrKey::pyobject_to_string(value, opts)
             }
             ObType::Str => {
                 // because of ObType::Enum
@@ -290,7 +289,7 @@ impl Serialize for DictNonStrKey {
                     value,
                 ));
             } else {
-                match self.pyobject_to_string(key, opts) {
+                match DictNonStrKey::pyobject_to_string(key, opts) {
                     Ok(key_as_str) => items.push((key_as_str, value)),
                     Err(NonStrError::TimeTzinfo) => err!(TIME_HAS_TZINFO),
                     Err(NonStrError::IntegerRange) => {
