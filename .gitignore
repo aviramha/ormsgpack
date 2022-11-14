@@ -13,3 +13,4 @@ vendor
 build
 !json/perfect_float.patch
 .DS_Store
+.idea
