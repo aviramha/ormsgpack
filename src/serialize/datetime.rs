@@ -40,7 +40,7 @@ impl Date {
     }
     pub fn write_buf(&self, buf: &mut DateTimeBuffer) {
         {
-            let year = ffi!(PyDateTime_GET_YEAR(self.ptr)) as _;
+            let year: i32 = ffi!(PyDateTime_GET_YEAR(self.ptr)) as _;
             let mut yearbuf = itoa::Buffer::new();
             let formatted = yearbuf.format(year);
             if unlikely!(year < 1000) {
@@ -176,7 +176,7 @@ impl DateTime {
             }
         };
         {
-            let year = ffi!(PyDateTime_GET_YEAR(self.ptr)) as _;
+            let year: i32 = ffi!(PyDateTime_GET_YEAR(self.ptr)) as _;
             let mut yearbuf = itoa::Buffer::new();
             let formatted = yearbuf.format(year);
             if unlikely!(year < 1000) {

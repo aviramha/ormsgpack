@@ -152,10 +152,10 @@ impl DictNonStrKey {
         }
     }
 
-    fn pyobject_to_string(
-        key: *mut pyo3::ffi::PyObject,
+    fn pyobject_to_string<'a>(
+        'a key: *mut pyo3::ffi::PyObject,
         opts: crate::opt::Opt,
-    ) -> Result<Key, NonStrError> {
+    ) -> Result<Key<'a>, NonStrError> {
         match pyobject_to_obtype(key, opts) {
             ObType::None => Ok(Key::String(InlinableString::from("null"))),
             ObType::Bool => {
