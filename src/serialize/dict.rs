@@ -153,7 +153,7 @@ impl DictNonStrKey {
     }
 
     fn pyobject_to_string<'a>(
-        'a key: *mut pyo3::ffi::PyObject,
+        key: *mut pyo3::ffi::PyObject,
         opts: crate::opt::Opt,
     ) -> Result<Key<'a>, NonStrError> {
         match pyobject_to_obtype(key, opts) {
