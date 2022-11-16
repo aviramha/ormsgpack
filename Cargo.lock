@@ -64,9 +64,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
+checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
 dependencies = [
  "cfg-if",
  "libc",
@@ -108,6 +108,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "memoffset"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -118,9 +127,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.12.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
+checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 
 [[package]]
 name = "ormsgpack"
@@ -184,12 +193,13 @@ checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
 
 [[package]]
 name = "pyo3"
-version = "0.16.5"
+version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e6302e85060011447471887705bb7838f14aba43fcb06957d823739a496b3dc"
+checksum = "268be0c73583c183f2b14052337465768c07726936a260f480f0857cb95ba543"
 dependencies = [
  "cfg-if",
  "libc",
+ "memoffset",
  "parking_lot",
  "pyo3-build-config",
  "pyo3-ffi",
@@ -197,9 +207,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-build-config"
-version = "0.16.5"
+version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b65b546c35d8a3b1b2f0ddbac7c6a569d759f357f2b9df884f5d6b719152c8"
+checksum = "28fcd1e73f06ec85bf3280c48c67e731d8290ad3d730f8be9dc07946923005c8"
 dependencies = [
  "once_cell",
  "target-lexicon",
@@ -207,9 +217,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-ffi"
-version = "0.16.5"
+version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c275a07127c1aca33031a563e384ffdd485aee34ef131116fcd58e3430d1742b"
+checksum = "0f6cb136e222e49115b3c51c32792886defbfb0adead26a688142b346a0b9ffc"
 dependencies = [
  "libc",
  "pyo3-build-config",

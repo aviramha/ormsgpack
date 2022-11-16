@@ -40,7 +40,7 @@ impl Date {
     }
     pub fn write_buf(&self, buf: &mut DateTimeBuffer) {
         {
-            let year = ffi!(PyDateTime_GET_YEAR(self.ptr)) as i32;
+            let year: i32 = ffi!(PyDateTime_GET_YEAR(self.ptr)) as _;
             let mut yearbuf = itoa::Buffer::new();
             let formatted = yearbuf.format(year);
             if unlikely!(year < 1000) {
@@ -84,7 +84,7 @@ pub struct Time {
 
 impl Time {
     pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, TimeError> {
-        if unsafe { (*(ptr as *mut pyo3::ffi::PyDateTime_Time)).hastzinfo == 1 } {
+        if unsafe { (*(ptr as *mut pyo3::ffi::PyDateTime_Time)).hastzinfo != 0 } {
             return Err(TimeError::HasTimezone);
         }
         Ok(Time {
@@ -143,7 +143,7 @@ impl DateTime {
         }
     }
     pub fn write_buf(&self, buf: &mut DateTimeBuffer) -> Result<(), DateTimeError> {
-        let has_tz = unsafe { (*(self.ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo == 1 };
+        let has_tz = unsafe { (*(self.ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo != 0 };
         let offset_day: i32;
         let mut offset_second: i32;
         if !has_tz {
@@ -154,7 +154,7 @@ impl DateTime {
             if ffi!(PyObject_HasAttr(tzinfo, CONVERT_METHOD_STR)) == 1 {
                 // pendulum
                 let offset = call_method!(self.ptr, UTCOFFSET_METHOD_STR);
-                offset_second = ffi!(PyDateTime_DELTA_GET_SECONDS(offset)) as i32;
+                offset_second = ffi!(PyDateTime_DELTA_GET_SECONDS(offset)) as _;
                 offset_day = ffi!(PyDateTime_DELTA_GET_DAYS(offset));
                 ffi!(Py_DECREF(offset));
             } else if ffi!(PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR)) == 1 {
@@ -162,13 +162,13 @@ impl DateTime {
                 let method_ptr = call_method!(tzinfo, NORMALIZE_METHOD_STR, self.ptr);
                 let offset = call_method!(method_ptr, UTCOFFSET_METHOD_STR);
                 ffi!(Py_DECREF(method_ptr));
-                offset_second = ffi!(PyDateTime_DELTA_GET_SECONDS(offset)) as i32;
+                offset_second = ffi!(PyDateTime_DELTA_GET_SECONDS(offset)) as _;
                 offset_day = ffi!(PyDateTime_DELTA_GET_DAYS(offset));
                 ffi!(Py_DECREF(offset));
             } else if ffi!(PyObject_HasAttr(tzinfo, DST_STR)) == 1 {
                 // dateutil/arrow, datetime.timezone.utc
                 let offset = call_method!(tzinfo, UTCOFFSET_METHOD_STR, self.ptr);
-                offset_second = ffi!(PyDateTime_DELTA_GET_SECONDS(offset)) as i32;
+                offset_second = ffi!(PyDateTime_DELTA_GET_SECONDS(offset)) as _;
                 offset_day = ffi!(PyDateTime_DELTA_GET_DAYS(offset));
                 ffi!(Py_DECREF(offset));
             } else {
@@ -176,7 +176,7 @@ impl DateTime {
             }
         };
         {
-            let year = ffi!(PyDateTime_GET_YEAR(self.ptr)) as i32;
+            let year: i32 = ffi!(PyDateTime_GET_YEAR(self.ptr)) as _;
             let mut yearbuf = itoa::Buffer::new();
             let formatted = yearbuf.format(year);
             if unlikely!(year < 1000) {
