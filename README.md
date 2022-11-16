@@ -811,7 +811,7 @@ This is an example of building a wheel using the repository as source,
 pip install maturin
 curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2021-05-25 --profile minimal -y
 export RUSTFLAGS="-C target-cpu=k8"
-maturin build --no-sdist --release --strip --manylinux off
+maturin build --release --strip --manylinux off
 ls -1 target/wheels
 ```
 
