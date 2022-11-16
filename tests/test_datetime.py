@@ -429,11 +429,11 @@ def test_datetime_partial_second_pytz():
                     0,
                     27,
                     87,
-                    tzinfo=pytz.timezone("Europe/Amsterdam"),
+                    tzinfo=pytz.timezone("Asia/Vladivostok"),
                 )
             ]
         )
-        == msgpack.packb(["1937-01-01T12:00:27.000087+00:20"])
+        == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
     )
 
 
@@ -446,10 +446,10 @@ def test_datetime_partial_second_dateutil():
     assert ormsgpack.packb(
         [
             datetime.datetime(
-                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Europe/Amsterdam")
+                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Asia/Vladivostok")
             )
         ]
-    ) == msgpack.packb(["1937-01-01T12:00:27.000087+00:20"])
+    ) == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
 
 
 def test_datetime_microsecond_max():
@@ -558,12 +558,12 @@ def test_datetime_utc_z_with_tz():
         ormsgpack.packb(
             [
                 datetime.datetime(
-                    1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Europe/Amsterdam")
+                    1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Asia/Vladivostok")
                 )
             ],
             option=ormsgpack.OPT_UTC_Z,
         )
-        == msgpack.packb(["1937-01-01T12:00:27.000087+00:20"])
+        == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
     )
 
 
