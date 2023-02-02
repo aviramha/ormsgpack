@@ -26,7 +26,7 @@ pub fn serialize(
     default: Option<NonNull<pyo3::ffi::PyObject>>,
     opts: Opt,
 ) -> Result<NonNull<pyo3::ffi::PyObject>, String> {
-    let mut buf = BytesWriter::new();
+    let mut buf = BytesWriter::default();
     let obj = PyObjectSerializer::new(ptr, opts, 0, 0, default);
     let mut ser = rmp_serde::Serializer::new(&mut buf);
     let res = obj.serialize(&mut ser);

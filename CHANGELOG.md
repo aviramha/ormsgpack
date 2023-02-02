@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.5 02/02/2023
+
+### Fixed
+
+- aarch64 build on macOS. Took `src/serialize/writer.rs` from upstream orjson. by @ijl
+- Fix release on aarch64 to match orjson's upstream.
+
+### Misc
+
+- update dependencies
+
 ## 1.2.4 16/11/2022
 
 ### Misc
