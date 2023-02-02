@@ -6,7 +6,7 @@ on:
 
 # Cancel previous runs on the same PR.
 concurrency:
-  group: ${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 name: Tests & Linting
