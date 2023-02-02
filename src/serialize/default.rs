@@ -12,7 +12,7 @@ use std::ptr::NonNull;
 #[inline(never)]
 fn format_err(ptr: *mut pyo3::ffi::PyObject) -> String {
     let name = unsafe { CStr::from_ptr((*ob_type!(ptr)).tp_name).to_string_lossy() };
-    format_args!("Type is not msgpack serializable: {}", name).to_string()
+    format_args!("Type is not msgpack serializable: {name}").to_string()
 }
 
 pub struct DefaultSerializer {

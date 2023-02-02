@@ -37,7 +37,7 @@ impl UUID {
         }
 
         let mut hexadecimal: SmallVec<[u8; 32]> = SmallVec::with_capacity(32);
-        write!(hexadecimal, "{:032x}", value).unwrap();
+        write!(hexadecimal, "{value:032x}").unwrap();
 
         buf.extend_from_slice(&hexadecimal[..8]);
         buf.push(b'-');
