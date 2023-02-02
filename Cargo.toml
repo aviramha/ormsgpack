@@ -37,7 +37,7 @@ unstable-simd = [
 ]
 
 [dependencies]
-ahash = { version = "0.7.6", default_features = false }
+ahash = { version = "0.8", default_features = false }
 associative-cache = { version = "1" }
 bytecount = { version = "^0.6.2", default_features = false, features = ["runtime-dispatch-simd"] }
 encoding_rs = { version = "0.8", default_features = false }
