@@ -54,7 +54,7 @@ rmp-serde = {version = "1"}
 
 
 [build-dependencies]
-pyo3-build-config = { version = "0.17.3" }
+pyo3-build-config = { version = "0.18.1" }
 
 [profile.release]
 codegen-units = 1
