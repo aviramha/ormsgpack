@@ -1,7 +1,6 @@
 use crate::typeref::{ARRAY_STRUCT_STR, NUMPY_TYPES};
 use pyo3::ffi::*;
 use serde::ser::{Serialize, SerializeSeq, Serializer};
-use std::ops::DerefMut;
 use std::os::raw::{c_char, c_int, c_void};
 
 macro_rules! slice {
@@ -435,7 +434,7 @@ impl Serialize for NumpyScalar {
     {
         unsafe {
             let ob_type = ob_type!(self.ptr);
-            let scalar_types = NUMPY_TYPES.deref_mut().as_ref().unwrap();
+            let scalar_types = NUMPY_TYPES.as_ref().unwrap();
             if ob_type == scalar_types.float64 {
                 (*(self.ptr as *mut NumpyFloat64)).serialize(serializer)
             } else if ob_type == scalar_types.float32 {
