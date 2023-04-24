@@ -12,6 +12,7 @@ mod util;
 mod deserialize;
 mod exc;
 mod ffi;
+mod lazy;
 mod opt;
 mod serialize;
 mod typeref;

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use ahash::RandomState;
-use once_cell::unsync::Lazy;
 use pyo3::ffi::*;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::Once;
+
+use crate::lazy::ThreadSafeLazy;
 
 pub struct NumpyTypes {
     pub array: *mut PyTypeObject,
@@ -37,8 +38,10 @@ pub static mut TIME_TYPE: *mut PyTypeObject = 0 as *mut PyTypeObject;
 pub static mut TUPLE_TYPE: *mut PyTypeObject = 0 as *mut PyTypeObject;
 pub static mut UUID_TYPE: *mut PyTypeObject = 0 as *mut PyTypeObject;
 pub static mut ENUM_TYPE: *mut PyTypeObject = 0 as *mut PyTypeObject;
-pub static mut NUMPY_TYPES: Lazy<Option<NumpyTypes>> = Lazy::new(|| unsafe { load_numpy_types() });
-pub static mut FIELD_TYPE: Lazy<NonNull<PyObject>> = Lazy::new(|| unsafe { look_up_field_type() });
+pub static mut NUMPY_TYPES: ThreadSafeLazy<Option<NumpyTypes>> =
+    ThreadSafeLazy::new(|| unsafe { load_numpy_types() });
+pub static mut FIELD_TYPE: ThreadSafeLazy<NonNull<PyObject>> =
+    ThreadSafeLazy::new(|| unsafe { look_up_field_type() });
 
 pub static mut BYTES_TYPE: *mut PyTypeObject = 0 as *mut PyTypeObject;
 pub static mut BYTEARRAY_TYPE: *mut PyTypeObject = 0 as *mut PyTypeObject;
@@ -60,7 +63,8 @@ pub static mut VALUE_STR: *mut PyObject = 0 as *mut PyObject;
 pub static mut STR_HASH_FUNCTION: Option<hashfunc> = None;
 pub static mut DEFAULT: *mut PyObject = 0 as *mut PyObject;
 pub static mut OPTION: *mut PyObject = 0 as *mut PyObject;
-pub static mut HASH_BUILDER: Lazy<ahash::RandomState> = Lazy::new(|| unsafe {
+
+pub static mut HASH_BUILDER: ThreadSafeLazy<ahash::RandomState> = ThreadSafeLazy::new(|| unsafe {
     RandomState::with_seeds(
         VALUE_STR as u64,
         DICT_TYPE as u64,
