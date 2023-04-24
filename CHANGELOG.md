@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.6 24/04/2023
+
+### Fixed
+
+- `once_cell` poisoning on parallel initialization by (@Quitlox)[https://github.com/Quitlox] in (#153)[https://github.com/aviramha/ormsgpack/pull/153]
+
+
 ## 1.2.5 02/02/2023
 
 ### Fixed
