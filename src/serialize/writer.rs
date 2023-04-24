@@ -14,14 +14,17 @@ pub struct BytesWriter {
 }
 
 impl BytesWriter {
-    pub fn default() -> Self {
+pub fn default() -> Self {
+        let bytes_: *mut PyBytesObject;
+        unsafe {
+            bytes_ = PyBytes_FromStringAndSize(std::ptr::null_mut(), BUFFER_LENGTH as isize)
+                as *mut PyBytesObject;
+        }
+        assert!(! bytes_.is_null() , "MemoryError: allocation failed in PyBytes_FromStringAndSize!");
         BytesWriter {
             cap: BUFFER_LENGTH,
             len: 0,
-            bytes: unsafe {
-                PyBytes_FromStringAndSize(std::ptr::null_mut(), BUFFER_LENGTH as isize)
-                    as *mut PyBytesObject
-            },
+            bytes: bytes_,
         }
     }
 
@@ -47,10 +50,11 @@ impl BytesWriter {
     pub fn resize(&mut self, len: usize) {
         self.cap = len;
         unsafe {
-            _PyBytes_Resize(
+            let retval = _PyBytes_Resize(
                 std::ptr::addr_of_mut!(self.bytes) as *mut *mut PyBytesObject as *mut *mut PyObject,
                 len as isize,
             );
+            assert_eq!(retval, 0, "MemoryError while deserializing a Bytes object!");
         }
     }
 
