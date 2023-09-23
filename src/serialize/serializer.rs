@@ -152,7 +152,8 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
         } else if opts & SERIALIZE_NUMPY != 0 && is_numpy_array(ob_type) {
             ObType::NumpyArray
         } else if opts & SERIALIZE_PYDANTIC != 0
-            && ffi!(PyDict_Contains((*ob_type).tp_dict, PYDANTIC_FIELDS_STR)) == 1
+            && (ffi!(PyDict_Contains((*ob_type).tp_dict, PYDANTIC_FIELDS_STR)) == 1
+                || ffi!(PyDict_Contains((*ob_type).tp_dict, PYDANTIC2_FIELDS_STR)) == 1)
         {
             ObType::Pydantic
         } else {
