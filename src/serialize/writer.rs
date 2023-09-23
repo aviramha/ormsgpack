@@ -48,7 +48,7 @@ impl BytesWriter {
         self.cap = len;
         unsafe {
             _PyBytes_Resize(
-                std::ptr::addr_of_mut!(self.bytes) as *mut *mut PyBytesObject as *mut *mut PyObject,
+                std::ptr::addr_of_mut!(self.bytes) as *mut *mut PyObject,
                 len as isize,
             );
         }
@@ -82,7 +82,7 @@ impl std::io::Write for BytesWriter {
             self.grow(end_length);
         }
         unsafe {
-            std::ptr::copy_nonoverlapping(buf.as_ptr() as *const u8, self.buffer_ptr(), to_write);
+            std::ptr::copy_nonoverlapping(buf.as_ptr(), self.buffer_ptr(), to_write);
         };
         self.len = end_length;
         Ok(())
@@ -174,7 +174,7 @@ impl WriteExt for &mut BytesWriter {
         unsafe {
             let ptr = self.buffer_ptr();
             std::ptr::write(ptr, b'"');
-            std::ptr::copy_nonoverlapping(val.as_ptr() as *const u8, ptr.add(1), to_write);
+            std::ptr::copy_nonoverlapping(val.as_ptr(), ptr.add(1), to_write);
             std::ptr::write(ptr.add(to_write + 1), b'"');
         };
         self.len = end_length;
@@ -187,7 +187,7 @@ impl WriteExt for &mut BytesWriter {
     ) -> std::result::Result<(), std::io::Error> {
         let to_write = val.len();
         unsafe {
-            std::ptr::copy_nonoverlapping(val.as_ptr() as *const u8, self.buffer_ptr(), to_write);
+            std::ptr::copy_nonoverlapping(val.as_ptr(), self.buffer_ptr(), to_write);
         };
         self.len += to_write;
         Ok(())
