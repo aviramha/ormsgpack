@@ -29,7 +29,6 @@ default = ["unstable-simd"]
 
 # Use SIMD intrinsics. This requires Rust on the nightly channel.
 unstable-simd = [
-    "bytecount/generic-simd",
     "bytecount/runtime-dispatch-simd",
     "encoding_rs/simd-accel",
     "simdutf8/aarch64_neon",
