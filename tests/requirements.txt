@@ -8,4 +8,4 @@ pytz
 typing_extensions;python_version>="3.6" and python_version<"3.8"
 xxhash==1.4.3;sys_platform!="windows" and python_version<"3.9" # creates non-compact ASCII for test_str_ascii
 msgpack
-pydantic==1.10.12
+pydantic
