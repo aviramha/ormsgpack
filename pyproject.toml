@@ -23,10 +23,9 @@ classifiers = [
 
 [build-system]
 build-backend = "maturin"
-requires = ["maturin>=0.11.2,<0.12"]
+requires = ["maturin>=1.0,<2.0"]
 
 [tool.maturin]
-sdist-include = ["Cargo.lock", "setup.py"]
 strip = true
 
 [tool.black]
