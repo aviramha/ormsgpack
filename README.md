@@ -830,5 +830,5 @@ There are no runtime dependencies other than libc.
 orjson was written by ijl <<ijl@mailbox.org>>, copyright 2018 - 2021, licensed
 under both the Apache 2 and MIT licenses.
 
-ormsgpack was forked from orjson and is maintained by Aviram Hassan <<aviramyhassan@gmail.com>>, licensed
+ormsgpack was forked from orjson by Aviram Hassan and is now maintained by Emanuele Giaquinta (@exg), licensed
 same as orjson.
