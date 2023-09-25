@@ -15,9 +15,9 @@ dependencies = [
 
 [[package]]
 name = "associative-cache"
-version = "1.0.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46016233fc1bb55c23b856fe556b7db6ccd05119a0a392e04f0b3b7c79058f16"
+checksum = "b993cd767a2bc7307dd87622311ca22c44329cc7a21366206bfa0896827b2bad"
 
 [[package]]
 name = "autocfg"
