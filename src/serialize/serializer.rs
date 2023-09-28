@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
-use crate::ffi::{PyDict_GET_SIZE, PyTypeObject};
+use crate::ffi::PyDict_GET_SIZE;
 use crate::opt::*;
 use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
@@ -117,7 +117,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
             ObType::Tuple
         } else if ob_type == UUID_TYPE {
             ObType::Uuid
-        } else if (*(ob_type as *mut PyTypeObject)).ob_type == ENUM_TYPE {
+        } else if ob_type!(ob_type) == ENUM_TYPE {
             ObType::Enum
         } else if opts & PASSTHROUGH_SUBCLASS == 0
             && is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS)

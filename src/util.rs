@@ -8,7 +8,7 @@ macro_rules! is_type {
 
 macro_rules! ob_type {
     ($obj:expr) => {
-        unsafe { (*$obj).ob_type }
+        unsafe { (*($obj as *mut pyo3::ffi::PyObject)).ob_type }
     };
 }
 
