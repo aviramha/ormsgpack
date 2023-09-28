@@ -197,7 +197,7 @@ impl<'de> Visitor<'de> for MsgpackValue {
                         },
                     );
                     pykey = entry.get();
-                    pyhash = unsafe { (*pykey.cast::<PyASCIIObject>()).hash }
+                    pyhash = unsafe { (*pykey.cast::<pyo3::ffi::PyASCIIObject>()).hash }
                 }
             }
             let _ = ffi!(_PyDict_SetItem_KnownHash(
