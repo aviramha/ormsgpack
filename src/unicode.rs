@@ -8,25 +8,6 @@ use std::os::raw::c_char;
 // see unicodeobject.h for documentation
 // re: python3.12 changes, https://www.python.org/dev/peps/pep-0623/
 
-#[repr(C)]
-pub struct PyASCIIObject {
-    pub ob_base: PyObject,
-    pub length: Py_ssize_t,
-    pub hash: Py_hash_t,
-    pub state: u32,
-    #[cfg(not(python312))]
-    pub wstr: *mut c_char,
-}
-
-#[repr(C)]
-pub struct PyCompactUnicodeObject {
-    pub ob_base: PyASCIIObject,
-    pub utf8_length: Py_ssize_t,
-    pub utf8: *mut c_char,
-    #[cfg(not(python312))]
-    pub wstr_length: Py_ssize_t,
-}
-
 const STATE_ASCII: u32 = 0b00000000000000000000000001000000;
 #[cfg(not(python312))]
 const STATE_COMPACT: u32 = 0b00000000000000000000000000100000;
