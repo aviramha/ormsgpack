@@ -102,7 +102,7 @@ impl Serialize for Dict {
                 self.recursion + 1,
                 self.default,
             );
-            if unlikely!(unsafe { ob_type!(key) != STR_TYPE }) {
+            if unlikely!(!is_type!(ob_type!(key), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
             }
             {

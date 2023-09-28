@@ -66,11 +66,11 @@ pub enum ObType {
 pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
     unsafe {
         let ob_type = ob_type!(obj);
-        if ob_type == STR_TYPE {
+        if is_type!(ob_type, STR_TYPE) {
             ObType::Str
-        } else if ob_type == BYTES_TYPE {
+        } else if is_type!(ob_type, BYTES_TYPE) {
             ObType::Bytes
-        } else if ob_type == INT_TYPE
+        } else if is_type!(ob_type, INT_TYPE)
             && (opts & PASSTHROUGH_BIG_INT == 0
                 || ffi!(_PyLong_NumBits(obj)) <= {
                     if ffi!(Py_SIZE(obj)) > 0 {
@@ -81,17 +81,17 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
                 })
         {
             ObType::Int
-        } else if ob_type == BOOL_TYPE {
+        } else if is_type!(ob_type, BOOL_TYPE) {
             ObType::Bool
-        } else if ob_type == NONE_TYPE {
+        } else if is_type!(ob_type, NONE_TYPE) {
             ObType::None
-        } else if ob_type == FLOAT_TYPE {
+        } else if is_type!(ob_type, FLOAT_TYPE) {
             ObType::Float
-        } else if ob_type == LIST_TYPE {
+        } else if is_type!(ob_type, LIST_TYPE) {
             ObType::List
-        } else if ob_type == DICT_TYPE {
+        } else if is_type!(ob_type, DICT_TYPE) {
             ObType::Dict
-        } else if ob_type == DATETIME_TYPE && opts & PASSTHROUGH_DATETIME == 0 {
+        } else if is_type!(ob_type, DATETIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
             ObType::Datetime
         } else {
             pyobject_to_obtype_unlikely(obj, opts)
@@ -109,15 +109,15 @@ macro_rules! is_subclass {
 pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
     unsafe {
         let ob_type = ob_type!(obj);
-        if ob_type == DATE_TYPE && opts & PASSTHROUGH_DATETIME == 0 {
+        if is_type!(ob_type, DATE_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
             ObType::Date
-        } else if ob_type == TIME_TYPE && opts & PASSTHROUGH_DATETIME == 0 {
+        } else if is_type!(ob_type, TIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
             ObType::Time
-        } else if ob_type == TUPLE_TYPE && opts & PASSTHROUGH_TUPLE == 0 {
+        } else if is_type!(ob_type, TUPLE_TYPE) && opts & PASSTHROUGH_TUPLE == 0 {
             ObType::Tuple
-        } else if ob_type == UUID_TYPE {
+        } else if is_type!(ob_type, UUID_TYPE) {
             ObType::Uuid
-        } else if ob_type!(ob_type) == ENUM_TYPE {
+        } else if is_type!(ob_type!(ob_type), ENUM_TYPE) {
             ObType::Enum
         } else if opts & PASSTHROUGH_SUBCLASS == 0
             && is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS)

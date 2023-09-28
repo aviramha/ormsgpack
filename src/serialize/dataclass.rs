@@ -70,7 +70,7 @@ impl Serialize for DataclassFastSerializer {
                 self.recursion + 1,
                 self.default,
             );
-            if unlikely!(unsafe { ob_type!(key) != STR_TYPE }) {
+            if unlikely!(!is_type!(ob_type!(key), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
             }
             {
@@ -147,7 +147,7 @@ impl Serialize for DataclassFallbackSerializer {
             };
             let field_type = ffi!(PyObject_GetAttr(field, FIELD_TYPE_STR));
             ffi!(Py_DECREF(field_type));
-            if unsafe { field_type != FIELD_TYPE.as_ptr() } {
+            if !is_type!(field_type, FIELD_TYPE.as_ptr()) {
                 continue;
             }
             {
