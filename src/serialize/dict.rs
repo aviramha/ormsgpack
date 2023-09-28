@@ -82,7 +82,6 @@ impl Serialize for Dict {
         let len = unsafe { PyDict_GET_SIZE(self.ptr) as usize };
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         let mut pos = 0isize;
-        let mut str_size: pyo3::ffi::Py_ssize_t = 0;
         let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         for _ in 0..=len - 1 {
@@ -106,11 +105,11 @@ impl Serialize for Dict {
                 err!(KEY_MUST_BE_STR)
             }
             {
-                let data = read_utf8_from_str(key, &mut str_size);
-                if unlikely!(data.is_null()) {
+                let data = unicode_to_str(key);
+                if unlikely!(data.is_none()) {
                     err!(INVALID_STR)
                 }
-                map.serialize_key(str_from_slice!(data, str_size)).unwrap();
+                map.serialize_key(data.unwrap()).unwrap();
             }
 
             map.serialize_value(&value)?;
@@ -215,14 +214,11 @@ impl DictNonStrKey {
             }
             ObType::Str => {
                 // because of ObType::Enum
-                let mut str_size: pyo3::ffi::Py_ssize_t = 0;
-                let uni = read_utf8_from_str(key, &mut str_size);
-                if unlikely!(uni.is_null()) {
+                let uni = unicode_to_str(key);
+                if unlikely!(uni.is_none()) {
                     Err(NonStrError::InvalidStr)
                 } else {
-                    Ok(Key::String(InlinableString::from(str_from_slice!(
-                        uni, str_size
-                    ))))
+                    Ok(Key::String(InlinableString::from(uni.unwrap())))
                 }
             }
             ObType::Bytes => {
@@ -233,14 +229,11 @@ impl DictNonStrKey {
                 }))
             }
             ObType::StrSubclass => {
-                let mut str_size: pyo3::ffi::Py_ssize_t = 0;
-                let uni = ffi!(PyUnicode_AsUTF8AndSize(key, &mut str_size)) as *const u8;
-                if unlikely!(uni.is_null()) {
+                let uni = unicode_to_str_via_ffi(key);
+                if unlikely!(uni.is_none()) {
                     Err(NonStrError::InvalidStr)
                 } else {
-                    Ok(Key::String(InlinableString::from(str_from_slice!(
-                        uni, str_size
-                    ))))
+                    Ok(Key::String(InlinableString::from(uni.unwrap())))
                 }
             }
             ObType::Tuple => Ok(Key::Tuple(key)),
@@ -265,7 +258,6 @@ impl Serialize for DictNonStrKey {
         let mut items: SmallVec<[(Key, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         let mut pos = 0isize;
-        let mut str_size: pyo3::ffi::Py_ssize_t = 0;
         let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         let opts = self.opts & NOT_PASSTHROUGH;
@@ -280,14 +272,11 @@ impl Serialize for DictNonStrKey {
                 )
             };
             if is_type!(ob_type!(key), STR_TYPE) {
-                let data = read_utf8_from_str(key, &mut str_size);
-                if unlikely!(data.is_null()) {
+                let data = unicode_to_str(key);
+                if unlikely!(data.is_none()) {
                     err!(INVALID_STR)
                 }
-                items.push((
-                    Key::String(InlinableString::from(str_from_slice!(data, str_size))),
-                    value,
-                ));
+                items.push((Key::String(InlinableString::from(data.unwrap())), value));
             } else {
                 match DictNonStrKey::pyobject_to_string(key, opts) {
                     Ok(key_as_str) => items.push((key_as_str, value)),

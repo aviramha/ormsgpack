@@ -50,7 +50,6 @@ impl Serialize for DataclassFastSerializer {
         // length is unknown without further work because attributes are filtered below
         let mut map = serializer.serialize_map(None).unwrap();
         let mut pos = 0isize;
-        let mut str_size: pyo3::ffi::Py_ssize_t = 0;
         let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         for _ in 0..=len - 1 {
@@ -74,11 +73,11 @@ impl Serialize for DataclassFastSerializer {
                 err!(KEY_MUST_BE_STR)
             }
             {
-                let data = read_utf8_from_str(key, &mut str_size);
-                if unlikely!(data.is_null()) {
+                let data = unicode_to_str(key);
+                if unlikely!(data.is_none()) {
                     err!(INVALID_STR)
                 }
-                let key_as_str = str_from_slice!(data, str_size);
+                let key_as_str = data.unwrap();
                 if unlikely!(key_as_str.as_bytes()[0] == b'_') {
                     continue;
                 }
@@ -132,7 +131,6 @@ impl Serialize for DataclassFallbackSerializer {
         // length is unknown without further work because attributes are filtered below
         let mut map = serializer.serialize_map(None).unwrap();
         let mut pos = 0isize;
-        let mut str_size: pyo3::ffi::Py_ssize_t = 0;
         let mut attr: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         let mut field: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
         for _ in 0..=len - 1 {
@@ -151,11 +149,11 @@ impl Serialize for DataclassFallbackSerializer {
                 continue;
             }
             {
-                let data = read_utf8_from_str(attr, &mut str_size);
-                if unlikely!(data.is_null()) {
+                let data = unicode_to_str(attr);
+                if unlikely!(data.is_none()) {
                     err!(INVALID_STR);
                 }
-                let key_as_str = str_from_slice!(data, str_size);
+                let key_as_str = data.unwrap();
                 if key_as_str.as_bytes()[0] == b'_' {
                     continue;
                 }
