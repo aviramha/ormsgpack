@@ -63,7 +63,6 @@ pub static mut PYDANTIC2_FIELDS_STR: *mut PyObject = null_mut();
 pub static mut FIELD_TYPE_STR: *mut PyObject = null_mut();
 pub static mut ARRAY_STRUCT_STR: *mut PyObject = null_mut();
 pub static mut VALUE_STR: *mut PyObject = null_mut();
-pub static mut STR_HASH_FUNCTION: Option<hashfunc> = None;
 pub static mut INT_ATTR_STR: *mut PyObject = null_mut();
 
 pub static mut HASH_BUILDER: ThreadSafeLazy<ahash::RandomState> = ThreadSafeLazy::new(|| unsafe {
@@ -94,7 +93,6 @@ pub fn init_typerefs() {
         FALSE = Py_False();
         EMPTY_UNICODE = PyUnicode_New(0, 255);
         STR_TYPE = (*EMPTY_UNICODE).ob_type;
-        STR_HASH_FUNCTION = (*((*EMPTY_UNICODE).ob_type)).tp_hash;
         BYTES_TYPE = (*PyBytes_FromStringAndSize("".as_ptr() as *const c_char, 0)).ob_type;
 
         {

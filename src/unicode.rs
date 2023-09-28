@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::typeref::EMPTY_UNICODE;
-use crate::typeref::STR_HASH_FUNCTION;
+use core::ffi::c_void;
 use pyo3::ffi::*;
 
 // see unicodeobject.h for documentation
@@ -122,6 +122,24 @@ fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut pyo3::ffi::PyObject {
     }
 }
 
+#[inline]
+pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
+    unsafe {
+        let data_ptr: *mut c_void = if (*op.cast::<PyASCIIObject>()).compact() == 1
+            && (*op.cast::<PyASCIIObject>()).ascii() == 1
+        {
+            (op as *mut PyASCIIObject).offset(1) as *mut c_void
+        } else {
+            (op as *mut PyCompactUnicodeObject).offset(1) as *mut c_void
+        };
+        let num_bytes =
+            (*(op as *mut PyASCIIObject)).length * ((*(op as *mut PyASCIIObject)).kind()) as isize;
+        let hash = pyo3::ffi::_Py_HashBytes(data_ptr, num_bytes);
+        (*op.cast::<PyASCIIObject>()).hash = hash;
+        hash
+    }
+}
+
 #[inline(never)]
 pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
     let mut str_size: pyo3::ffi::Py_ssize_t = 0;
@@ -149,13 +167,5 @@ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
         } else {
             unicode_to_str_via_ffi(op)
         }
-    }
-}
-
-#[inline]
-pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
-    unsafe {
-        (*op.cast::<PyASCIIObject>()).hash = STR_HASH_FUNCTION.unwrap()(op);
-        (*op.cast::<PyASCIIObject>()).hash
     }
 }
