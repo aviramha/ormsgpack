@@ -60,12 +60,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "inlinable_string"
-version = "0.1.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8fae54786f62fb2918dcfae3d568594e50eb9b5c25bf04371af6fe7516452fb"
-
-[[package]]
 name = "itoa"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,7 +120,6 @@ dependencies = [
  "associative-cache",
  "bytecount",
  "encoding_rs",
- "inlinable_string",
  "itoa",
  "once_cell",
  "pyo3",
