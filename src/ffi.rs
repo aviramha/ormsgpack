@@ -2,12 +2,7 @@
 
 use pyo3::ffi::*;
 use std::os::raw::{c_char, c_int};
-
-#[allow(non_snake_case)]
-#[inline(always)]
-pub unsafe fn PyDict_GET_SIZE(op: *mut PyObject) -> Py_ssize_t {
-    (*op.cast::<PyDictObject>()).ma_used
-}
+use std::ptr::NonNull;
 
 #[allow(non_snake_case)]
 #[inline(always)]
@@ -45,4 +40,36 @@ pub struct PyMemoryViewObject {
 #[inline(always)]
 pub unsafe fn PyMemoryView_GET_BUFFER(op: *mut PyObject) -> *const Py_buffer {
     &(*op.cast::<PyMemoryViewObject>()).view
+}
+
+pub struct PyDictIter {
+    op: *mut pyo3::ffi::PyObject,
+    pos: isize,
+}
+
+impl PyDictIter {
+    #[inline]
+    pub fn from_pyobject(op: *mut pyo3::ffi::PyObject) -> Self {
+        PyDictIter { op: op, pos: 0 }
+    }
+}
+
+impl Iterator for PyDictIter {
+    type Item = (NonNull<pyo3::ffi::PyObject>, NonNull<pyo3::ffi::PyObject>);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
+        let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
+        if unsafe { pyo3::ffi::PyDict_Next(self.op, &mut self.pos, &mut key, &mut value) } == 1 {
+            Some((nonnull!(key), nonnull!(value)))
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = ffi!(Py_SIZE(self.op)) as usize;
+        (len, Some(len))
+    }
 }
