@@ -15,6 +15,7 @@ pub const PASSTHROUGH_DATACLASS: Opt = 1 << 9;
 pub const SERIALIZE_PYDANTIC: Opt = 1 << 10;
 pub const PASSTHROUGH_BIG_INT: Opt = 1 << 11;
 pub const PASSTHROUGH_TUPLE: Opt = 1 << 12;
+pub const SORT_KEYS: Opt = 1 << 13;
 
 pub const NOT_PASSTHROUGH: Opt = !(PASSTHROUGH_BIG_INT
     | PASSTHROUGH_DATACLASS
@@ -34,6 +35,7 @@ pub const MAX_PACKB_OPT: i32 = (APPEND_NEWLINE
     | PASSTHROUGH_TUPLE
     | SERIALIZE_NUMPY
     | SERIALIZE_PYDANTIC
+    | SORT_KEYS
     | UTC_Z) as i32;
 
 pub const MAX_UNPACKB_OPT: i32 = NON_STR_KEYS as i32;

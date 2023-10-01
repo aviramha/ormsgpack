@@ -183,6 +183,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         "OPT_PASSTHROUGH_TUPLE\0",
         opt::PASSTHROUGH_TUPLE
     );
+    opt!(exported_objects, mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
     opt!(exported_objects, mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
     typeref::init_typerefs();

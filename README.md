@@ -229,6 +229,8 @@ objects may serialize to the same `str` as an existing key, e.g.,
 The last key to be inserted to the `dict` will be serialized last and a msgpack deserializer will presumably take the last
 occurrence of a key (in the above, `false`). The first value will be lost.
 
+This option is not compatible with `ormsgpack.OPT_SORT_KEYS`.
+
 ##### OPT_OMIT_MICROSECONDS
 
 Do not serialize the `microsecond` field on `datetime.datetime` and
@@ -381,6 +383,36 @@ Serialize `numpy.ndarray` instances. For more, see
 ##### OPT_SERIALIZE_PYDANTIC
 Serialize `pydantic.BaseModel` instances. Right now it ignores the config (str transformations), support might be added
 later.
+
+##### OPT_SORT_KEYS
+
+Serialize `dict` keys in sorted order. The default is to serialize in an
+unspecified order. This is equivalent to `sort_keys=True` in the standard
+library.
+
+This can be used to ensure the order is deterministic for hashing or tests.
+It has a substantial performance penalty and is not recommended in general.
+
+```python
+>>> import ormsgpack
+>>> ormsgpack.packb({"b": 1, "c": 2, "a": 3})
+b'\x83\xa1b\x01\xa1c\x02\xa1a\x03'
+>>> ormsgpack.packb({"b": 1, "c": 2, "a": 3}, option=ormsgpack.OPT_SORT_KEYS)
+b'\x83\xa1a\x03\xa1b\x01\xa1c\x02'
+```
+
+The sorting is not collation/locale-aware:
+
+```python
+>>> import ormsgpack
+>>> ormsgpack.packb({"a": 1, "ä": 2, "A": 3}, option=ormsgpack.OPT_SORT_KEYS)
+b'\x83\xa1A\x03\xa1a\x01\xa2\xc3\xa4\x02'
+```
+
+This is the same sorting behavior as the standard library.
+
+`dataclass` also serialize as maps but this has no effect on them.
+
 ##### OPT_UTC_Z
 
 Serialize a UTC timezone on `datetime.datetime` instances as `Z` instead
