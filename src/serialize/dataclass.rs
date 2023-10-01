@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
-use crate::ffi::PyDict_GET_SIZE;
+use crate::ffi::PyDictIter;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 use crate::typeref::*;
@@ -11,8 +11,78 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 
 use std::ptr::NonNull;
 
+pub struct DataclassGenericSerializer {
+    ptr: *mut pyo3::ffi::PyObject,
+    opts: Opt,
+    default_calls: u8,
+    recursion: u8,
+    default: Option<NonNull<pyo3::ffi::PyObject>>,
+}
+
+impl DataclassGenericSerializer {
+    pub fn new(
+        ptr: *mut pyo3::ffi::PyObject,
+        opts: Opt,
+        default_calls: u8,
+        recursion: u8,
+        default: Option<NonNull<pyo3::ffi::PyObject>>,
+    ) -> Self {
+        DataclassGenericSerializer {
+            ptr: ptr,
+            opts: opts,
+            default_calls: default_calls,
+            recursion: recursion,
+            default: default,
+        }
+    }
+}
+
+impl Serialize for DataclassGenericSerializer {
+    #[inline(never)]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
+        let ob_type = ob_type!(self.ptr);
+        if unlikely!(dict.is_null()) {
+            ffi!(PyErr_Clear());
+            DataclassFallbackSerializer::new(
+                self.ptr,
+                self.opts,
+                self.default_calls,
+                self.recursion,
+                self.default,
+            )
+            .serialize(serializer)
+        } else if ffi!(PyDict_Contains((*ob_type).tp_dict, SLOTS_STR)) == 1 {
+            let ret = DataclassFallbackSerializer::new(
+                self.ptr,
+                self.opts,
+                self.default_calls,
+                self.recursion,
+                self.default,
+            )
+            .serialize(serializer);
+            ffi!(Py_DECREF(dict));
+            ret
+        } else {
+            let ret = DataclassFastSerializer::new(
+                dict,
+                self.opts,
+                self.default_calls,
+                self.recursion,
+                self.default,
+            )
+            .serialize(serializer);
+            ffi!(Py_DECREF(dict));
+            ret
+        }
+    }
+}
+
 pub struct DataclassFastSerializer {
-    dict: *mut pyo3::ffi::PyObject,
+    ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
     recursion: u8,
@@ -21,14 +91,14 @@ pub struct DataclassFastSerializer {
 
 impl DataclassFastSerializer {
     pub fn new(
-        dict: *mut pyo3::ffi::PyObject,
+        ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
         default_calls: u8,
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
         DataclassFastSerializer {
-            dict: dict,
+            ptr: ptr,
             opts: opts,
             default_calls: default_calls,
             recursion: recursion,
@@ -38,53 +108,37 @@ impl DataclassFastSerializer {
 }
 
 impl Serialize for DataclassFastSerializer {
-    #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let len = unsafe { PyDict_GET_SIZE(self.dict) as usize };
+        let len = ffi!(Py_SIZE(self.ptr));
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
-        // length is unknown without further work because attributes are filtered below
         let mut map = serializer.serialize_map(None).unwrap();
-        let mut pos = 0isize;
-        let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        for _ in 0..=len - 1 {
-            unsafe {
-                pyo3::ffi::_PyDict_Next(
-                    self.dict,
-                    &mut pos,
-                    &mut key,
-                    &mut value,
-                    std::ptr::null_mut(),
-                )
-            };
-            let value = PyObjectSerializer::new(
-                value,
+        for (key, value) in PyDictIter::from_pyobject(self.ptr) {
+            if unlikely!(!is_type!(ob_type!(key.as_ptr()), STR_TYPE)) {
+                err!(KEY_MUST_BE_STR)
+            }
+            let data = unicode_to_str(key.as_ptr());
+            if unlikely!(data.is_none()) {
+                err!(INVALID_STR)
+            }
+            let key_as_str = data.unwrap();
+            if unlikely!(key_as_str.as_bytes()[0] == b'_') {
+                continue;
+            }
+
+            let pyvalue = PyObjectSerializer::new(
+                value.as_ptr(),
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
                 self.default,
             );
-            if unlikely!(!is_type!(ob_type!(key), STR_TYPE)) {
-                err!(KEY_MUST_BE_STR)
-            }
-            {
-                let data = unicode_to_str(key);
-                if unlikely!(data.is_none()) {
-                    err!(INVALID_STR)
-                }
-                let key_as_str = data.unwrap();
-                if unlikely!(key_as_str.as_bytes()[0] == b'_') {
-                    continue;
-                }
-                map.serialize_key(key_as_str).unwrap();
-            }
-
-            map.serialize_value(&value)?;
+            map.serialize_key(key_as_str).unwrap();
+            map.serialize_value(&pyvalue)?;
         }
         map.end()
     }
@@ -117,59 +171,43 @@ impl DataclassFallbackSerializer {
 }
 
 impl Serialize for DataclassFallbackSerializer {
-    #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let fields = ffi!(PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR));
         ffi!(Py_DECREF(fields));
-        let len = unsafe { PyDict_GET_SIZE(fields) as usize };
+        let len = ffi!(Py_SIZE(fields));
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
-        // length is unknown without further work because attributes are filtered below
         let mut map = serializer.serialize_map(None).unwrap();
-        let mut pos = 0isize;
-        let mut attr: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        let mut field: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        for _ in 0..=len - 1 {
-            unsafe {
-                pyo3::ffi::_PyDict_Next(
-                    fields,
-                    &mut pos,
-                    &mut attr,
-                    &mut field,
-                    std::ptr::null_mut(),
-                )
-            };
-            let field_type = ffi!(PyObject_GetAttr(field, FIELD_TYPE_STR));
+        for (attr, field) in PyDictIter::from_pyobject(fields) {
+            let field_type = ffi!(PyObject_GetAttr(field.as_ptr(), FIELD_TYPE_STR));
             ffi!(Py_DECREF(field_type));
             if !is_type!(field_type, FIELD_TYPE.as_ptr()) {
                 continue;
             }
-            {
-                let data = unicode_to_str(attr);
-                if unlikely!(data.is_none()) {
-                    err!(INVALID_STR);
-                }
-                let key_as_str = data.unwrap();
-                if key_as_str.as_bytes()[0] == b'_' {
-                    continue;
-                }
-                map.serialize_key(key_as_str).unwrap();
+            let data = unicode_to_str(attr.as_ptr());
+            if unlikely!(data.is_none()) {
+                err!(INVALID_STR);
+            }
+            let key_as_str = data.unwrap();
+            if key_as_str.as_bytes()[0] == b'_' {
+                continue;
             }
 
-            let value = ffi!(PyObject_GetAttr(self.ptr, attr));
+            let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
             ffi!(Py_DECREF(value));
-
-            map.serialize_value(&PyObjectSerializer::new(
+            let pyvalue = PyObjectSerializer::new(
                 value,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
                 self.default,
-            ))?
+            );
+            map.serialize_key(key_as_str).unwrap();
+            map.serialize_value(&pyvalue)?
         }
         map.end()
     }

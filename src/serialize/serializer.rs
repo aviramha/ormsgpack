@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
-use crate::ffi::PyDict_GET_SIZE;
 use crate::opt::*;
 use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
@@ -16,7 +15,7 @@ use crate::serialize::tuple::*;
 use crate::serialize::uuid::*;
 use crate::serialize::writer::*;
 use crate::typeref::*;
-use serde::ser::{Serialize, SerializeMap, SerializeSeq, Serializer};
+use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::ptr::NonNull;
 
 pub const RECURSION_LIMIT: u8 = 255;
@@ -205,27 +204,14 @@ impl Serialize for PyObjectSerializer {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                if unlikely!(unsafe { PyDict_GET_SIZE(self.ptr) } == 0) {
-                    serializer.serialize_map(Some(0)).unwrap().end()
-                } else if self.opts & NON_STR_KEYS == 0 {
-                    Dict::new(
-                        self.ptr,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
-                } else {
-                    DictNonStrKey::new(
-                        self.ptr,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
-                }
+                DictGenericSerializer::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer)
             }
             ObType::List => {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
@@ -256,31 +242,14 @@ impl Serialize for PyObjectSerializer {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
-                let ob_type = ob_type!(self.ptr);
-                if unlikely!(
-                    dict.is_null() || ffi!(PyDict_Contains((*ob_type).tp_dict, SLOTS_STR)) == 1
-                ) {
-                    unsafe { pyo3::ffi::PyErr_Clear() };
-                    DataclassFallbackSerializer::new(
-                        self.ptr,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
-                } else {
-                    ffi!(Py_DECREF(dict));
-                    DataclassFastSerializer::new(
-                        dict,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
-                }
+                DataclassGenericSerializer::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer)
             }
             ObType::Pydantic => {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
