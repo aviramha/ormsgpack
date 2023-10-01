@@ -184,17 +184,15 @@ def test_dict_keys_time():
 
 
 def test_dict_non_str_and_sort_keys():
-    assert (
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(
             {
                 datetime.date(1970, 1, 3): 3,
                 datetime.date(1970, 1, 5): 2,
                 "other": 1,
             },
-            option=ormsgpack.OPT_NON_STR_KEYS,
+            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_SORT_KEYS,
         )
-        == msgpack.packb({"1970-01-03": 3, "1970-01-05": 2, "other": 1})
-    )
 
 
 def test_dict_keys_time_err():
