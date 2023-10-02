@@ -28,30 +28,18 @@ const PACKB_DOC: &str =
 const UNPACKB_DOC: &str =
     "unpackb(obj, /, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
 
-macro_rules! export {
-    ($array:expr, $name:expr) => {
-        $array.push(PyUnicode_InternFromString($name.as_ptr() as *const c_char));
-    };
-}
-
 macro_rules! module_add {
-    ($array: expr, $name: expr, $mptr: expr, $object:expr) => {
-        export!($array, $name);
-        unsafe {
-            PyModule_AddObject($mptr, $name.as_ptr() as *const c_char, $object);
-        };
+    ($name: expr, $mptr: expr, $object:expr) => {
+        PyModule_AddObject($mptr, $name.as_ptr() as *const c_char, $object);
     };
 }
 
 macro_rules! opt {
-    ($array:expr, $mptr:expr, $name:expr, $opt:expr) => {
-        export!($array, $name);
-        unsafe {
-            #[cfg(not(target_os = "windows"))]
-            PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i64);
-            #[cfg(target_os = "windows")]
-            PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i32);
-        }
+    ($mptr:expr, $name:expr, $opt:expr) => {
+        #[cfg(not(target_os = "windows"))]
+        PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i64);
+        #[cfg(target_os = "windows")]
+        PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i32);
     };
 }
 
@@ -72,10 +60,8 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     };
 
     let mptr = PyModule_Create(Box::into_raw(Box::new(init)));
-    let mut exported_objects = Vec::new();
     let version = env!("CARGO_PKG_VERSION");
     module_add!(
-        exported_objects,
         "__version__\0",
         mptr,
         PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
@@ -96,7 +82,6 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     }
 
     module_add!(
-        exported_objects,
         "packb\0",
         mptr,
         PyCFunction_NewEx(
@@ -118,7 +103,6 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     }
 
     module_add!(
-        exported_objects,
         "unpackb\0",
         mptr,
         PyCFunction_NewEx(
@@ -128,86 +112,36 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         )
     );
 
-    opt!(exported_objects, mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
+    opt!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
+    opt!(mptr, "OPT_NON_STR_KEYS\0", opt::NON_STR_KEYS);
+    opt!(mptr, "OPT_OMIT_MICROSECONDS\0", opt::OMIT_MICROSECONDS);
+    opt!(mptr, "OPT_PASSTHROUGH_BIG_INT\0", opt::PASSTHROUGH_BIG_INT);
     opt!(
-        exported_objects,
-        mptr,
-        "OPT_NON_STR_KEYS\0",
-        opt::NON_STR_KEYS
-    );
-    opt!(
-        exported_objects,
-        mptr,
-        "OPT_OMIT_MICROSECONDS\0",
-        opt::OMIT_MICROSECONDS
-    );
-    opt!(
-        exported_objects,
-        mptr,
-        "OPT_PASSTHROUGH_BIG_INT\0",
-        opt::PASSTHROUGH_BIG_INT
-    );
-    opt!(
-        exported_objects,
         mptr,
         "OPT_PASSTHROUGH_DATACLASS\0",
         opt::PASSTHROUGH_DATACLASS
     );
     opt!(
-        exported_objects,
         mptr,
         "OPT_PASSTHROUGH_DATETIME\0",
         opt::PASSTHROUGH_DATETIME
     );
     opt!(
-        exported_objects,
         mptr,
         "OPT_PASSTHROUGH_SUBCLASS\0",
         opt::PASSTHROUGH_SUBCLASS
     );
-    opt!(
-        exported_objects,
-        mptr,
-        "OPT_SERIALIZE_NUMPY\0",
-        opt::SERIALIZE_NUMPY
-    );
-    opt!(
-        exported_objects,
-        mptr,
-        "OPT_SERIALIZE_PYDANTIC\0",
-        opt::SERIALIZE_PYDANTIC
-    );
-    opt!(
-        exported_objects,
-        mptr,
-        "OPT_PASSTHROUGH_TUPLE\0",
-        opt::PASSTHROUGH_TUPLE
-    );
-    opt!(exported_objects, mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
-    opt!(exported_objects, mptr, "OPT_UTC_Z\0", opt::UTC_Z);
+    opt!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
+    opt!(mptr, "OPT_SERIALIZE_PYDANTIC\0", opt::SERIALIZE_PYDANTIC);
+    opt!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
+    opt!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
+    opt!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
     typeref::init_typerefs();
 
-    module_add!(
-        exported_objects,
-        "MsgpackDecodeError\0",
-        mptr,
-        typeref::MsgpackDecodeError
-    );
-    module_add!(
-        exported_objects,
-        "MsgpackEncodeError\0",
-        mptr,
-        typeref::MsgpackEncodeError
-    );
+    module_add!("MsgpackDecodeError\0", mptr, typeref::MsgpackDecodeError);
+    module_add!("MsgpackEncodeError\0", mptr, typeref::MsgpackEncodeError);
 
-    let exported = ffi!(PyList_New(exported_objects.len() as pyo3::ffi::Py_ssize_t));
-    for (i, &obj) in exported_objects.iter().enumerate() {
-        ffi!(PyList_SET_ITEM(exported, i as pyo3::ffi::Py_ssize_t, obj));
-    }
-    unsafe {
-        PyModule_AddObject(mptr, "__all__\0".as_ptr() as *const c_char, exported);
-    }
     mptr
 }
 
