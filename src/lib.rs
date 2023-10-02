@@ -22,6 +22,7 @@ use pyo3::ffi::*;
 use std::borrow::Cow;
 use std::os::raw::c_char;
 use std::os::raw::c_int;
+use std::os::raw::c_long;
 use std::os::raw::c_void;
 use std::ptr::NonNull;
 
@@ -30,18 +31,15 @@ const PACKB_DOC: &str =
 const UNPACKB_DOC: &str =
     "unpackb(obj, /, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
 
-macro_rules! module_add {
-    ($name: expr, $mptr: expr, $object:expr) => {
+macro_rules! module_add_object {
+    ($mptr: expr, $name: expr, $object:expr) => {
         PyModule_AddObject($mptr, $name.as_ptr() as *const c_char, $object);
     };
 }
 
-macro_rules! opt {
-    ($mptr:expr, $name:expr, $opt:expr) => {
-        #[cfg(not(target_os = "windows"))]
-        PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i64);
-        #[cfg(target_os = "windows")]
-        PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $opt as i32);
+macro_rules! module_add_int {
+    ($mptr:expr, $name:expr, $int:expr) => {
+        PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $int as c_long);
     };
 }
 
@@ -101,41 +99,41 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
 #[cold]
 pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
     let version = env!("CARGO_PKG_VERSION");
-    module_add!(
-        "__version__\0",
+    module_add_object!(
         mptr,
+        "__version__\0",
         PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
     );
 
-    opt!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
-    opt!(mptr, "OPT_NON_STR_KEYS\0", opt::NON_STR_KEYS);
-    opt!(mptr, "OPT_OMIT_MICROSECONDS\0", opt::OMIT_MICROSECONDS);
-    opt!(mptr, "OPT_PASSTHROUGH_BIG_INT\0", opt::PASSTHROUGH_BIG_INT);
-    opt!(
+    module_add_int!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
+    module_add_int!(mptr, "OPT_NON_STR_KEYS\0", opt::NON_STR_KEYS);
+    module_add_int!(mptr, "OPT_OMIT_MICROSECONDS\0", opt::OMIT_MICROSECONDS);
+    module_add_int!(mptr, "OPT_PASSTHROUGH_BIG_INT\0", opt::PASSTHROUGH_BIG_INT);
+    module_add_int!(
         mptr,
         "OPT_PASSTHROUGH_DATACLASS\0",
         opt::PASSTHROUGH_DATACLASS
     );
-    opt!(
+    module_add_int!(
         mptr,
         "OPT_PASSTHROUGH_DATETIME\0",
         opt::PASSTHROUGH_DATETIME
     );
-    opt!(
+    module_add_int!(
         mptr,
         "OPT_PASSTHROUGH_SUBCLASS\0",
         opt::PASSTHROUGH_SUBCLASS
     );
-    opt!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
-    opt!(mptr, "OPT_SERIALIZE_PYDANTIC\0", opt::SERIALIZE_PYDANTIC);
-    opt!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
-    opt!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
-    opt!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
+    module_add_int!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
+    module_add_int!(mptr, "OPT_SERIALIZE_PYDANTIC\0", opt::SERIALIZE_PYDANTIC);
+    module_add_int!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
+    module_add_int!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
+    module_add_int!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
 
     typeref::init_typerefs();
 
-    module_add!("MsgpackDecodeError\0", mptr, typeref::MsgpackDecodeError);
-    module_add!("MsgpackEncodeError\0", mptr, typeref::MsgpackEncodeError);
+    module_add_object!(mptr, "MsgpackDecodeError\0", typeref::MsgpackDecodeError);
+    module_add_object!(mptr, "MsgpackEncodeError\0", typeref::MsgpackEncodeError);
 
     0
 }
