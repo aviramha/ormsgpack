@@ -209,14 +209,14 @@ def test_packb_module_str():
     """
     ormsgpack.packb.__module__ is a str
     """
-    assert ormsgpack.packb.__module__ == "ormsgpack"
+    assert ormsgpack.packb.__module__ == "ormsgpack.ormsgpack"
 
 
 def test_unpackb_module_str():
     """
     ormsgpack.unpackb.__module__ is a str
     """
-    assert ormsgpack.unpackb.__module__ == "ormsgpack"
+    assert ormsgpack.unpackb.__module__ == "ormsgpack.ormsgpack"
 
 
 def test_bytes_buffer():

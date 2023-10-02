@@ -47,12 +47,32 @@ macro_rules! opt {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
+    let methods: Box<[PyMethodDef; 3]> = Box::new([
+        PyMethodDef {
+            ml_name: "packb\0".as_ptr() as *const c_char,
+            ml_meth: PyMethodDefPointer {
+                _PyCFunctionFastWithKeywords: packb,
+            },
+            ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
+            ml_doc: PACKB_DOC.as_ptr() as *const c_char,
+        },
+        PyMethodDef {
+            ml_name: "unpackb\0".as_ptr() as *const c_char,
+            ml_meth: PyMethodDefPointer {
+                _PyCFunctionFastWithKeywords: unpackb,
+            },
+            ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
+            ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
+        },
+        PyMethodDef::zeroed(),
+    ]);
+
     let init = PyModuleDef {
         m_base: PyModuleDef_HEAD_INIT,
         m_name: "ormsgpack\0".as_ptr() as *const c_char,
         m_doc: std::ptr::null(),
         m_size: 0,
-        m_methods: std::ptr::null_mut(),
+        m_methods: Box::into_raw(methods) as *mut PyMethodDef,
         m_slots: std::ptr::null_mut(),
         m_traverse: None,
         m_clear: None,
@@ -65,51 +85,6 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         "__version__\0",
         mptr,
         PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
-    );
-
-    let wrapped_packb: PyMethodDef;
-    let wrapped_unpackb: PyMethodDef;
-
-    {
-        wrapped_packb = PyMethodDef {
-            ml_name: "packb\0".as_ptr() as *const c_char,
-            ml_meth: PyMethodDefPointer {
-                _PyCFunctionFastWithKeywords: packb,
-            },
-            ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
-            ml_doc: PACKB_DOC.as_ptr() as *const c_char,
-        };
-    }
-
-    module_add!(
-        "packb\0",
-        mptr,
-        PyCFunction_NewEx(
-            Box::into_raw(Box::new(wrapped_packb)),
-            std::ptr::null_mut(),
-            PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char),
-        )
-    );
-
-    {
-        wrapped_unpackb = PyMethodDef {
-            ml_name: "unpackb\0".as_ptr() as *const c_char,
-            ml_meth: PyMethodDefPointer {
-                _PyCFunctionFastWithKeywords: unpackb,
-            },
-            ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
-            ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
-        };
-    }
-
-    module_add!(
-        "unpackb\0",
-        mptr,
-        PyCFunction_NewEx(
-            Box::into_raw(Box::new(wrapped_unpackb)),
-            std::ptr::null_mut(),
-            PyUnicode_InternFromString("ormsgpack\0".as_ptr() as *const c_char)
-        )
     );
 
     opt!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
