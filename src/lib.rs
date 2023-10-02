@@ -21,6 +21,8 @@ mod unicode;
 use pyo3::ffi::*;
 use std::borrow::Cow;
 use std::os::raw::c_char;
+use std::os::raw::c_int;
+use std::os::raw::c_void;
 use std::ptr::NonNull;
 
 const PACKB_DOC: &str =
@@ -46,7 +48,7 @@ macro_rules! opt {
 #[allow(non_snake_case)]
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
+pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
     let methods: Box<[PyMethodDef; 3]> = Box::new([
         PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
@@ -67,19 +69,37 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
         PyMethodDef::zeroed(),
     ]);
 
-    let init = PyModuleDef {
+    let slots: Box<[PyModuleDef_Slot; 2]> = Box::new([
+        PyModuleDef_Slot {
+            slot: Py_mod_exec,
+            value: ormsgpack_exec as *mut c_void,
+        },
+        PyModuleDef_Slot {
+            slot: 0,
+            value: std::ptr::null_mut(),
+        },
+    ]);
+
+    let init = Box::new(PyModuleDef {
         m_base: PyModuleDef_HEAD_INIT,
         m_name: "ormsgpack\0".as_ptr() as *const c_char,
         m_doc: std::ptr::null(),
         m_size: 0,
         m_methods: Box::into_raw(methods) as *mut PyMethodDef,
-        m_slots: std::ptr::null_mut(),
+        m_slots: Box::into_raw(slots) as *mut PyModuleDef_Slot,
         m_traverse: None,
         m_clear: None,
         m_free: None,
-    };
+    });
+    let init_ptr = Box::into_raw(init);
+    PyModuleDef_Init(init_ptr);
+    init_ptr
+}
 
-    let mptr = PyModule_Create(Box::into_raw(Box::new(init)));
+#[allow(non_snake_case)]
+#[no_mangle]
+#[cold]
+pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
     let version = env!("CARGO_PKG_VERSION");
     module_add!(
         "__version__\0",
@@ -117,7 +137,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyObject {
     module_add!("MsgpackDecodeError\0", mptr, typeref::MsgpackDecodeError);
     module_add!("MsgpackEncodeError\0", mptr, typeref::MsgpackEncodeError);
 
-    mptr
+    0
 }
 
 #[cold]
