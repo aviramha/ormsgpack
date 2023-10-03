@@ -8,7 +8,7 @@ It supports serialization of:
 [dataclass](https://github.com/aviramha/ormsgpack#dataclass),
 [datetime](https://github.com/aviramha/ormsgpack#datetime),
 [numpy](https://github.com/aviramha/ormsgpack#numpy),
-[pydantic](https://github.com/avirmaha/ormsgpack#OPT_SERIALIZE_PYDANTIC) and
+[pydantic](https://github.com/aviramha/ormsgpack#OPT_SERIALIZE_PYDANTIC) and
 [UUID](https://github.com/aviramha/ormsgpack#uuid) instances natively.
 
 Its features and drawbacks compared to other Python msgpack libraries:
@@ -178,8 +178,8 @@ def default(obj):
 #### option
 
 To modify how data is serialized, specify `option`. Each `option` is an integer
-constant in `ormspgack`. To specify multiple options, mask them together, e.g.,
-`option=ormspgack.OPT_NON_STR_KEYS | ormspgack.OPT_NAIVE_UTC`.
+constant in `ormsgpack`. To specify multiple options, mask them together, e.g.,
+`option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_NAIVE_UTC`.
 
 ##### OPT_NAIVE_UTC
 
