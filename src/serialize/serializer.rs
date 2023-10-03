@@ -134,17 +134,15 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
         ObType::List
     } else if opts & PASSTHROUGH_SUBCLASS == 0 && is_subclass!(ob_type, Py_TPFLAGS_DICT_SUBCLASS) {
         ObType::Dict
-    } else if opts & PASSTHROUGH_DATACLASS == 0
-        && ffi!(PyDict_Contains((*ob_type).tp_dict, DATACLASS_FIELDS_STR)) == 1
-    {
+    } else if opts & PASSTHROUGH_DATACLASS == 0 && pydict_contains!(ob_type, DATACLASS_FIELDS_STR) {
         ObType::Dataclass
     } else if opts & SERIALIZE_NUMPY != 0 && is_numpy_scalar(ob_type) {
         ObType::NumpyScalar
     } else if opts & SERIALIZE_NUMPY != 0 && is_numpy_array(ob_type) {
         ObType::NumpyArray
     } else if opts & SERIALIZE_PYDANTIC != 0
-        && (ffi!(PyDict_Contains((*ob_type).tp_dict, PYDANTIC_FIELDS_STR)) == 1
-            || ffi!(PyDict_Contains((*ob_type).tp_dict, PYDANTIC2_FIELDS_STR)) == 1)
+        && (pydict_contains!(ob_type, PYDANTIC_FIELDS_STR)
+            || pydict_contains!(ob_type, PYDANTIC2_FIELDS_STR))
     {
         ObType::Pydantic
     } else {

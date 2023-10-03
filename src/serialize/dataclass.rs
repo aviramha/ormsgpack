@@ -55,7 +55,7 @@ impl Serialize for DataclassGenericSerializer {
                 self.default,
             )
             .serialize(serializer)
-        } else if ffi!(PyDict_Contains((*ob_type).tp_dict, SLOTS_STR)) == 1 {
+        } else if pydict_contains!(ob_type, SLOTS_STR) {
             let ret = DataclassFallbackSerializer::new(
                 self.ptr,
                 self.opts,
