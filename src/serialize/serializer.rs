@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
@@ -71,7 +72,7 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
     } else if is_type!(ob_type, INT_TYPE)
         && (opts & PASSTHROUGH_BIG_INT == 0
             || ffi!(_PyLong_NumBits(obj)) <= {
-                if ffi!(Py_SIZE(obj)) > 0 {
+                if pylong_is_positive(obj) {
                     64
                 } else {
                     63
@@ -122,7 +123,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
         && is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS)
         && (opts & PASSTHROUGH_BIG_INT == 0
             || ffi!(_PyLong_NumBits(obj)) <= {
-                if ffi!(Py_SIZE(obj)) > 0 {
+                if pylong_is_positive(obj) {
                     64
                 } else {
                     63

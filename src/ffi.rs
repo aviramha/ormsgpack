@@ -42,6 +42,32 @@ pub unsafe fn PyMemoryView_GET_BUFFER(op: *mut PyObject) -> *const Py_buffer {
     &(*op.cast::<PyMemoryViewObject>()).view
 }
 
+#[repr(C)]
+#[cfg(Py_3_12)]
+struct _PyLongValue {
+    pub lv_tag: usize,
+}
+
+#[repr(C)]
+#[cfg(Py_3_12)]
+struct PyLongObject {
+    pub ob_base: PyObject,
+    pub long_value: _PyLongValue,
+}
+
+#[cfg(Py_3_12)]
+const SIGN_MASK: usize = 3;
+
+#[cfg(Py_3_12)]
+pub fn pylong_is_positive(op: *mut pyo3::ffi::PyObject) -> bool {
+    unsafe { (*(op as *mut PyLongObject)).long_value.lv_tag & SIGN_MASK == 0 }
+}
+
+#[cfg(not(Py_3_12))]
+pub fn pylong_is_positive(op: *mut pyo3::ffi::PyObject) -> bool {
+    ffi!(Py_SIZE(op)) > 0
+}
+
 pub struct PyDictIter {
     op: *mut pyo3::ffi::PyObject,
     pos: isize,
