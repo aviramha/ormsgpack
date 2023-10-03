@@ -20,7 +20,7 @@ e.g., "1970-01-01T00:00:00+00:00"
 * serializes `pydantic.BaseModel` instances natively (disregards the configuration ATM).
 * serializes arbitrary types using a `default` hook
 
-ormsgpack supports CPython 3.8, 3.9, 3.10 and 3.11. ormsgpack does not support PyPy. Releases follow semantic
+ormsgpack supports CPython 3.8, 3.9, 3.10, 3.11 and 3.12. ormsgpack does not support PyPy. Releases follow semantic
 versioning and serializing a new object type without an opt-in flag is
 considered a breaking change.
 
