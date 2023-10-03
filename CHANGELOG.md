@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.7
+
+### Changed
+
+- Drop support for Python 3.7
+- Add support for Python 3.12
+- Add support for Pydantic 2
+- Add `packb` option `OPT_SORT_KEYS` to serialize dictionaries sorted by key
+- Update dependencies
+
 ## 1.2.6 24/04/2023
 
 ### Fixed
