@@ -98,3 +98,17 @@ macro_rules! call_method {
         }
     };
 }
+
+#[cfg(not(Py_3_12))]
+macro_rules! pydict_contains {
+    ($obj1:expr, $obj2:expr) => {
+        unsafe { pyo3::ffi::PyDict_Contains((*$obj1).tp_dict, $obj2) == 1 }
+    };
+}
+
+#[cfg(Py_3_12)]
+macro_rules! pydict_contains {
+    ($obj1:expr, $obj2:expr) => {
+        unsafe { pyo3::ffi::PyDict_Contains(pyo3::ffi::PyType_GetDict($obj1), $obj2) == 1 }
+    };
+}
