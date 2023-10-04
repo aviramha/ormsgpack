@@ -25,40 +25,28 @@ def test_dict_keys_substr_passthrough():
     """
     OPT_PASSTHROUGH_SUBCLASS does not affect OPT_NON_STR_KEYS
     """
-    assert (
-        ormsgpack.packb(
-            {SubStr("aaa"): True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_PASSTHROUGH_SUBCLASS,
-        )
-        == msgpack.packb({"aaa": True})
-    )
+    assert ormsgpack.packb(
+        {SubStr("aaa"): True},
+        option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_PASSTHROUGH_SUBCLASS,
+    ) == msgpack.packb({"aaa": True})
 
 
 def test_dict_keys_int_range_valid_i64():
     """
     OPT_NON_STR_KEYS has a i64 range for int, valid
     """
-    assert (
-        ormsgpack.packb(
-            {9223372036854775807: True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({9223372036854775807: True})
-    )
-    assert (
-        ormsgpack.packb(
-            {-9223372036854775807: True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({-9223372036854775807: True})
-    )
-    assert (
-        ormsgpack.packb(
-            {9223372036854775809: True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({9223372036854775809: True})
-    )
+    assert ormsgpack.packb(
+        {9223372036854775807: True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({9223372036854775807: True})
+    assert ormsgpack.packb(
+        {-9223372036854775807: True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({-9223372036854775807: True})
+    assert ormsgpack.packb(
+        {9223372036854775809: True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({9223372036854775809: True})
 
 
 def test_dict_keys_int_range_valid_u64():
@@ -70,13 +58,10 @@ def test_dict_keys_int_range_valid_u64():
     assert packed == msgpack.packb(obj)
     assert obj == ormsgpack.unpackb(packed, option=ormsgpack.OPT_NON_STR_KEYS)
 
-    assert (
-        ormsgpack.packb(
-            {18446744073709551615: True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({18446744073709551615: True})
-    )
+    assert ormsgpack.packb(
+        {18446744073709551615: True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({18446744073709551615: True})
 
 
 def test_dict_keys_int_range_invalid():
@@ -119,52 +104,40 @@ def test_dict_keys_bool():
 
 
 def test_dict_keys_datetime():
-    assert (
-        ormsgpack.packb(
-            {datetime.datetime(2000, 1, 1, 2, 3, 4, 123): True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({"2000-01-01T02:03:04.000123": True})
-    )
+    assert ormsgpack.packb(
+        {datetime.datetime(2000, 1, 1, 2, 3, 4, 123): True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({"2000-01-01T02:03:04.000123": True})
 
 
 def test_dict_keys_datetime_opt():
-    assert (
-        ormsgpack.packb(
-            {datetime.datetime(2000, 1, 1, 2, 3, 4, 123): True},
-            option=ormsgpack.OPT_NON_STR_KEYS
-            | ormsgpack.OPT_OMIT_MICROSECONDS
-            | ormsgpack.OPT_NAIVE_UTC
-            | ormsgpack.OPT_UTC_Z,
-        )
-        == msgpack.packb({"2000-01-01T02:03:04Z": True})
-    )
+    assert ormsgpack.packb(
+        {datetime.datetime(2000, 1, 1, 2, 3, 4, 123): True},
+        option=ormsgpack.OPT_NON_STR_KEYS
+        | ormsgpack.OPT_OMIT_MICROSECONDS
+        | ormsgpack.OPT_NAIVE_UTC
+        | ormsgpack.OPT_UTC_Z,
+    ) == msgpack.packb({"2000-01-01T02:03:04Z": True})
 
 
 def test_dict_keys_datetime_passthrough():
     """
     OPT_PASSTHROUGH_DATETIME does not affect OPT_NON_STR_KEYS
     """
-    assert (
-        ormsgpack.packb(
-            {datetime.datetime(2000, 1, 1, 2, 3, 4, 123): True},
-            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_PASSTHROUGH_DATETIME,
-        )
-        == msgpack.packb({"2000-01-01T02:03:04.000123": True})
-    )
+    assert ormsgpack.packb(
+        {datetime.datetime(2000, 1, 1, 2, 3, 4, 123): True},
+        option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_PASSTHROUGH_DATETIME,
+    ) == msgpack.packb({"2000-01-01T02:03:04.000123": True})
 
 
 def test_dict_keys_uuid():
     """
     OPT_NON_STR_KEYS always serializes UUID as keys
     """
-    assert (
-        ormsgpack.packb(
-            {uuid.UUID("7202d115-7ff3-4c81-a7c1-2a1f067b1ece"): True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({"7202d115-7ff3-4c81-a7c1-2a1f067b1ece": True})
-    )
+    assert ormsgpack.packb(
+        {uuid.UUID("7202d115-7ff3-4c81-a7c1-2a1f067b1ece"): True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({"7202d115-7ff3-4c81-a7c1-2a1f067b1ece": True})
 
 
 def test_dict_keys_date():
@@ -174,13 +147,10 @@ def test_dict_keys_date():
 
 
 def test_dict_keys_time():
-    assert (
-        ormsgpack.packb(
-            {datetime.time(12, 15, 59, 111): True},
-            option=ormsgpack.OPT_NON_STR_KEYS,
-        )
-        == msgpack.packb({"12:15:59.000111": True})
-    )
+    assert ormsgpack.packb(
+        {datetime.time(12, 15, 59, 111): True},
+        option=ormsgpack.OPT_NON_STR_KEYS,
+    ) == msgpack.packb({"12:15:59.000111": True})
 
 
 def test_dict_non_str_and_sort_keys():
