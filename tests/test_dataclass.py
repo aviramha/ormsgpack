@@ -96,6 +96,7 @@ class InitDataclass:
         self._other = 1
         self.ab = f"{a} {b}"
 
+
 class AbstractBase(abc.ABC):
     @abc.abstractmethod
     def key(self):
@@ -104,7 +105,6 @@ class AbstractBase(abc.ABC):
 
 @dataclass(frozen=True)
 class ConcreteAbc(AbstractBase):
-
     __slots__ = ("attr",)
 
     attr: float

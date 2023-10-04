@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+import ctypes
 import datetime
 import inspect
 import re
-import ctypes
 import sys
 
 import msgpack
@@ -112,13 +112,10 @@ def test_opts_multiple():
     """
     packb() multiple option
     """
-    assert (
-        ormsgpack.packb(
-            [1, datetime.datetime(2000, 1, 1, 2, 3, 4)],
-            option=ormsgpack.OPT_SERIALIZE_NUMPY | ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb([1, "2000-01-01T02:03:04+00:00"])
-    )
+    assert ormsgpack.packb(
+        [1, datetime.datetime(2000, 1, 1, 2, 3, 4)],
+        option=ormsgpack.OPT_SERIALIZE_NUMPY | ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb([1, "2000-01-01T02:03:04+00:00"])
 
 
 def test_default_positional():
@@ -176,14 +173,11 @@ def test_option_mixed():
         def __str__(self):
             return "zxc"
 
-    assert (
-        ormsgpack.packb(
-            [Custom(), datetime.datetime(2000, 1, 1, 2, 3, 4)],
-            default=default,
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["zxc", "2000-01-01T02:03:04+00:00"])
-    )
+    assert ormsgpack.packb(
+        [Custom(), datetime.datetime(2000, 1, 1, 2, 3, 4)],
+        default=default,
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["zxc", "2000-01-01T02:03:04+00:00"])
 
 
 def test_packb_signature():
@@ -228,6 +222,7 @@ def test_bytes_buffer():
     c = "c" * 4096 * 4096
     assert ormsgpack.packb([a, b, c]) == msgpack.packb([a, b, c])
 
+
 def test_function_flags():
     """
     Make sure we use fastcall when possible
@@ -235,7 +230,7 @@ def test_function_flags():
     FASTCALL = 0x0080
     KEYWORDS = 0x0002
     VARARGS = 0x0001
-    ctypes.pythonapi.PyCFunction_GetFlags.argtypes =[ctypes.py_object]
+    ctypes.pythonapi.PyCFunction_GetFlags.argtypes = [ctypes.py_object]
     packb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.packb)
     unpackb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.unpackb)
     if sys.version_info.minor > 7:

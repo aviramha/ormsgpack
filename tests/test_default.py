@@ -236,13 +236,10 @@ def test_default_recursion_reset():
     """
     packb() default recursion limit reset
     """
-    assert (
-        ormsgpack.packb(
-            [Recursive(254), {"a": "b"}, Recursive(254), Recursive(254)],
-            default=default,
-        )
-        == msgpack.packb([0, {"a": "b"}, 0, 0])
-    )
+    assert ormsgpack.packb(
+        [Recursive(254), {"a": "b"}, Recursive(254), Recursive(254)],
+        default=default,
+    ) == msgpack.packb([0, {"a": "b"}, 0, 0])
 
 
 def test_default_recursion_infinite():

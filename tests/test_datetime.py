@@ -32,82 +32,60 @@ def test_datetime_naive_utc():
     """
     datetime.datetime naive with opt assumes UTC
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["2000-01-01T02:03:04.000123+00:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["2000-01-01T02:03:04.000123+00:00"])
 
 
 def test_datetime_min():
     """
     datetime.datetime min range
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(datetime.MINYEAR, 1, 1, 0, 0, 0, 0)],
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["0001-01-01T00:00:00+00:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(datetime.MINYEAR, 1, 1, 0, 0, 0, 0)],
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["0001-01-01T00:00:00+00:00"])
 
 
 def test_datetime_max():
     """
     datetime.datetime max range
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(datetime.MAXYEAR, 12, 31, 23, 59, 50, 999999)],
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["9999-12-31T23:59:50.999999+00:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(datetime.MAXYEAR, 12, 31, 23, 59, 50, 999999)],
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["9999-12-31T23:59:50.999999+00:00"])
 
 
 def test_datetime_three_digits():
     """
     datetime.datetime three digit year
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(312, 1, 1)],
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["0312-01-01T00:00:00+00:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(312, 1, 1)],
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["0312-01-01T00:00:00+00:00"])
 
 
 def test_datetime_two_digits():
     """
     datetime.datetime two digit year
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(46, 1, 1)],
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["0046-01-01T00:00:00+00:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(46, 1, 1)],
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["0046-01-01T00:00:00+00:00"])
 
 
 def test_datetime_tz_assume():
     """
     datetime.datetime tz with assume UTC uses tz
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018, 1, 1, 2, 3, 4, 0, tzinfo=tz.gettz("Asia/Shanghai")
-                )
-            ],
-            option=ormsgpack.OPT_NAIVE_UTC,
-        )
-        == msgpack.packb(["2018-01-01T02:03:04+08:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2018, 1, 1, 2, 3, 4, 0, tzinfo=tz.gettz("Asia/Shanghai"))],
+        option=ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
 
 
 def test_datetime_timezone_utc():
@@ -133,23 +111,20 @@ def test_datetime_pytz_utc():
     reason="zoneinfo not available",
 )
 def test_datetime_zoneinfo_positive():
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    1,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=zoneinfo.ZoneInfo("Asia/Shanghai"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-01-01T02:03:04+08:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                1,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=zoneinfo.ZoneInfo("Asia/Shanghai"),
+            )
+        ]
+    ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
 
 
 @pytest.mark.skipif(
@@ -157,23 +132,20 @@ def test_datetime_zoneinfo_positive():
     reason="zoneinfo not available",
 )
 def test_datetime_zoneinfo_negative():
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    6,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=zoneinfo.ZoneInfo("America/New_York"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-06-01T02:03:04-04:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                6,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=zoneinfo.ZoneInfo("America/New_York"),
+            )
+        ]
+    ) == msgpack.packb(["2018-06-01T02:03:04-04:00"])
 
 
 @pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
@@ -213,23 +185,20 @@ def test_datetime_pendulum_positive():
     """
     datetime.datetime positive UTC
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    1,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pendulum.timezone("Asia/Shanghai"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-01-01T02:03:04+08:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                1,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pendulum.timezone("Asia/Shanghai"),
+            )
+        ]
+    ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
 
 
 def test_datetime_pytz_negative_dst():
@@ -250,46 +219,40 @@ def test_datetime_pendulum_negative_dst():
     """
     datetime.datetime negative UTC DST
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    6,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pendulum.timezone("America/New_York"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-06-01T02:03:04-04:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                6,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pendulum.timezone("America/New_York"),
+            )
+        ]
+    ) == msgpack.packb(["2018-06-01T02:03:04-04:00"])
 
 
 def test_datetime_pytz_negative_non_dst():
     """
     datetime.datetime negative UTC non-DST
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    12,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pytz.timezone("America/New_York"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-12-01T02:03:04-05:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                12,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pytz.timezone("America/New_York"),
+            )
+        ]
+    ) == msgpack.packb(["2018-12-01T02:03:04-05:00"])
 
 
 @pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
@@ -297,69 +260,60 @@ def test_datetime_pendulum_negative_non_dst():
     """
     datetime.datetime negative UTC non-DST
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    12,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pendulum.timezone("America/New_York"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-12-01T02:03:04-05:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                12,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pendulum.timezone("America/New_York"),
+            )
+        ]
+    ) == msgpack.packb(["2018-12-01T02:03:04-05:00"])
 
 
 def test_datetime_partial_hour():
     """
     datetime.datetime UTC offset partial hour
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    12,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pytz.timezone("Australia/Adelaide"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-12-01T02:03:04+10:30"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                12,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pytz.timezone("Australia/Adelaide"),
+            )
+        ]
+    ) == msgpack.packb(["2018-12-01T02:03:04+10:30"])
 
 
 def test_datetime_pytz_partial_hour():
     """
     datetime.datetime UTC offset partial hour
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    12,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pytz.timezone("Australia/Adelaide"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-12-01T02:03:04+10:30"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                12,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pytz.timezone("Australia/Adelaide"),
+            )
+        ]
+    ) == msgpack.packb(["2018-12-01T02:03:04+10:30"])
 
 
 @pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
@@ -367,23 +321,20 @@ def test_datetime_pendulum_partial_hour():
     """
     datetime.datetime UTC offset partial hour
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    2018,
-                    12,
-                    1,
-                    2,
-                    3,
-                    4,
-                    0,
-                    tzinfo=pendulum.timezone("Australia/Adelaide"),
-                )
-            ]
-        )
-        == msgpack.packb(["2018-12-01T02:03:04+10:30"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                2018,
+                12,
+                1,
+                2,
+                3,
+                4,
+                0,
+                tzinfo=pendulum.timezone("Australia/Adelaide"),
+            )
+        ]
+    ) == msgpack.packb(["2018-12-01T02:03:04+10:30"])
 
 
 @pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
@@ -393,23 +344,20 @@ def test_datetime_partial_second_pendulum_supported():
 
     https://tools.ietf.org/html/rfc3339#section-5.8
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    1937,
-                    1,
-                    1,
-                    12,
-                    0,
-                    27,
-                    87,
-                    tzinfo=pendulum.timezone("Europe/Amsterdam"),
-                )
-            ]
-        )
-        == msgpack.packb(["1937-01-01T12:00:27.000087+00:20"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                1937,
+                1,
+                1,
+                12,
+                0,
+                27,
+                87,
+                tzinfo=pendulum.timezone("Europe/Amsterdam"),
+            )
+        ]
+    ) == msgpack.packb(["1937-01-01T12:00:27.000087+00:20"])
 
 
 def test_datetime_partial_second_pytz():
@@ -418,23 +366,20 @@ def test_datetime_partial_second_pytz():
 
     https://tools.ietf.org/html/rfc3339#section-5.8
     """
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    1937,
-                    1,
-                    1,
-                    12,
-                    0,
-                    27,
-                    87,
-                    tzinfo=pytz.timezone("Asia/Vladivostok"),
-                )
-            ]
-        )
-        == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                1937,
+                1,
+                1,
+                12,
+                0,
+                27,
+                87,
+                tzinfo=pytz.timezone("Asia/Vladivostok"),
+            )
+        ]
+    ) == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
 
 
 def test_datetime_partial_second_dateutil():
@@ -474,26 +419,20 @@ def test_datetime_omit_microseconds():
     """
     datetime.datetime OPT_OMIT_MICROSECONDS
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
-            option=ormsgpack.OPT_OMIT_MICROSECONDS,
-        )
-        == msgpack.packb(["2000-01-01T02:03:04"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
+        option=ormsgpack.OPT_OMIT_MICROSECONDS,
+    ) == msgpack.packb(["2000-01-01T02:03:04"])
 
 
 def test_datetime_omit_microseconds_naive():
     """
     datetime.datetime naive OPT_OMIT_MICROSECONDS
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
-            option=ormsgpack.OPT_NAIVE_UTC | ormsgpack.OPT_OMIT_MICROSECONDS,
-        )
-        == msgpack.packb(["2000-01-01T02:03:04+00:00"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
+        option=ormsgpack.OPT_NAIVE_UTC | ormsgpack.OPT_OMIT_MICROSECONDS,
+    ) == msgpack.packb(["2000-01-01T02:03:04+00:00"])
 
 
 def test_time_omit_microseconds():
@@ -509,28 +448,22 @@ def test_datetime_utc_z_naive_omit():
     """
     datetime.datetime naive OPT_UTC_Z
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
-            option=ormsgpack.OPT_NAIVE_UTC
-            | ormsgpack.OPT_UTC_Z
-            | ormsgpack.OPT_OMIT_MICROSECONDS,
-        )
-        == msgpack.packb(["2000-01-01T02:03:04Z"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
+        option=ormsgpack.OPT_NAIVE_UTC
+        | ormsgpack.OPT_UTC_Z
+        | ormsgpack.OPT_OMIT_MICROSECONDS,
+    ) == msgpack.packb(["2000-01-01T02:03:04Z"])
 
 
 def test_datetime_utc_z_naive():
     """
     datetime.datetime naive OPT_UTC_Z
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
-            option=ormsgpack.OPT_NAIVE_UTC | ormsgpack.OPT_UTC_Z,
-        )
-        == msgpack.packb(["2000-01-01T02:03:04.000123Z"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2000, 1, 1, 2, 3, 4, 123)],
+        option=ormsgpack.OPT_NAIVE_UTC | ormsgpack.OPT_UTC_Z,
+    ) == msgpack.packb(["2000-01-01T02:03:04.000123Z"])
 
 
 def test_datetime_utc_z_without_tz():
@@ -546,25 +479,19 @@ def test_datetime_utc_z_with_tz():
     """
     datetime.datetime naive OPT_UTC_Z
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.datetime(2000, 1, 1, 0, 0, 0, 1, tzinfo=datetime.timezone.utc)],
-            option=ormsgpack.OPT_UTC_Z,
-        )
-        == msgpack.packb(["2000-01-01T00:00:00.000001Z"])
-    )
+    assert ormsgpack.packb(
+        [datetime.datetime(2000, 1, 1, 0, 0, 0, 1, tzinfo=datetime.timezone.utc)],
+        option=ormsgpack.OPT_UTC_Z,
+    ) == msgpack.packb(["2000-01-01T00:00:00.000001Z"])
 
-    assert (
-        ormsgpack.packb(
-            [
-                datetime.datetime(
-                    1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Asia/Vladivostok")
-                )
-            ],
-            option=ormsgpack.OPT_UTC_Z,
-        )
-        == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
-    )
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Asia/Vladivostok")
+            )
+        ],
+        option=ormsgpack.OPT_UTC_Z,
+    ) == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
 
 
 @pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
@@ -610,24 +537,18 @@ def test_date_three_digits():
     """
     datetime.date three digit year
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.date(312, 1, 1)],
-        )
-        == msgpack.packb(["0312-01-01"])
-    )
+    assert ormsgpack.packb(
+        [datetime.date(312, 1, 1)],
+    ) == msgpack.packb(["0312-01-01"])
 
 
 def test_date_two_digits():
     """
     datetime.date two digit year
     """
-    assert (
-        ormsgpack.packb(
-            [datetime.date(46, 1, 1)],
-        )
-        == msgpack.packb(["0046-01-01"])
-    )
+    assert ormsgpack.packb(
+        [datetime.date(46, 1, 1)],
+    ) == msgpack.packb(["0046-01-01"])
 
 
 def test_time():
@@ -693,11 +614,8 @@ def test_passthrough_datetime_default():
     def default(obj):
         return obj.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
-    assert (
-        ormsgpack.packb(
-            datetime.datetime(1970, 1, 1),
-            option=ormsgpack.OPT_PASSTHROUGH_DATETIME,
-            default=default,
-        )
-        == msgpack.packb("Thu, 01 Jan 1970 00:00:00 GMT")
-    )
+    assert ormsgpack.packb(
+        datetime.datetime(1970, 1, 1),
+        option=ormsgpack.OPT_PASSTHROUGH_DATETIME,
+        default=default,
+    ) == msgpack.packb("Thu, 01 Jan 1970 00:00:00 GMT")
