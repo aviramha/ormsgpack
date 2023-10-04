@@ -7,3 +7,4 @@ pytz
 xxhash==1.4.3;sys_platform!="windows" and python_version<"3.9" # creates non-compact ASCII for test_str_ascii
 msgpack
 pydantic
+types-pytz

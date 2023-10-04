@@ -1,16 +1,16 @@
 import datetime
 import random
 from time import mktime
+from typing import Any
 
 import msgpack
-import pytest
 
 import ormsgpack
 
 data = []
 for year in range(1920, 2020):
     start = datetime.date(year, 1, 1)
-    array = [
+    array: list[tuple[Any, int]] = [
         (int(mktime((start + datetime.timedelta(days=i)).timetuple())), i + 1)
         for i in range(0, 365)
     ]

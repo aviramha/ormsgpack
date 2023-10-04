@@ -65,7 +65,7 @@ def test_cannot_subclass():
     """
     with pytest.raises(TypeError):
 
-        class Subclass(StrEnum):
+        class Subclass(StrEnum):  # type: ignore
             B = "b"
 
 
@@ -117,7 +117,7 @@ def test_str_enum():
 def test_bool_enum():
     with pytest.raises(TypeError):
 
-        class BoolEnum(bool, enum.Enum):
+        class BoolEnum(bool, enum.Enum):  # type: ignore
             TRUE = True
 
 
