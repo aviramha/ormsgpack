@@ -34,3 +34,8 @@ strip = true
 line-length = 88
 target-version = ['py38', 'py39', 'py310', 'py311']
 include = '\.pyi?$'
+
+[tool.isort]
+line_length = 88
+profile = "black"
+skip_gitignore = true
