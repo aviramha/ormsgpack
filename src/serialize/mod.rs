@@ -5,6 +5,7 @@ mod dataclass;
 mod datetime;
 mod default;
 mod dict;
+mod ext;
 mod int;
 mod list;
 mod numpy;

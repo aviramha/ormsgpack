@@ -8,6 +8,7 @@ use crate::serialize::dataclass::*;
 use crate::serialize::datetime::*;
 use crate::serialize::default::*;
 use crate::serialize::dict::*;
+use crate::serialize::ext::*;
 use crate::serialize::int::*;
 use crate::serialize::list::*;
 use crate::serialize::numpy::*;
@@ -60,6 +61,7 @@ pub enum ObType {
     Pydantic,
     Enum,
     StrSubclass,
+    Ext,
     Unknown,
 }
 
@@ -146,6 +148,8 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
             || pydict_contains!(ob_type, PYDANTIC2_FIELDS_STR))
     {
         ObType::Pydantic
+    } else if is_type!(ob_type, EXT_TYPE) {
+        ObType::Ext
     } else {
         ObType::Unknown
     }
@@ -300,6 +304,7 @@ impl Serialize for PyObjectSerializer {
                 }
             },
             ObType::NumpyScalar => NumpyScalar::new(self.ptr).serialize(serializer),
+            ObType::Ext => ExtSerializer::new(self.ptr).serialize(serializer),
             ObType::Unknown => DefaultSerializer::new(
                 self.ptr,
                 self.opts,

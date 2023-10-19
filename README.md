@@ -175,6 +175,23 @@ def default(obj):
 {'set': None}
 ```
 
+To serialize a type as a MessagePack extension type, return an
+`ormsgpack.Ext` object. The instantiation arguments are an integer in
+the range `[0, 127]` and a `bytes` object, defining the type and
+value, respectively.
+
+```python
+>>> import ormsgpack, decimal
+>>>
+def default(obj):
+    if isinstance(obj, decimal.Decimal):
+        return ormsgpack.Ext(0, str(obj).encode())
+    raise TypeError
+
+>>> ormsgpack.packb(decimal.Decimal("0.0842389659712649442845"), default=default)
+b'\xc7\x18\x000.0842389659712649442845'
+```
+
 #### option
 
 To modify how data is serialized, specify `option`. Each `option` is an integer
@@ -433,7 +450,12 @@ b'"1970-01-01T00:00:00Z"'
 
 ### Deserialize
 ```python
-def unpackb(__obj: Union[bytes, bytearray, memoryview], / , option=None) -> Any: ...
+def unpackb(
+    __obj: Union[bytes, bytearray, memoryview],
+    /,
+    ext_hook: Optional[Callable[[int, bytes], Any]] = ...,
+    option: Optional[int] = ...,
+) -> Any: ...
 ```
 
 `unpackb()` deserializes msgpack to Python objects. It deserializes to `dict`,
@@ -451,6 +473,27 @@ It raises `MsgpackDecodeError` if given an invalid type or invalid
 msgpack.
 
 `MsgpackDecodeError` is a subclass of `ValueError`.
+
+#### ext_hook
+
+To deserialize extension types, specify the optional `ext_hook`
+argument. The value should be a callable and is invoked with the
+extension type and value as arguments.
+
+```python
+>>> import ormsgpack, decimal
+>>>
+def ext_hook(tag, data):
+    if tag == 0:
+        return decimal.Decimal(data.decode())
+    raise TypeError
+
+>>> ormsgpack.packb(
+    ormsgpack.Ext(0, str(decimal.Decimal("0.0842389659712649442845")).encode())
+)
+>>> ormsgpack.unpackb(_, ext_hook=ext_hook)
+Decimal('0.0842389659712649442845')
+```
 
 #### option
 `unpackb()` supports the `OPT_NON_STR_KEYS` option, that is similar to original msgpack's `strict_map_keys=False`.

@@ -7,6 +7,8 @@ use std::os::raw::c_char;
 use std::ptr::{null_mut, NonNull};
 use std::sync::Once;
 
+use crate::ext::create_ext_type;
+
 pub struct NumpyTypes {
     pub array: *mut PyTypeObject,
     pub float64: *mut PyTypeObject,
@@ -21,6 +23,7 @@ pub struct NumpyTypes {
 }
 
 pub static mut DEFAULT: *mut PyObject = null_mut();
+pub static mut EXT_HOOK: *mut PyObject = null_mut();
 pub static mut OPTION: *mut PyObject = null_mut();
 
 pub static mut NONE: *mut PyObject = null_mut();
@@ -45,6 +48,7 @@ pub static mut TUPLE_TYPE: *mut PyTypeObject = null_mut();
 pub static mut UUID_TYPE: *mut PyTypeObject = null_mut();
 pub static mut ENUM_TYPE: *mut PyTypeObject = null_mut();
 pub static mut FIELD_TYPE: *mut PyTypeObject = null_mut();
+pub static mut EXT_TYPE: *mut PyTypeObject = null_mut();
 pub static mut NUMPY_TYPES: OnceBox<Option<NonNull<NumpyTypes>>> = OnceBox::new();
 
 pub static mut UTCOFFSET_METHOD_STR: *mut PyObject = null_mut();
@@ -123,6 +127,7 @@ pub fn init_typerefs() {
         UUID_TYPE = look_up_uuid_type();
         ENUM_TYPE = look_up_enum_type();
         FIELD_TYPE = look_up_field_type();
+        EXT_TYPE = create_ext_type();
         INT_ATTR_STR = PyUnicode_InternFromString("int\0".as_ptr() as *const c_char);
         UTCOFFSET_METHOD_STR = PyUnicode_InternFromString("utcoffset\0".as_ptr() as *const c_char);
         NORMALIZE_METHOD_STR = PyUnicode_InternFromString("normalize\0".as_ptr() as *const c_char);
@@ -140,6 +145,7 @@ pub fn init_typerefs() {
             PyUnicode_InternFromString("__array_struct__\0".as_ptr() as *const c_char);
         VALUE_STR = PyUnicode_InternFromString("value\0".as_ptr() as *const c_char);
         DEFAULT = PyUnicode_InternFromString("default\0".as_ptr() as *const c_char);
+        EXT_HOOK = PyUnicode_InternFromString("ext_hook\0".as_ptr() as *const c_char);
         OPTION = PyUnicode_InternFromString("option\0".as_ptr() as *const c_char);
         MsgpackEncodeError = PyExc_TypeError;
         MsgpackDecodeError = PyExc_ValueError;

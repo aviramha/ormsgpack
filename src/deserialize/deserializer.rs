@@ -7,6 +7,7 @@ use crate::opt::*;
 use crate::typeref::*;
 use crate::unicode::*;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde_bytes::ByteBuf;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::fmt;
@@ -15,6 +16,7 @@ use std::ptr::NonNull;
 
 pub fn deserialize(
     ptr: *mut pyo3::ffi::PyObject,
+    ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
     opts: Opt,
 ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
     let obj_type_ptr = ob_type!(ptr);
@@ -45,18 +47,70 @@ pub fn deserialize(
 
     let mut deserializer = rmp_serde::Deserializer::new(contents);
     if (opts & NON_STR_KEYS) != 0 {
-        let seed = MsgpackNonStrDictValue {};
+        let seed = MsgpackNonStrDictValue { ext_hook };
         seed.deserialize(&mut deserializer)
             .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
     } else {
-        let seed = MsgpackValue {};
+        let seed = MsgpackValue { ext_hook };
         seed.deserialize(&mut deserializer)
             .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
     }
 }
 
 #[derive(Clone, Copy)]
-struct MsgpackValue;
+struct MsgpackExtValue {
+    ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
+}
+
+impl<'de> Visitor<'de> for MsgpackExtValue {
+    type Value = NonNull<pyo3::ffi::PyObject>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("msgpack extension type")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let tag: i8 = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+
+        let data: ByteBuf = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+
+        match self.ext_hook {
+            Some(callable) => {
+                let tag_obj = ffi!(PyLong_FromLongLong(tag as i64));
+                let data_ptr = data.as_ptr() as *const c_char;
+                let data_len = data.len() as pyo3::ffi::Py_ssize_t;
+                let data_obj = ffi!(PyBytes_FromStringAndSize(data_ptr, data_len));
+                #[allow(clippy::unnecessary_cast)]
+                let obj = ffi!(PyObject_CallFunctionObjArgs(
+                    callable.as_ptr(),
+                    tag_obj,
+                    data_obj,
+                    std::ptr::null_mut() as *mut pyo3::ffi::PyObject
+                ));
+                ffi!(Py_DECREF(tag_obj));
+                ffi!(Py_DECREF(data_obj));
+                if unlikely!(obj.is_null()) {
+                    Err(de::Error::custom("ext_hook failed"))
+                } else {
+                    Ok(nonnull!(obj))
+                }
+            }
+            None => Err(de::Error::custom("ext_hook missing")),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct MsgpackValue {
+    ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
+}
 
 impl<'de> DeserializeSeed<'de> for MsgpackValue {
     type Value = NonNull<pyo3::ffi::PyObject>;
@@ -74,6 +128,18 @@ impl<'de> Visitor<'de> for MsgpackValue {
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("msgpack")
+    }
+
+    fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_tuple(
+            2,
+            MsgpackExtValue {
+                ext_hook: self.ext_hook,
+            },
+        )
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E> {
@@ -216,7 +282,9 @@ impl<'de> Visitor<'de> for MsgpackValue {
 
 // Implemntation of MsgpackValue that can deserialize non-str keys also.
 #[derive(Clone, Copy)]
-struct MsgpackNonStrDictValue;
+struct MsgpackNonStrDictValue {
+    ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
+}
 
 impl<'de> DeserializeSeed<'de> for MsgpackNonStrDictValue {
     type Value = NonNull<pyo3::ffi::PyObject>;
@@ -234,6 +302,18 @@ impl<'de> Visitor<'de> for MsgpackNonStrDictValue {
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("msgpack")
+    }
+
+    fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_tuple(
+            2,
+            MsgpackExtValue {
+                ext_hook: self.ext_hook,
+            },
+        )
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E> {
