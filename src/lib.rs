@@ -11,6 +11,7 @@ mod util;
 
 mod deserialize;
 mod exc;
+mod ext;
 mod ffi;
 mod opt;
 mod serialize;
@@ -28,7 +29,7 @@ use std::ptr::NonNull;
 const PACKB_DOC: &str =
     "packb(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to msgpack.\0";
 const UNPACKB_DOC: &str =
-    "unpackb(obj, /, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
+    "unpackb(obj, /, ext_hook=None, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
 
 macro_rules! module_add_object {
     ($mptr: expr, $name: expr, $object:expr) => {
@@ -133,6 +134,7 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
 
     module_add_object!(mptr, "MsgpackDecodeError\0", typeref::MsgpackDecodeError);
     module_add_object!(mptr, "MsgpackEncodeError\0", typeref::MsgpackEncodeError);
+    module_add_object!(mptr, "Ext\0", typeref::EXT_TYPE as *mut PyObject);
 
     0
 }
@@ -171,6 +173,7 @@ pub unsafe extern "C" fn unpackb(
     nargs: Py_ssize_t,
     kwnames: *mut PyObject,
 ) -> *mut PyObject {
+    let mut ext_hook: Option<NonNull<PyObject>> = None;
     let mut optsptr: Option<NonNull<PyObject>> = None;
 
     let num_args = PyVectorcall_NARGS(nargs as usize);
@@ -187,7 +190,9 @@ pub unsafe extern "C" fn unpackb(
         if tuple_size > 0 {
             for i in 0..=tuple_size - 1 {
                 let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
-                if arg == typeref::OPTION {
+                if arg == typeref::EXT_HOOK {
+                    ext_hook = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
+                } else if arg == typeref::OPTION {
                     optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
                 } else {
                     return raise_unpackb_exception(deserialize::DeserializeError::new(
@@ -215,7 +220,7 @@ pub unsafe extern "C" fn unpackb(
         }
     }
 
-    match crate::deserialize::deserialize(*args, optsbits as opt::Opt) {
+    match crate::deserialize::deserialize(*args, ext_hook, optsbits as opt::Opt) {
         Ok(val) => val.as_ptr(),
         Err(err) => raise_unpackb_exception(err),
     }

@@ -7,6 +7,7 @@ __all__ = (
     "__version__",
     "packb",
     "unpackb",
+    "Ext",
     "MsgpackDecodeError",
     "MsgpackEncodeError",
     "OPT_NAIVE_UTC",
