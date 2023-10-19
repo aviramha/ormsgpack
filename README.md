@@ -5,11 +5,11 @@
 ormsgpack is a fast msgpack library for Python. It is a fork/reboot of [orjson](https://github.com/ijl/orjson)
 It serializes faster than [msgpack-python](https://github.com/msgpack/msgpack-python) and deserializes a bit slower (right now).
 It supports serialization of:
-[dataclass](https://github.com/aviramha/ormsgpack#dataclass),
-[datetime](https://github.com/aviramha/ormsgpack#datetime),
-[numpy](https://github.com/aviramha/ormsgpack#numpy),
-[pydantic](https://github.com/aviramha/ormsgpack#OPT_SERIALIZE_PYDANTIC) and
-[UUID](https://github.com/aviramha/ormsgpack#uuid) instances natively.
+[dataclass](#dataclass),
+[datetime](#datetime),
+[numpy](#numpy),
+[pydantic](#OPT_SERIALIZE_PYDANTIC) and
+[UUID](#uuid) instances natively.
 
 Its features and drawbacks compared to other Python msgpack libraries:
 
@@ -31,26 +31,26 @@ submitted there. There is a
 [CHANGELOG](https://github.com/aviramha/ormsgpack/blob/master/CHANGELOG.md)
 available in the repository.
 
-1. [Usage](https://github.com/aviramha/ormsgpack#usage)
-    1. [Install](https://github.com/aviramha/ormsgpack#install)
-    2. [Quickstart](https://github.com/aviramha/ormsgpack#quickstart)
-    4. [Serialize](https://github.com/aviramha/ormsgpack#serialize)
-        1. [default](https://github.com/aviramha/ormsgpack#default)
-        2. [option](https://github.com/aviramha/ormsgpack#option)
-    5. [Deserialize](https://github.com/aviramha/ormsgpack#deserialize)
-2. [Types](https://github.com/aviramha/ormsgpack#types)
-    1. [dataclass](https://github.com/aviramha/ormsgpack#dataclass)
-    2. [datetime](https://github.com/aviramha/ormsgpack#datetime)
-    3. [enum](https://github.com/aviramha/ormsgpack#enum)
-    4. [float](https://github.com/aviramha/ormsgpack#float)
-    5. [int](https://github.com/aviramha/ormsgpack#int)
-    6. [numpy](https://github.com/aviramha/ormsgpack#numpy)
-    7. [uuid](https://github.com/aviramha/ormsgpack#uuid)
-    8. [pydantic](https://github.com/aviramha/ormsgpack#pydantic)
-3. [Latency](https://github.com/aviramha/ormsgpack#latency)
-4. [Questions](https://github.com/aviramha/ormsgpack#questions)
-5. [Packaging](https://github.com/aviramha/ormsgpack#packaging)
-6. [License](https://github.com/aviramha/ormsgpack#license)
+1. [Usage](#usage)
+    1. [Install](#install)
+    2. [Quickstart](#quickstart)
+    4. [Serialize](#serialize)
+        1. [default](#default)
+        2. [option](#option)
+    5. [Deserialize](#deserialize)
+2. [Types](#types)
+    1. [dataclass](#dataclass)
+    2. [datetime](#datetime)
+    3. [enum](#enum)
+    4. [float](#float)
+    5. [int](#int)
+    6. [numpy](#numpy)
+    7. [uuid](#uuid)
+    8. [pydantic](#pydantic)
+3. [Latency](#latency)
+4. [Questions](#questions)
+5. [Packaging](#packaging)
+6. [License](#license)
 
 ## Usage
 
@@ -66,7 +66,7 @@ pip install --upgrade ormsgpack
 Notice that Linux environments with a `pip` version shipped in 2018 or earlier
 must first upgrade `pip` to support `manylinux2014` wheels.
 
-To build a wheel, see [packaging](https://github.com/aviramha/ormsgpack#packaging).
+To build a wheel, see [packaging](#packaging).
 
 ### Quickstart
 
@@ -115,7 +115,7 @@ The global interpreter lock (GIL) is held for the duration of the call.
 It raises `MsgpackEncodeError` on an unsupported type. This exception message
 describes the invalid object with the error message
 `Type is not JSON serializable: ...`. To fix this, specify
-[default](https://github.com/aviramha/ormsgpack#default).
+[default](#default).
 
 It raises `MsgpackEncodeError` on a `str` that contains invalid UTF-8.
 
@@ -378,7 +378,7 @@ Passthrough tuples to `default`.
 ##### OPT_SERIALIZE_NUMPY
 
 Serialize `numpy.ndarray` instances. For more, see
-[numpy](https://github.com/aviramha/ormsgpack#numpy).
+[numpy](#numpy).
 
 ##### OPT_SERIALIZE_PYDANTIC
 Serialize `pydantic.BaseModel` instances. Right now it ignores the config (str transformations), support might be added
