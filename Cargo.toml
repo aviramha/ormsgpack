@@ -42,7 +42,7 @@ unstable-simd = [
 [dependencies]
 ahash = { version = "0.8", default_features = false }
 associative-cache = { version = "2" }
-bytecount = { version = "^0.6.5", default_features = false, features = ["runtime-dispatch-simd"] }
+bytecount = { version = "^0.6.7", default_features = false, features = ["runtime-dispatch-simd"] }
 encoding_rs = { version = "0.8", default_features = false }
 itoa = { version = "1", default_features = false }
 once_cell = { version = "1", default_features = false }
