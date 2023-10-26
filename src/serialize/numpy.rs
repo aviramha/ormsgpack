@@ -1,4 +1,4 @@
-use crate::typeref::{ARRAY_STRUCT_STR, NUMPY_TYPES};
+use crate::typeref::{load_numpy_types, ARRAY_STRUCT_STR, NUMPY_TYPES};
 use pyo3::ffi::*;
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::os::raw::{c_char, c_int, c_void};
@@ -10,10 +10,11 @@ macro_rules! slice {
 }
 
 pub fn is_numpy_scalar(ob_type: *mut PyTypeObject) -> bool {
-    if unsafe { NUMPY_TYPES.is_none() } {
+    let numpy_types = unsafe { NUMPY_TYPES.get_or_init(load_numpy_types) };
+    if numpy_types.is_none() {
         false
     } else {
-        let scalar_types = unsafe { NUMPY_TYPES.as_ref().unwrap() };
+        let scalar_types = unsafe { numpy_types.unwrap().as_ref() };
         ob_type == scalar_types.float64
             || ob_type == scalar_types.float32
             || ob_type == scalar_types.int64
@@ -27,10 +28,12 @@ pub fn is_numpy_scalar(ob_type: *mut PyTypeObject) -> bool {
 }
 
 pub fn is_numpy_array(ob_type: *mut PyTypeObject) -> bool {
-    if unsafe { NUMPY_TYPES.is_none() } {
+    let numpy_types = unsafe { NUMPY_TYPES.get_or_init(load_numpy_types) };
+    if numpy_types.is_none() {
         false
     } else {
-        unsafe { ob_type == NUMPY_TYPES.as_ref().unwrap().array }
+        let scalar_types = unsafe { numpy_types.unwrap().as_ref() };
+        unsafe { ob_type == scalar_types.array }
     }
 }
 
@@ -434,7 +437,8 @@ impl Serialize for NumpyScalar {
     {
         unsafe {
             let ob_type = ob_type!(self.ptr);
-            let scalar_types = NUMPY_TYPES.as_ref().unwrap();
+            let scalar_types =
+                unsafe { NUMPY_TYPES.get_or_init(load_numpy_types).unwrap().as_ref() };
             if ob_type == scalar_types.float64 {
                 (*(self.ptr as *mut NumpyFloat64)).serialize(serializer)
             } else if ob_type == scalar_types.float32 {

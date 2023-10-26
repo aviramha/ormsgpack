@@ -185,7 +185,7 @@ impl Serialize for DataclassFallbackSerializer {
         for (attr, field) in PyDictIter::from_pyobject(fields) {
             let field_type = ffi!(PyObject_GetAttr(field.as_ptr(), FIELD_TYPE_STR));
             ffi!(Py_DECREF(field_type));
-            if !is_type!(field_type, FIELD_TYPE.as_ptr()) {
+            if !is_type!(field_type as *mut pyo3::ffi::PyTypeObject, FIELD_TYPE) {
                 continue;
             }
             let data = unicode_to_str(attr.as_ptr());

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use ahash::RandomState;
+use once_cell::race::OnceBox;
 use pyo3::ffi::*;
 use std::os::raw::c_char;
 use std::ptr::{null_mut, NonNull};
 use std::sync::Once;
-
-use crate::lazy::ThreadSafeLazy;
 
 pub struct NumpyTypes {
     pub array: *mut PyTypeObject,
@@ -45,10 +44,8 @@ pub static mut TIME_TYPE: *mut PyTypeObject = null_mut();
 pub static mut TUPLE_TYPE: *mut PyTypeObject = null_mut();
 pub static mut UUID_TYPE: *mut PyTypeObject = null_mut();
 pub static mut ENUM_TYPE: *mut PyTypeObject = null_mut();
-pub static mut NUMPY_TYPES: ThreadSafeLazy<Option<NumpyTypes>> =
-    ThreadSafeLazy::new(|| unsafe { load_numpy_types() });
-pub static mut FIELD_TYPE: ThreadSafeLazy<NonNull<PyObject>> =
-    ThreadSafeLazy::new(|| unsafe { look_up_field_type() });
+pub static mut FIELD_TYPE: *mut PyTypeObject = null_mut();
+pub static mut NUMPY_TYPES: OnceBox<Option<NonNull<NumpyTypes>>> = OnceBox::new();
 
 pub static mut UTCOFFSET_METHOD_STR: *mut PyObject = null_mut();
 pub static mut NORMALIZE_METHOD_STR: *mut PyObject = null_mut();
@@ -65,14 +62,22 @@ pub static mut ARRAY_STRUCT_STR: *mut PyObject = null_mut();
 pub static mut VALUE_STR: *mut PyObject = null_mut();
 pub static mut INT_ATTR_STR: *mut PyObject = null_mut();
 
-pub static mut HASH_BUILDER: ThreadSafeLazy<ahash::RandomState> = ThreadSafeLazy::new(|| unsafe {
-    RandomState::with_seeds(
-        VALUE_STR as u64,
-        DICT_TYPE as u64,
-        STR_TYPE as u64,
-        BYTES_TYPE as u64,
-    )
-});
+pub static mut HASH_BUILDER: OnceBox<ahash::RandomState> = OnceBox::new();
+
+pub fn ahash_init() -> Box<ahash::RandomState> {
+    unsafe {
+        debug_assert!(!VALUE_STR.is_null());
+        debug_assert!(!DICT_TYPE.is_null());
+        debug_assert!(!STR_TYPE.is_null());
+        debug_assert!(!BYTES_TYPE.is_null());
+        Box::new(RandomState::with_seeds(
+            VALUE_STR as u64,
+            DICT_TYPE as u64,
+            STR_TYPE as u64,
+            BYTES_TYPE as u64,
+        ))
+    }
+}
 
 #[allow(non_upper_case_globals)]
 pub static mut MsgpackEncodeError: *mut PyObject = null_mut();
@@ -117,6 +122,7 @@ pub fn init_typerefs() {
         TIME_TYPE = look_up_time_type();
         UUID_TYPE = look_up_uuid_type();
         ENUM_TYPE = look_up_enum_type();
+        FIELD_TYPE = look_up_field_type();
         INT_ATTR_STR = PyUnicode_InternFromString("int\0".as_ptr() as *const c_char);
         UTCOFFSET_METHOD_STR = PyUnicode_InternFromString("utcoffset\0".as_ptr() as *const c_char);
         NORMALIZE_METHOD_STR = PyUnicode_InternFromString("normalize\0".as_ptr() as *const c_char);
@@ -137,6 +143,8 @@ pub fn init_typerefs() {
         OPTION = PyUnicode_InternFromString("option\0".as_ptr() as *const c_char);
         MsgpackEncodeError = pyo3::ffi::PyExc_TypeError;
         MsgpackDecodeError = pyo3::ffi::PyExc_ValueError;
+
+        HASH_BUILDER.get_or_init(ahash_init);
     });
 }
 
@@ -150,38 +158,40 @@ unsafe fn look_up_numpy_type(numpy_module: *mut PyObject, np_type: &str) -> *mut
 }
 
 #[cold]
-unsafe fn load_numpy_types() -> Option<NumpyTypes> {
-    let numpy = PyImport_ImportModule("numpy\0".as_ptr() as *const c_char);
-    if numpy.is_null() {
-        PyErr_Clear();
-        return None;
-    }
+pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
+    unsafe {
+        let numpy = PyImport_ImportModule("numpy\0".as_ptr() as *const c_char);
+        if numpy.is_null() {
+            PyErr_Clear();
+            return Box::new(None);
+        }
 
-    let types = Some(NumpyTypes {
-        array: look_up_numpy_type(numpy, "ndarray\0"),
-        float32: look_up_numpy_type(numpy, "float32\0"),
-        float64: look_up_numpy_type(numpy, "float64\0"),
-        int8: look_up_numpy_type(numpy, "int8\0"),
-        int32: look_up_numpy_type(numpy, "int32\0"),
-        int64: look_up_numpy_type(numpy, "int64\0"),
-        uint32: look_up_numpy_type(numpy, "uint32\0"),
-        uint64: look_up_numpy_type(numpy, "uint64\0"),
-        uint8: look_up_numpy_type(numpy, "uint8\0"),
-        bool_: look_up_numpy_type(numpy, "bool_\0"),
-    });
-    Py_XDECREF(numpy);
-    types
+        let types = Box::new(NumpyTypes {
+            array: look_up_numpy_type(numpy, "ndarray\0"),
+            float32: look_up_numpy_type(numpy, "float32\0"),
+            float64: look_up_numpy_type(numpy, "float64\0"),
+            int8: look_up_numpy_type(numpy, "int8\0"),
+            int32: look_up_numpy_type(numpy, "int32\0"),
+            int64: look_up_numpy_type(numpy, "int64\0"),
+            uint32: look_up_numpy_type(numpy, "uint32\0"),
+            uint64: look_up_numpy_type(numpy, "uint64\0"),
+            uint8: look_up_numpy_type(numpy, "uint8\0"),
+            bool_: look_up_numpy_type(numpy, "bool_\0"),
+        });
+        Py_XDECREF(numpy);
+        Box::new(Some(nonnull!(Box::<NumpyTypes>::into_raw(types))))
+    }
 }
 
 #[cold]
-unsafe fn look_up_field_type() -> NonNull<PyObject> {
+unsafe fn look_up_field_type() -> *mut PyTypeObject {
     let module = PyImport_ImportModule("dataclasses\0".as_ptr() as *const c_char);
     let module_dict = PyObject_GenericGetDict(module, null_mut());
     let ptr = PyMapping_GetItemString(module_dict, "_FIELD\0".as_ptr() as *const c_char)
         as *mut PyTypeObject;
     Py_DECREF(module_dict);
     Py_DECREF(module);
-    NonNull::new_unchecked(ptr as *mut PyObject)
+    ptr
 }
 
 #[cold]
