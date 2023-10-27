@@ -33,26 +33,22 @@ default = ["unstable-simd"]
 # Use SIMD intrinsics. This requires Rust on the nightly channel.
 unstable-simd = [
     "bytecount/generic-simd",
-    "bytecount/runtime-dispatch-simd",
     "encoding_rs/simd-accel",
-    "simdutf8/aarch64_neon",
-    "simdutf8/std",
 ]
 
 [dependencies]
 ahash = { version = "0.8", default_features = false }
-associative-cache = { version = "2" }
+associative-cache = { version = "2", default_features = false }
 bytecount = { version = "^0.6.7", default_features = false, features = ["runtime-dispatch-simd"] }
 encoding_rs = { version = "0.8", default_features = false }
 itoa = { version = "1", default_features = false }
 once_cell = { version = "1", default_features = false, features = ["race"] }
-pyo3 = { version = "^0.20.0", default_features = false, features = ["extension-module"]}
+pyo3 = { version = "^0.20.0", default_features = false, features = ["extension-module"] }
+rmp = { version = "^0.8.10", default_features = false, features = ["std"] }
+rmp-serde = { version = "1", default_features = false }
 serde = { version = "1", default_features = false }
-simdutf8 = { version = "0.1", default_features = false, features = ["std"] }
+simdutf8 = { version = "0.1", default_features = false, features = ["std", "aarch64_neon"] }
 smallvec = { version = "^1.8", default_features = false, features = ["union", "write"] }
-rmp = { version = "^0.8.10"}
-rmp-serde = {version = "1"}
-
 
 [build-dependencies]
 pyo3-build-config = { version = "^0.20.0" }
