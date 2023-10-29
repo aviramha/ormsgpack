@@ -56,7 +56,7 @@ fn find_str_kind(buf: &str, num_chars: usize) -> PyUnicodeKind {
     }
 }
 
-pub fn unicode_from_str(buf: &str) -> *mut pyo3::ffi::PyObject {
+pub fn unicode_from_str(buf: &str) -> *mut PyObject {
     if buf.is_empty() {
         ffi!(Py_INCREF(EMPTY_UNICODE));
         unsafe { EMPTY_UNICODE }
@@ -71,7 +71,7 @@ pub fn unicode_from_str(buf: &str) -> *mut pyo3::ffi::PyObject {
     }
 }
 
-fn pyunicode_ascii(buf: &str) -> *mut pyo3::ffi::PyObject {
+fn pyunicode_ascii(buf: &str) -> *mut PyObject {
     unsafe {
         let ptr = ffi!(PyUnicode_New(buf.len() as isize, 127));
         let data_ptr = ptr.cast::<PyASCIIObject>().offset(1) as *mut u8;
@@ -83,7 +83,7 @@ fn pyunicode_ascii(buf: &str) -> *mut pyo3::ffi::PyObject {
 
 #[cold]
 #[inline(never)]
-fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut pyo3::ffi::PyObject {
+fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
         let ptr = ffi!(PyUnicode_New(num_chars as isize, 255));
         let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u8;
@@ -96,7 +96,7 @@ fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut pyo3::ffi::PyObject {
     }
 }
 
-fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut pyo3::ffi::PyObject {
+fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
         let ptr = ffi!(PyUnicode_New(num_chars as isize, 65535));
         let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u16;
@@ -109,7 +109,7 @@ fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut pyo3::ffi::PyObject {
     }
 }
 
-fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut pyo3::ffi::PyObject {
+fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
         let ptr = ffi!(PyUnicode_New(num_chars as isize, 1114111));
         let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u32;
@@ -134,7 +134,7 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
         };
         let num_bytes =
             (*(op as *mut PyASCIIObject)).length * ((*(op as *mut PyASCIIObject)).kind()) as isize;
-        let hash = pyo3::ffi::_Py_HashBytes(data_ptr, num_bytes);
+        let hash = _Py_HashBytes(data_ptr, num_bytes);
         (*op.cast::<PyASCIIObject>()).hash = hash;
         hash
     }
@@ -142,7 +142,7 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
 
 #[inline(never)]
 pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
-    let mut str_size: pyo3::ffi::Py_ssize_t = 0;
+    let mut str_size: Py_ssize_t = 0;
     let ptr = ffi!(PyUnicode_AsUTF8AndSize(op, &mut str_size)) as *const u8;
     if unlikely!(ptr.is_null()) {
         None

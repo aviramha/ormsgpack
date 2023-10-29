@@ -18,7 +18,7 @@ pub unsafe fn PyBytes_GET_SIZE(op: *mut PyObject) -> Py_ssize_t {
 
 #[repr(C)]
 pub struct _PyManagedBufferObject {
-    pub ob_base: *mut pyo3::ffi::PyObject,
+    pub ob_base: *mut PyObject,
     pub flags: c_int,
     pub exports: Py_ssize_t,
     pub master: *mut Py_buffer,
@@ -59,35 +59,35 @@ struct PyLongObject {
 const SIGN_MASK: usize = 3;
 
 #[cfg(Py_3_12)]
-pub fn pylong_is_positive(op: *mut pyo3::ffi::PyObject) -> bool {
+pub fn pylong_is_positive(op: *mut PyObject) -> bool {
     unsafe { (*(op as *mut PyLongObject)).long_value.lv_tag & SIGN_MASK == 0 }
 }
 
 #[cfg(not(Py_3_12))]
-pub fn pylong_is_positive(op: *mut pyo3::ffi::PyObject) -> bool {
+pub fn pylong_is_positive(op: *mut PyObject) -> bool {
     unsafe { (*(op as *mut PyVarObject)).ob_size > 0 }
 }
 
 pub struct PyDictIter {
-    op: *mut pyo3::ffi::PyObject,
+    op: *mut PyObject,
     pos: isize,
 }
 
 impl PyDictIter {
     #[inline]
-    pub fn from_pyobject(op: *mut pyo3::ffi::PyObject) -> Self {
+    pub fn from_pyobject(op: *mut PyObject) -> Self {
         PyDictIter { op: op, pos: 0 }
     }
 }
 
 impl Iterator for PyDictIter {
-    type Item = (NonNull<pyo3::ffi::PyObject>, NonNull<pyo3::ffi::PyObject>);
+    type Item = (NonNull<PyObject>, NonNull<PyObject>);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let mut key: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        let mut value: *mut pyo3::ffi::PyObject = std::ptr::null_mut();
-        if unsafe { pyo3::ffi::PyDict_Next(self.op, &mut self.pos, &mut key, &mut value) } == 1 {
+        let mut key: *mut PyObject = std::ptr::null_mut();
+        let mut value: *mut PyObject = std::ptr::null_mut();
+        if unsafe { PyDict_Next(self.op, &mut self.pos, &mut key, &mut value) } == 1 {
             Some((nonnull!(key), nonnull!(value)))
         } else {
             None

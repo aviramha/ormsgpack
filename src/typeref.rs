@@ -137,12 +137,12 @@ pub fn init_typerefs() {
             PyUnicode_InternFromString("model_fields\0".as_ptr() as *const c_char);
         FIELD_TYPE_STR = PyUnicode_InternFromString("_field_type\0".as_ptr() as *const c_char);
         ARRAY_STRUCT_STR =
-            pyo3::ffi::PyUnicode_InternFromString("__array_struct__\0".as_ptr() as *const c_char);
-        VALUE_STR = pyo3::ffi::PyUnicode_InternFromString("value\0".as_ptr() as *const c_char);
+            PyUnicode_InternFromString("__array_struct__\0".as_ptr() as *const c_char);
+        VALUE_STR = PyUnicode_InternFromString("value\0".as_ptr() as *const c_char);
         DEFAULT = PyUnicode_InternFromString("default\0".as_ptr() as *const c_char);
         OPTION = PyUnicode_InternFromString("option\0".as_ptr() as *const c_char);
-        MsgpackEncodeError = pyo3::ffi::PyExc_TypeError;
-        MsgpackDecodeError = pyo3::ffi::PyExc_ValueError;
+        MsgpackEncodeError = PyExc_TypeError;
+        MsgpackDecodeError = PyExc_ValueError;
 
         HASH_BUILDER.get_or_init(ahash_init);
     });
