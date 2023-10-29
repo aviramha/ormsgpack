@@ -52,7 +52,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
             ml_meth: PyMethodDefPointer {
                 _PyCFunctionFastWithKeywords: packb,
             },
-            ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
+            ml_flags: METH_FASTCALL | METH_KEYWORDS,
             ml_doc: PACKB_DOC.as_ptr() as *const c_char,
         },
         PyMethodDef {
@@ -60,7 +60,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
             ml_meth: PyMethodDefPointer {
                 _PyCFunctionFastWithKeywords: unpackb,
             },
-            ml_flags: pyo3::ffi::METH_FASTCALL | METH_KEYWORDS,
+            ml_flags: METH_FASTCALL | METH_KEYWORDS,
             ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
         },
         PyMethodDef::zeroed(),
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn unpackb(
 ) -> *mut PyObject {
     let mut optsptr: Option<NonNull<PyObject>> = None;
 
-    let num_args = pyo3::ffi::PyVectorcall_NARGS(nargs as usize);
+    let num_args = PyVectorcall_NARGS(nargs as usize);
     if unlikely!(num_args != 1) {
         let msg = if num_args > 1 {
             Cow::Borrowed("unpackb() accepts only 1 positional argument")
@@ -231,7 +231,7 @@ pub unsafe extern "C" fn packb(
     let mut default: Option<NonNull<PyObject>> = None;
     let mut optsptr: Option<NonNull<PyObject>> = None;
 
-    let num_args = pyo3::ffi::PyVectorcall_NARGS(nargs as usize);
+    let num_args = PyVectorcall_NARGS(nargs as usize);
     if unlikely!(num_args == 0) {
         return raise_packb_exception(Cow::Borrowed(
             "packb() missing 1 required positional argument: 'obj'",

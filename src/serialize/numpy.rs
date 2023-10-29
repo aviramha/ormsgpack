@@ -208,8 +208,8 @@ impl NumpyArray {
 impl Drop for NumpyArray {
     fn drop(&mut self) {
         if self.depth == 0 {
-            ffi!(Py_DECREF(self.array as *mut pyo3::ffi::PyObject));
-            ffi!(Py_DECREF(self.capsule as *mut pyo3::ffi::PyObject));
+            ffi!(Py_DECREF(self.array as *mut PyObject));
+            ffi!(Py_DECREF(self.capsule as *mut PyObject));
         }
     }
 }
@@ -421,7 +421,7 @@ impl Serialize for DataTypeBOOL {
 
 #[repr(transparent)]
 pub struct NumpyScalar {
-    pub ptr: *mut pyo3::ffi::PyObject,
+    pub ptr: *mut PyObject,
 }
 
 impl NumpyScalar {
