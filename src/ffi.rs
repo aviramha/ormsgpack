@@ -65,7 +65,7 @@ pub fn pylong_is_positive(op: *mut pyo3::ffi::PyObject) -> bool {
 
 #[cfg(not(Py_3_12))]
 pub fn pylong_is_positive(op: *mut pyo3::ffi::PyObject) -> bool {
-    ffi!(Py_SIZE(op)) > 0
+    unsafe { (*(op as *mut PyVarObject)).ob_size > 0 }
 }
 
 pub struct PyDictIter {
