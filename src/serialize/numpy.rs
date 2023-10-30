@@ -288,7 +288,7 @@ impl Serialize for NumpyArray {
                 ItemType::BOOL => {
                     let slice: &[u8] = slice!(data_ptr as *const u8, num_items);
                     for &each in slice.iter() {
-                        seq.serialize_element(&DataTypeBOOL { obj: each }).unwrap();
+                        seq.serialize_element(&DataTypeBool { obj: each }).unwrap();
                     }
                 }
             }
@@ -410,11 +410,11 @@ impl Serialize for DataTypeU64 {
 }
 
 #[repr(transparent)]
-pub struct DataTypeBOOL {
+pub struct DataTypeBool {
     pub obj: u8,
 }
 
-impl Serialize for DataTypeBOOL {
+impl Serialize for DataTypeBool {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
