@@ -127,10 +127,14 @@ impl NumpyArray {
         } else {
             let num_dimensions = unsafe { (*array).nd as usize };
             if num_dimensions == 0 {
+                ffi!(Py_DECREF(capsule));
                 return Err(PyArrayError::UnsupportedDataType);
             }
             match ItemType::find(array) {
-                None => Err(PyArrayError::UnsupportedDataType),
+                None => {
+                    ffi!(Py_DECREF(capsule));
+                    Err(PyArrayError::UnsupportedDataType)
+                }
                 Some(kind) => {
                     let mut pyarray = NumpyArray {
                         array: array,
