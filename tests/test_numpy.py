@@ -356,7 +356,7 @@ def test_numpy_scalar_int8():
     ) == msgpack.packb(127)
 
     assert ormsgpack.packb(
-        numpy.int8(--128), option=ormsgpack.OPT_SERIALIZE_NUMPY
+        numpy.int8(-128), option=ormsgpack.OPT_SERIALIZE_NUMPY
     ) == msgpack.packb(-128)
 
 
