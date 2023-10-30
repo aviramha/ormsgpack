@@ -58,6 +58,20 @@ def test_numpy_array_d1_u8():
     ) == msgpack.packb([0, 255])
 
 
+def test_numpy_array_d1_i16():
+    assert ormsgpack.packb(
+        numpy.array([-32768, 32767], numpy.int16),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb([-32768, 32767])
+
+
+def test_numpy_array_d1_u16():
+    assert ormsgpack.packb(
+        numpy.array([0, 65535], numpy.uint16),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb([0, 65535])
+
+
 def test_numpy_array_d1_i32():
     assert ormsgpack.packb(
         numpy.array([-2147483647, 2147483647], numpy.int32),
@@ -346,6 +360,20 @@ def test_numpy_scalar_int8():
     ) == msgpack.packb(-128)
 
 
+def test_numpy_scalar_int16():
+    assert ormsgpack.packb(
+        numpy.int16(0), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(0)
+
+    assert ormsgpack.packb(
+        numpy.int16(32767), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(32767)
+
+    assert ormsgpack.packb(
+        numpy.int16(-32768), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(-32768)
+
+
 def test_numpy_scalar_int32():
     assert ormsgpack.packb(
         numpy.int32(1), option=ormsgpack.OPT_SERIALIZE_NUMPY
@@ -377,6 +405,15 @@ def test_numpy_scalar_uint8():
     assert ormsgpack.packb(
         numpy.uint8(255), option=ormsgpack.OPT_SERIALIZE_NUMPY
     ) == msgpack.packb(255)
+
+
+def test_numpy_scalar_uint16():
+    assert ormsgpack.packb(
+        numpy.uint16(0), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(0)
+    assert ormsgpack.packb(
+        numpy.uint16(65535), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(65535)
 
 
 def test_numpy_scalar_uint32():
