@@ -41,8 +41,7 @@ pub fn is_numpy_array(ob_type: *mut PyTypeObject) -> bool {
 
 #[repr(C)]
 pub struct PyCapsule {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub pointer: *mut c_void,
     pub name: *const c_char,
     pub context: *mut c_void,
@@ -520,8 +519,7 @@ impl Serialize for NumpyScalar {
 
 #[repr(C)]
 pub struct NumpyInt8 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: i8,
 }
 
@@ -536,8 +534,7 @@ impl Serialize for NumpyInt8 {
 
 #[repr(C)]
 pub struct NumpyInt16 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: i16,
 }
 
@@ -552,8 +549,7 @@ impl Serialize for NumpyInt16 {
 
 #[repr(C)]
 pub struct NumpyInt32 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: i32,
 }
 
@@ -568,8 +564,7 @@ impl Serialize for NumpyInt32 {
 
 #[repr(C)]
 pub struct NumpyInt64 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: i64,
 }
 
@@ -584,8 +579,7 @@ impl Serialize for NumpyInt64 {
 
 #[repr(C)]
 pub struct NumpyUint8 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: u8,
 }
 
@@ -600,8 +594,7 @@ impl Serialize for NumpyUint8 {
 
 #[repr(C)]
 pub struct NumpyUint16 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: u16,
 }
 
@@ -616,8 +609,7 @@ impl Serialize for NumpyUint16 {
 
 #[repr(C)]
 pub struct NumpyUint32 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: u32,
 }
 
@@ -632,8 +624,7 @@ impl Serialize for NumpyUint32 {
 
 #[repr(C)]
 pub struct NumpyUint64 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: u64,
 }
 
@@ -648,8 +639,7 @@ impl Serialize for NumpyUint64 {
 
 #[repr(C)]
 pub struct NumpyFloat32 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: f32,
 }
 
@@ -664,8 +654,7 @@ impl Serialize for NumpyFloat32 {
 
 #[repr(C)]
 pub struct NumpyFloat64 {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: f64,
 }
 
@@ -680,8 +669,7 @@ impl Serialize for NumpyFloat64 {
 
 #[repr(C)]
 pub struct NumpyBool {
-    pub ob_refcnt: Py_ssize_t,
-    pub ob_type: *mut PyTypeObject,
+    pub ob_base: PyObject,
     pub value: bool,
 }
 
