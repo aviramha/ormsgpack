@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0
+
+### Fixed
+
+- Fix crash in non optimized builds
+
+### Changed
+
+- Add support for MessagePack Extension type
+- Add support for numpy 16-bit integers
+
 ## 1.3.0 04/10/2023
 
 ### Changed
