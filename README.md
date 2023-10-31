@@ -8,7 +8,7 @@ It supports serialization of:
 [dataclass](#dataclass),
 [datetime](#datetime),
 [numpy](#numpy),
-[pydantic](#OPT_SERIALIZE_PYDANTIC) and
+[pydantic](#pydantic) and
 [UUID](#uuid) instances natively.
 
 Its features and drawbacks compared to other Python msgpack libraries:
@@ -17,7 +17,7 @@ Its features and drawbacks compared to other Python msgpack libraries:
 * serializes `datetime`, `date`, and `time` instances to RFC 3339 format,
 e.g., "1970-01-01T00:00:00+00:00"
 * serializes `numpy.ndarray` instances natively and faster.
-* serializes `pydantic.BaseModel` instances natively (disregards the configuration ATM).
+* serializes `pydantic.BaseModel` instances natively
 * serializes arbitrary types using a `default` hook
 
 ormsgpack supports CPython 3.8, 3.9, 3.10, 3.11 and 3.12. ormsgpack does not support PyPy. Releases follow semantic
@@ -398,8 +398,7 @@ Serialize `numpy.ndarray` instances. For more, see
 [numpy](#numpy).
 
 ##### OPT_SERIALIZE_PYDANTIC
-Serialize `pydantic.BaseModel` instances. Right now it ignores the config (str transformations), support might be added
-later.
+Serialize `pydantic.BaseModel` instances.
 
 ##### OPT_SORT_KEYS
 
@@ -666,11 +665,13 @@ an unsigned 64-bit integer's maximum (18446744073709551615).
 
 ### numpy
 
-ormsgpack natively serializes `numpy.ndarray` and individual `numpy.float64`,
-`numpy.float32`, `numpy.int64`, `numpy.int32`, `numpy.int8`, `numpy.uint64`,
-`numpy.uint32`, and `numpy.uint8` instances. Arrays may have a
-`dtype` of `numpy.bool`, `numpy.float32`, `numpy.float64`, `numpy.int32`,
-`numpy.int64`, `numpy.uint32`, `numpy.uint64`, `numpy.uintp`, or `numpy.intp`.
+ormsgpack natively serializes `numpy.ndarray` and individual
+`numpy.float64`, `numpy.float32`,
+`numpy.int64`, `numpy.int32`, `numpy.int16`, `numpy.int8`,
+`numpy.uint64`, `numpy.uint32`, `numpy.uint16`, `numpy.uint8`,
+`numpy.uintp`, `numpy.intp`, and `numpy.bool`
+instances.
+
 ormsgpack is faster than all compared libraries at serializing
 numpy instances. Serializing numpy data requires specifying
 `option=ormsgpack.OPT_SERIALIZE_NUMPY`.
@@ -755,10 +756,12 @@ ormsgpack serializes `uuid.UUID` instances to
 >>> ormsgpack.unpackb(_)
 "886313e1-3b8a-5372-9b90-0c9aee199e5d"
 ```
+
 ### Pydantic
-![alt text](doc/pydantic.svg "pydantic")
-ormsgpack serializes `pydantic.BaseModel` instances natively. Currently it ignores `pydantic.BaseModel.Config`.
+ormsgpack serializes `pydantic.BaseModel` instances natively.
+
 #### Performance
+![alt text](doc/pydantic.svg "pydantic")
 
 ```
 -------------------------------------------------------------------------------- benchmark 'pydantic': 2 tests ---------------------------------------------------------------------------------
@@ -768,6 +771,7 @@ test_pydantic_ormsgpack       4.3918 (1.0)       12.6521 (1.0)        4.8550 (1.
 test_pydantic_msgpack       124.5500 (28.36)    125.5427 (9.92)     125.0582 (25.76)    0.2877 (1.0)      125.0855 (27.13)    0.2543 (3.84)          2;0    7.9963 (0.04)          8           1
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ```
+
 ## Latency
 ### Graphs
 ![alt text](doc/twitter_packb.svg "twitter.json serialization")
@@ -867,36 +871,17 @@ If someone implements it well.
 
 ## Packaging
 
-To package ormsgpack requires [Rust](https://www.rust-lang.org/) on the
- nightly channel and the [maturin](https://github.com/PyO3/maturin)
-build tool. maturin can be installed from PyPI or packaged as
-well. This is the simplest and recommended way of installing
-from source, assuming `rustup` is available from a
-package manager:
+To package ormsgpack requires [Rust](https://www.rust-lang.org/) 1.65
+or newer and the [maturin](https://github.com/PyO3/maturin) build
+tool. The default feature `unstable-simd` enables the usage of SIMD
+operations and requires nightly Rust. The recommended build command
+is:
 
 ```sh
-rustup default nightly
-pip wheel --no-binary=ormsgpack ormsgpack
+maturin build --release --strip
 ```
 
-This is an example of building a wheel using the repository as source,
-`rustup` installed from upstream, and a pinned version of Rust:
-
-```sh
-pip install maturin
-curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2021-05-25 --profile minimal -y
-export RUSTFLAGS="-C target-cpu=k8"
-maturin build --release --strip --manylinux off
-ls -1 target/wheels
-```
-
-Problems with the Rust nightly channel may require pinning a version.
-`nightly-2021-05-25` is known to be ok.
-
-ormsgpack is tested for amd64 and aarch64 on Linux, macOS, and Windows. It
-may not work on 32-bit targets. It has recommended `RUSTFLAGS`
-specified in `.cargo/config` so it is recommended to either not set
-`RUSTFLAGS` or include these options.
+ormsgpack is tested for amd64 on Linux, macOS, and Windows.
 
 There are no runtime dependencies other than libc.
 
