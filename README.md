@@ -114,7 +114,7 @@ The global interpreter lock (GIL) is held for the duration of the call.
 
 It raises `MsgpackEncodeError` on an unsupported type. This exception message
 describes the invalid object with the error message
-`Type is not JSON serializable: ...`. To fix this, specify
+`Type is not msgpack serializable: ...`. To fix this, specify
 [default](#default).
 
 It raises `MsgpackEncodeError` on a `str` that contains invalid UTF-8.
@@ -130,8 +130,7 @@ It raises `MsgpackEncodeError` on circular references.
 It raises `MsgpackEncodeError`  if a `tzinfo` on a datetime object is
 unsupported.
 
-`MsgpackEncodeError` is a subclass of `TypeError`. This is for compatibility
-with the standard library.
+`MsgpackEncodeError` is a subclass of `TypeError`.
 
 #### default
 
@@ -149,7 +148,7 @@ def default(obj):
     raise TypeError
 
 >>> ormsgpack.packb(decimal.Decimal("0.0842389659712649442845"))
-MsgpackEncodeError: Type is not JSON serializable: decimal.Decimal
+MsgpackEncodeError: Type is not msgpack serializable: decimal.Decimal
 >>> ormsgpack.packb(decimal.Decimal("0.0842389659712649442845"), default=default)
 b'\xb80.0842389659712649442845'
 >>> ormsgpack.packb({1, 2}, default=default)
@@ -220,9 +219,7 @@ has no effect on `datetime.datetime` objects that have `tzinfo` set.
 
 Serialize `dict` keys of type other than `str`. This allows `dict` keys
 to be one of `str`, `int`, `float`, `bool`, `None`, `datetime.datetime`,
-`datetime.date`, `datetime.time`, `enum.Enum`, and `uuid.UUID`. For comparison,
-the standard library serializes `str`, `int`, `float`, `bool` or `None` by
-default.
+`datetime.date`, `datetime.time`, `enum.Enum`, and `uuid.UUID`.
 
 ```python
 >>> import ormsgpack, datetime, uuid
@@ -403,8 +400,7 @@ Serialize `pydantic.BaseModel` instances.
 ##### OPT_SORT_KEYS
 
 Serialize `dict` keys in sorted order. The default is to serialize in an
-unspecified order. This is equivalent to `sort_keys=True` in the standard
-library.
+unspecified order.
 
 This can be used to ensure the order is deterministic for hashing or tests.
 It has a substantial performance penalty and is not recommended in general.
@@ -424,8 +420,6 @@ The sorting is not collation/locale-aware:
 >>> ormsgpack.packb({"a": 1, "ä": 2, "A": 3}, option=ormsgpack.OPT_SORT_KEYS)
 b'\x83\xa1A\x03\xa1a\x01\xa2\xc3\xa4\x02'
 ```
-
-This is the same sorting behavior as the standard library.
 
 `dataclass` also serialize as maps but this has no effect on them.
 
@@ -553,7 +547,7 @@ test_dataclass_msgpack       140.2774 (40.96)    143.6087 (18.42)    141.3847 (3
 
 ormsgpack serializes `datetime.datetime` objects to
 [RFC 3339](https://tools.ietf.org/html/rfc3339) format,
-e.g., "1970-01-01T00:00:00+00:00". This is a subset of ISO 8601 and
+e.g., "1970-01-01T00:00:00+00:00". This is a subset of ISO 8601 and is
 compatible with `isoformat()` in the standard library.
 
 ```python
@@ -600,17 +594,13 @@ module, or a timezone instance from the third-party `pendulum`, `pytz`, or
 
 Errors with `tzinfo` result in `MsgpackEncodeError` being raised.
 
-It is faster to have ormsgpack serialize datetime objects than to do so
-before calling `packb()`. If using an unsupported type such as
-`pendulum.datetime`, use `default`.
-
 To disable serialization of `datetime` objects specify the option
 `ormsgpack.OPT_PASSTHROUGH_DATETIME`.
 
 To use "Z" suffix instead of "+00:00" to indicate UTC ("Zulu") time, use the option
 `ormsgpack.OPT_UTC_Z`.
 
-To assume datetimes without timezone are UTC, se the option `ormsgpack.OPT_NAIVE_UTC`.
+To assume datetimes without timezone are UTC, use the option `ormsgpack.OPT_NAIVE_UTC`.
 
 ### enum
 
