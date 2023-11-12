@@ -9,6 +9,7 @@ use crate::unicode::*;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
+use smallvec::SmallVec;
 use std::ptr::NonNull;
 
 pub struct DataclassGenericSerializer {
@@ -112,11 +113,12 @@ impl Serialize for DataclassFastSerializer {
     where
         S: Serializer,
     {
-        let len = ffi!(Py_SIZE(self.ptr));
+        let len = ffi!(Py_SIZE(self.ptr)) as usize;
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
-        let mut map = serializer.serialize_map(None).unwrap();
+        let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
+            SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(!is_type!(ob_type!(key.as_ptr()), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
@@ -129,15 +131,19 @@ impl Serialize for DataclassFastSerializer {
             if unlikely!(key_as_str.as_bytes()[0] == b'_') {
                 continue;
             }
+            items.push((key_as_str, value.as_ptr()));
+        }
 
+        let mut map = serializer.serialize_map(Some(items.len())).unwrap();
+        for (key, value) in items.iter() {
             let pyvalue = PyObjectSerializer::new(
-                value.as_ptr(),
+                *value,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
                 self.default,
             );
-            map.serialize_key(key_as_str).unwrap();
+            map.serialize_key(key).unwrap();
             map.serialize_value(&pyvalue)?;
         }
         map.end()
@@ -177,11 +183,12 @@ impl Serialize for DataclassFallbackSerializer {
     {
         let fields = ffi!(PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR));
         ffi!(Py_DECREF(fields));
-        let len = ffi!(Py_SIZE(fields));
+        let len = ffi!(Py_SIZE(fields)) as usize;
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
-        let mut map = serializer.serialize_map(None).unwrap();
+        let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
+            SmallVec::with_capacity(len);
         for (attr, field) in PyDictIter::from_pyobject(fields) {
             let field_type = ffi!(PyObject_GetAttr(field.as_ptr(), FIELD_TYPE_STR));
             ffi!(Py_DECREF(field_type));
@@ -199,14 +206,19 @@ impl Serialize for DataclassFallbackSerializer {
 
             let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
             ffi!(Py_DECREF(value));
+            items.push((key_as_str, value));
+        }
+
+        let mut map = serializer.serialize_map(Some(items.len())).unwrap();
+        for (key, value) in items.iter() {
             let pyvalue = PyObjectSerializer::new(
-                value,
+                *value,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
                 self.default,
             );
-            map.serialize_key(key_as_str).unwrap();
+            map.serialize_key(key).unwrap();
             map.serialize_value(&pyvalue)?
         }
         map.end()
