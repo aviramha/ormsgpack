@@ -164,7 +164,7 @@ def test_numpy_array_d3_f64():
 
 def test_numpy_array_fortran():
     array = numpy.array([[1, 2], [3, 4]], order="F")
-    assert array.flags["F_CONTIGUOUS"] == True
+    assert array.flags["F_CONTIGUOUS"] is True
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(array, option=ormsgpack.OPT_SERIALIZE_NUMPY)
     assert ormsgpack.packb(
@@ -174,7 +174,7 @@ def test_numpy_array_fortran():
 
 def test_numpy_array_non_contiguous_message():
     array = numpy.array([[1, 2], [3, 4]], order="F")
-    assert array.flags["F_CONTIGUOUS"] == True
+    assert array.flags["F_CONTIGUOUS"] is True
     try:
         ormsgpack.packb(array, option=ormsgpack.OPT_SERIALIZE_NUMPY)
         assert False

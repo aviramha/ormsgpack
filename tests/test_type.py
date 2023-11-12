@@ -362,9 +362,6 @@ def test_dict_large_keys():
     dict with keys too large to cache
     """
     obj = {"keeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeey": "value"}
-    ref = (
-        '{"keeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeey":"value"}'
-    )
     assert ormsgpack.unpackb(ormsgpack.packb(obj)) == obj
 
 
