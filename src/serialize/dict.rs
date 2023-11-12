@@ -111,7 +111,8 @@ impl Serialize for Dict {
     where
         S: Serializer,
     {
-        let mut map = serializer.serialize_map(None).unwrap();
+        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(!is_type!(ob_type!(key.as_ptr()), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
@@ -182,7 +183,7 @@ impl Serialize for DictSortedKey {
 
         items.sort_unstable_by(|a, b| a.0.cmp(b.0));
 
-        let mut map = serializer.serialize_map(None).unwrap();
+        let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, val) in items.iter() {
             let pyvalue = PyObjectSerializer::new(
                 *val,
@@ -231,7 +232,8 @@ impl Serialize for DictNonStrKey {
         S: Serializer,
     {
         let opts = self.opts & NOT_PASSTHROUGH;
-        let mut map = serializer.serialize_map(None).unwrap();
+        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if is_type!(ob_type!(key.as_ptr()), STR_TYPE) {
                 let data = unicode_to_str(key.as_ptr());
