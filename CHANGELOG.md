@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1
+
+### Fixed
+
+- Fix performance regression in dict serialization introduced in 1.3.0
+
 ## 1.4.0 05/11/2023
 
 ### Fixed
