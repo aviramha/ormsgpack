@@ -219,7 +219,6 @@ def test_dict_keys_tuple():
 
 
 def test_dict_keys_unknown():
-    obj = {frozenset(): True}
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb({frozenset(): True}, option=ormsgpack.OPT_NON_STR_KEYS)
 
