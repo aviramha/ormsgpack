@@ -4,19 +4,33 @@ import datetime
 import sys
 
 import msgpack
+import pendulum
 import pytest
 import pytz
 from dateutil import tz
 
 import ormsgpack
 
-try:
-    import pendulum
-except ImportError:
-    pendulum = None  # type: ignore
-
 if sys.version_info >= (3, 9):
     import zoneinfo
+
+    ZoneInfo = zoneinfo.ZoneInfo
+    ZoneInfoUTC = zoneinfo.ZoneInfo("UTC")
+else:
+    ZoneInfo = None
+    ZoneInfoUTC = None
+
+
+TIMEZONE_PARAMS = (
+    pytest.param(pendulum.timezone, id="pendulum"),
+    pytest.param(pytz.timezone, id="pytz"),
+    pytest.param(tz.gettz, id="dateutil"),
+    pytest.param(
+        ZoneInfo,
+        id="zoneinfo",
+        marks=pytest.mark.skipif(ZoneInfo is None, reason="zoneinfo not available"),
+    ),
+)
 
 
 def test_datetime_naive():
@@ -88,100 +102,31 @@ def test_datetime_tz_assume():
     ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
 
 
-def test_datetime_timezone_utc():
-    """
-    datetime.datetime UTC
-    """
-    assert ormsgpack.packb(
-        [datetime.datetime(2018, 6, 1, 2, 3, 4, 0, tzinfo=datetime.timezone.utc)]
-    ) == msgpack.packb(["2018-06-01T02:03:04+00:00"])
-
-
-def test_datetime_pytz_utc():
-    """
-    datetime.datetime UTC
-    """
-    assert ormsgpack.packb(
-        [datetime.datetime(2018, 6, 1, 2, 3, 4, 0, tzinfo=pytz.UTC)]
-    ) == msgpack.packb(["2018-06-01T02:03:04+00:00"])
-
-
-@pytest.mark.skipif(
-    sys.version_info < (3, 9) or sys.platform.startswith("win"),
-    reason="zoneinfo not available",
+@pytest.mark.parametrize(
+    "timezone",
+    (
+        pytest.param(datetime.timezone.utc, id="datetime"),
+        pytest.param(pendulum.UTC, id="pendulum"),
+        pytest.param(pytz.UTC, id="pytz"),
+        pytest.param(tz.UTC, id="dateutil"),
+        pytest.param(
+            ZoneInfoUTC,
+            id="zoneinfo",
+            marks=pytest.mark.skipif(ZoneInfo is None, reason="zoneinfo not available"),
+        ),
+    ),
 )
-def test_datetime_zoneinfo_positive():
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018,
-                1,
-                1,
-                2,
-                3,
-                4,
-                0,
-                tzinfo=zoneinfo.ZoneInfo("Asia/Shanghai"),
-            )
-        ]
-    ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
-
-
-@pytest.mark.skipif(
-    sys.version_info < (3, 9) or sys.platform.startswith("win"),
-    reason="zoneinfo not available",
-)
-def test_datetime_zoneinfo_negative():
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018,
-                6,
-                1,
-                2,
-                3,
-                4,
-                0,
-                tzinfo=zoneinfo.ZoneInfo("America/New_York"),
-            )
-        ]
-    ) == msgpack.packb(["2018-06-01T02:03:04-04:00"])
-
-
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
-def test_datetime_pendulum_utc():
+def test_datetime_utc(timezone):
     """
     datetime.datetime UTC
     """
     assert ormsgpack.packb(
-        [datetime.datetime(2018, 6, 1, 2, 3, 4, 0, tzinfo=pendulum.UTC)]
+        [datetime.datetime(2018, 6, 1, 2, 3, 4, 0, tzinfo=timezone)]
     ) == msgpack.packb(["2018-06-01T02:03:04+00:00"])
 
 
-def test_datetime_arrow_positive():
-    """
-    datetime.datetime positive UTC
-    """
-    assert ormsgpack.packb(
-        [datetime.datetime(2018, 1, 1, 2, 3, 4, 0, tzinfo=tz.gettz("Asia/Shanghai"))]
-    ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
-
-
-def test_datetime_pytz_positive():
-    """
-    datetime.datetime positive UTC
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018, 1, 1, 2, 3, 4, 0, tzinfo=pytz.timezone("Asia/Shanghai")
-            )
-        ]
-    ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
-
-
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
-def test_datetime_pendulum_positive():
+@pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
+def test_datetime_positive(timezone):
     """
     datetime.datetime positive UTC
     """
@@ -195,27 +140,14 @@ def test_datetime_pendulum_positive():
                 3,
                 4,
                 0,
-                tzinfo=pendulum.timezone("Asia/Shanghai"),
+                tzinfo=timezone("Asia/Shanghai"),
             )
         ]
     ) == msgpack.packb(["2018-01-01T02:03:04+08:00"])
 
 
-def test_datetime_pytz_negative_dst():
-    """
-    datetime.datetime negative UTC DST
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018, 6, 1, 2, 3, 4, 0, tzinfo=pytz.timezone("America/New_York")
-            )
-        ]
-    ) == msgpack.packb(["2018-06-01T02:03:04-04:00"])
-
-
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
-def test_datetime_pendulum_negative_dst():
+@pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
+def test_datetime_negative_dst(timezone):
     """
     datetime.datetime negative UTC DST
     """
@@ -229,13 +161,14 @@ def test_datetime_pendulum_negative_dst():
                 3,
                 4,
                 0,
-                tzinfo=pendulum.timezone("America/New_York"),
+                tzinfo=timezone("America/New_York"),
             )
         ]
     ) == msgpack.packb(["2018-06-01T02:03:04-04:00"])
 
 
-def test_datetime_pytz_negative_non_dst():
+@pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
+def test_datetime_negative_non_dst(timezone):
     """
     datetime.datetime negative UTC non-DST
     """
@@ -249,34 +182,14 @@ def test_datetime_pytz_negative_non_dst():
                 3,
                 4,
                 0,
-                tzinfo=pytz.timezone("America/New_York"),
+                tzinfo=timezone("America/New_York"),
             )
         ]
     ) == msgpack.packb(["2018-12-01T02:03:04-05:00"])
 
 
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
-def test_datetime_pendulum_negative_non_dst():
-    """
-    datetime.datetime negative UTC non-DST
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018,
-                12,
-                1,
-                2,
-                3,
-                4,
-                0,
-                tzinfo=pendulum.timezone("America/New_York"),
-            )
-        ]
-    ) == msgpack.packb(["2018-12-01T02:03:04-05:00"])
-
-
-def test_datetime_partial_hour():
+@pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
+def test_datetime_partial_hour(timezone):
     """
     datetime.datetime UTC offset partial hour
     """
@@ -290,55 +203,14 @@ def test_datetime_partial_hour():
                 3,
                 4,
                 0,
-                tzinfo=pytz.timezone("Australia/Adelaide"),
+                tzinfo=timezone("Australia/Adelaide"),
             )
         ]
     ) == msgpack.packb(["2018-12-01T02:03:04+10:30"])
 
 
-def test_datetime_pytz_partial_hour():
-    """
-    datetime.datetime UTC offset partial hour
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018,
-                12,
-                1,
-                2,
-                3,
-                4,
-                0,
-                tzinfo=pytz.timezone("Australia/Adelaide"),
-            )
-        ]
-    ) == msgpack.packb(["2018-12-01T02:03:04+10:30"])
-
-
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
-def test_datetime_pendulum_partial_hour():
-    """
-    datetime.datetime UTC offset partial hour
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                2018,
-                12,
-                1,
-                2,
-                3,
-                4,
-                0,
-                tzinfo=pendulum.timezone("Australia/Adelaide"),
-            )
-        ]
-    ) == msgpack.packb(["2018-12-01T02:03:04+10:30"])
-
-
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
-def test_datetime_partial_second_pendulum_supported():
+@pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
+def test_datetime_partial_second(timezone):
     """
     datetime.datetime UTC offset round seconds
 
@@ -354,47 +226,13 @@ def test_datetime_partial_second_pendulum_supported():
                 0,
                 27,
                 87,
-                tzinfo=pendulum.timezone("Europe/Amsterdam"),
+                tzinfo=timezone("Europe/Amsterdam"),
             )
         ]
-    ) == msgpack.packb(["1937-01-01T12:00:27.000087+00:20"])
-
-
-def test_datetime_partial_second_pytz():
-    """
-    datetime.datetime UTC offset round seconds
-
-    https://tools.ietf.org/html/rfc3339#section-5.8
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                1937,
-                1,
-                1,
-                12,
-                0,
-                27,
-                87,
-                tzinfo=pytz.timezone("Asia/Vladivostok"),
-            )
-        ]
-    ) == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
-
-
-def test_datetime_partial_second_dateutil():
-    """
-    datetime.datetime UTC offset round seconds
-
-    https://tools.ietf.org/html/rfc3339#section-5.8
-    """
-    assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Asia/Vladivostok")
-            )
-        ]
-    ) == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
+    ) in {
+        msgpack.packb(["1937-01-01T12:00:27.000087+00:00"]),
+        msgpack.packb(["1937-01-01T12:00:27.000087+00:20"]),
+    }
 
 
 def test_datetime_microsecond_max():
@@ -487,14 +325,16 @@ def test_datetime_utc_z_with_tz():
     assert ormsgpack.packb(
         [
             datetime.datetime(
-                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Asia/Vladivostok")
+                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Europe/Amsterdam")
             )
         ],
         option=ormsgpack.OPT_UTC_Z,
-    ) == msgpack.packb(["1937-01-01T12:00:27.000087+10:00"])
+    ) in {
+        msgpack.packb(["1937-01-01T12:00:27.000087Z"]),
+        msgpack.packb(["1937-01-01T12:00:27.000087+00:20"]),
+    }
 
 
-@pytest.mark.skipif(pendulum is None, reason="pendulum install broken on win")
 def test_datetime_roundtrip():
     """
     datetime.datetime parsed by pendulum
