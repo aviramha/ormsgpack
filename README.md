@@ -59,12 +59,9 @@ available in the repository.
 To install a wheel from PyPI:
 
 ```sh
-pip install --upgrade "pip>=19.3" # manylinux2014 support
+pip install --upgrade "pip>=20.3" # manylinux_x_y, universal2 wheel support
 pip install --upgrade ormsgpack
 ```
-
-Notice that Linux environments with a `pip` version shipped in 2018 or earlier
-must first upgrade `pip` to support `manylinux2014` wheels.
 
 To build a wheel, see [packaging](#packaging).
 
@@ -489,7 +486,7 @@ Decimal('0.0842389659712649442845')
 ```
 
 #### option
-`unpackb()` supports the `OPT_NON_STR_KEYS` option, that is similar to original msgpack's `strict_map_keys=False`.
+`unpackb()` supports the `OPT_NON_STR_KEYS` option, that is similar to original msgpack's `strict_map_key=False`.
 Be aware that this option is considered unsafe and disabled by default in msgpack due to possibility of HashDoS.
 
 ## Types
@@ -525,12 +522,6 @@ class Object:
 >>> ormsgpack.packb(Object(1, "a", [Member(1, True), Member(2)]))
 b'\x83\xa2id\x01\xa4name\xa1a\xa7members\x92\x82\xa2id\x01\xa6active\xc3\x82\xa2id\x02\xa6active\xc2'
 ```
-Users may wish to control how dataclass instances are serialized, e.g.,
-to not serialize an attribute or to change the name of an
-attribute when serialized. ormsgpack may implement support using the
-metadata mapping on `field` attributes,
-e.g., `field(metadata={"json_serialize": False})`, if use cases are clear.
-
 #### Performance
 ![alt text](doc/dataclass.svg "dataclass")
 
@@ -854,10 +845,6 @@ the latest manylinux_x_y or universal2 wheel formats.
 No. This requires a schema specifying what types are expected and how to
 handle errors etc. This is addressed by data validation libraries a
 level above this.
-
-### Will it support PyPy?
-
-If someone implements it well.
 
 ## Packaging
 
