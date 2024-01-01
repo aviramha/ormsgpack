@@ -52,7 +52,7 @@ simdutf8 = { version = "0.1", default_features = false, features = ["std", "aarc
 smallvec = { version = "^1.11", default_features = false, features = ["union", "write"] }
 
 [build-dependencies]
-pyo3-build-config = { version = "^0.20.0" }
+pyo3-build-config = { version = "^0.20.1" }
 
 [profile.release]
 codegen-units = 1
