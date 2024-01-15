@@ -7,3 +7,4 @@ isort --check .
 black --check .
 mypy --ignore-missing-imports .
 cargo fmt --check
+cargo clippy -- -D warnings
