@@ -1,6 +1,6 @@
 name: Release
 # This should almost always run, but upload binaries only on tag.
-on: 
+on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
@@ -14,16 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  release_manylinux:
-    name: Release manylinux
+  build-linux-x86_64:
+    name: Build Linux x86_64 wheel
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-path: ['cp38-cp38', 'cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
     container: quay.io/pypa/manylinux2014_x86_64:latest
     env:
-      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
-      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
       CC: "gcc"
       CFLAGS: "-O2 -fno-plt"
       LDFLAGS: "-O2 -flto -Wl,--as-needed"
@@ -34,23 +32,23 @@ jobs:
       - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
       - run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - run: /opt/python/${{ matrix.python-path }}/bin/python -m venv .venv
-      - run: .venv/bin/pip install -U pip wheel
-      - run: .venv/bin/pip install -U twine maturin
+      - run: .venv/bin/pip install -U pip wheel maturin
       - run: .venv/bin/pip install -r requirements.txt
       - run: .venv/bin/maturin build --features=unstable-simd --release --strip --manylinux 2014 -i /opt/python/${{ matrix.python-path }}/bin/python --target x86_64-unknown-linux-gnu
       - run: .venv/bin/pip install ormsgpack --no-index -f target/wheels
       - run: .venv/bin/pytest
-      - if: startsWith(github.ref, 'refs/tags')
-        run: .venv/bin/twine upload --non-interactive --skip-existing target/wheels/*
-  release_windows:
-    name: Release windows
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: target/wheels
+          retention-days: 1
+
+  build-windows:
+    name: Build Windows wheel
     runs-on: windows-latest
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-    env:
-      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
-      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
       - uses: actions/checkout@v4
       - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
@@ -58,23 +56,23 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install --user -U pip wheel twine maturin
+      - run: python -m pip install --user -U pip wheel maturin
       - run: pip install -r requirements.txt
       - run: maturin build --release --strip -i $pythonLocation"python.exe"
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
-      - if: startsWith(github.ref, 'refs/tags')
-        run: twine upload --non-interactive --skip-existing target\wheels\*
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: target/wheels
+          retention-days: 1
 
-  release_macos_x64:
-    name: Release macOS (x86_64)
+  build-macos-x86_64:
+    name: Build macOS x86_64 wheel
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
     runs-on: macos-latest
-    env:
-      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
-      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
       - uses: actions/checkout@v4
       - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
@@ -83,7 +81,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -U pip wheel twine maturin
+      - run: python -m pip install -U pip wheel maturin
       - run: pip install -r requirements.txt
       - env:
           CC: "clang"
@@ -94,18 +92,18 @@ jobs:
         run: maturin build --release --strip --manylinux off -i $pythonLocation/python --features=unstable-simd -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target x86_64-apple-darwin
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
-      - if: startsWith(github.ref, 'refs/tags')
-        run: twine upload --non-interactive --skip-existing target/wheels/*
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: target/wheels
+          retention-days: 1
 
-  release_macos_universal:
-    name: Release macOS (universal)
+  build-macos-universal:
+    name: Build macOS universal wheel
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
     runs-on: macos-latest
-    env:
-      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
-      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
       - uses: actions/checkout@v4
       - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
@@ -114,7 +112,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -U pip wheel twine maturin
+      - run: python -m pip install -U pip wheel maturin
       - env:
           CC: "clang"
           CFLAGS: "-O2 -fno-plt -flto=thin"
@@ -122,14 +120,15 @@ jobs:
           RUSTFLAGS: "-C linker=clang"
           CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
         run: PATH=$HOME/.cargo/bin:$PATH PYO3_CROSS_LIB_DIR=$(python -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))") maturin build --release --strip --features=unstable-simd --target universal2-apple-darwin
-      - if: startsWith(github.ref, 'refs/tags')
-        run: twine upload --non-interactive --skip-existing target/wheels/*
-  release_sdist:
-    name: Release sdist
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: target/wheels
+          retention-days: 1
+
+  build-sdist:
+    name: Build sdist
     runs-on: ubuntu-latest
-    env:
-      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
-      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
       - uses: actions/checkout@v4
       - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
@@ -137,8 +136,36 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.8
-      - run: python -m pip install -U pip wheel twine maturin
+      - run: python -m pip install -U pip wheel maturin
       - run: pip install -r requirements.txt
       - run: maturin sdist
-      - if: startsWith(github.ref, 'refs/tags')
-        run: twine upload --non-interactive --skip-existing target/wheels/*
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: target/wheels
+          retention-days: 1
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
+      TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
+    needs: [
+      build-linux-x86_64,
+      build-windows,
+      build-macos-x86_64,
+      build-macos-universal,
+      build-sdist,
+    ]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheels
+          path: wheels
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -U pip wheel twine
+      - run: twine upload --non-interactive --skip-existing wheels/*
