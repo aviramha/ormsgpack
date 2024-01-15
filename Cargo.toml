@@ -49,7 +49,7 @@ rmp-serde = { version = "1", default_features = false }
 serde = { version = "1", default_features = false }
 serde_bytes = { version = "0.11.14", default_features = false, features = ["std"] }
 simdutf8 = { version = "0.1", default_features = false, features = ["std", "aarch64_neon"] }
-smallvec = { version = "^1.11", default_features = false, features = ["union", "write"] }
+smallvec = { version = "^1.12", default_features = false, features = ["union", "write"] }
 
 [build-dependencies]
 pyo3-build-config = { version = "^0.20.0" }
