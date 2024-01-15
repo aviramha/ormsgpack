@@ -195,7 +195,10 @@ def test_unpackb_signature():
     """
     unpackb() valid __text_signature__
     """
-    assert str(inspect.signature(ormsgpack.unpackb)) == "(obj, /, ext_hook=None, option=None)"
+    assert (
+        str(inspect.signature(ormsgpack.unpackb))
+        == "(obj, /, ext_hook=None, option=None)"
+    )
     inspect.signature(ormsgpack.unpackb).bind("[]")
 
 
