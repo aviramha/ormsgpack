@@ -30,14 +30,9 @@ jobs:
       CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-          components: rust-src
-      - run: yum install -y libffi libffi-devel openssl openssl-devel
+      - uses: actions/checkout@v3
+      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
+      - run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - run: /opt/python/${{ matrix.python-path }}/bin/python -m venv .venv
       - run: .venv/bin/pip install -U pip wheel
       - run: .venv/bin/pip install -U twine maturin
@@ -57,15 +52,10 @@ jobs:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-          components: rust-src
+      - uses: actions/checkout@v4
+      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install --user -U pip wheel twine maturin
@@ -86,15 +76,11 @@ jobs:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-          components: rust-src
+      - uses: actions/checkout@v4
+      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
+      - run: rustup component add rust-src
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -U pip wheel twine maturin
@@ -121,16 +107,11 @@ jobs:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-          target: aarch64-apple-darwin
-          components: rust-src
+      - uses: actions/checkout@v4
+      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
+      - run: rustup target add aarch64-apple-darwin
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -U pip wheel twine maturin
@@ -150,15 +131,10 @@ jobs:
       TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
-          components: rust-src
+      - uses: actions/checkout@v4
+      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       - run: python -m pip install -U pip wheel twine maturin
