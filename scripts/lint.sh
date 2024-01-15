@@ -2,8 +2,8 @@
 
 set -eou pipefail
 
-autoflake --in-place --recursive --remove-all-unused-imports --ignore-init-module-imports .
-isort .
-black .
+autoflake --check --recursive --remove-all-unused-imports --ignore-init-module-imports .
+isort --check .
+black --check .
 mypy --ignore-missing-imports .
-cargo fmt
+cargo fmt --check
