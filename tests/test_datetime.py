@@ -4,12 +4,20 @@ import datetime
 import sys
 
 import msgpack
-import pendulum
 import pytest
 import pytz
 from dateutil import tz
 
 import ormsgpack
+
+try:
+    import pendulum
+except ImportError:
+    pendulum_timezone = None
+    pendulum_UTC = None
+else:
+    pendulum_timezone = pendulum.timezone
+    pendulum_UTC = pendulum.UTC
 
 if sys.version_info >= (3, 9):
     import zoneinfo
@@ -22,7 +30,14 @@ else:
 
 
 TIMEZONE_PARAMS = (
-    pytest.param(pendulum.timezone, id="pendulum"),
+    pytest.param(
+        pendulum_timezone,
+        id="pendulum",
+        marks=pytest.mark.skipif(
+            pendulum_timezone is None,
+            reason="pendulum not available",
+        ),
+    ),
     pytest.param(pytz.timezone, id="pytz"),
     pytest.param(tz.gettz, id="dateutil"),
     pytest.param(
@@ -106,7 +121,14 @@ def test_datetime_tz_assume():
     "timezone",
     (
         pytest.param(datetime.timezone.utc, id="datetime"),
-        pytest.param(pendulum.UTC, id="pendulum"),
+        pytest.param(
+            pendulum_UTC,
+            id="pendulum",
+            marks=pytest.mark.skipif(
+                pendulum_UTC is None,
+                reason="pendulum not available",
+            ),
+        ),
         pytest.param(pytz.UTC, id="pytz"),
         pytest.param(tz.UTC, id="dateutil"),
         pytest.param(
@@ -335,6 +357,7 @@ def test_datetime_utc_z_with_tz():
     }
 
 
+@pytest.mark.skipif(pendulum_timezone is None, reason="pendulum not available")
 def test_datetime_roundtrip():
     """
     datetime.datetime parsed by pendulum

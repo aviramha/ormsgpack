@@ -46,6 +46,59 @@ jobs:
           path: target/wheels
           retention-days: 1
 
+  build-linux-cross:
+    name: Build Linux wheel
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        target: [
+          {
+            platform: 'linux/arm64',
+            target: 'aarch64-unknown-linux-gnu',
+            maturin_args: '',
+          },
+          {
+            platform: 'linux/arm/v7',
+            target: 'armv7-unknown-linux-gnueabihf',
+            maturin_args: '--no-default-features',
+          },
+        ]
+    env:
+      CC: "gcc"
+      CFLAGS: "-O2"
+      LDFLAGS: "-O2 -flto -Wl,--as-needed"
+      CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target.target }}
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          manylinux: auto
+          args: --release --strip -i python${{ matrix.python-version }} ${{ matrix.target.maturin_args }}
+      - uses: docker/setup-qemu-action@v3
+      - run: |
+          docker run \
+            --rm \
+            -v "$GITHUB_WORKSPACE":/work \
+            -w /work \
+            --platform ${{ matrix.target.platform }} \
+            python:${{ matrix.python-version }}-bookworm \
+            bash -e -c '
+              python3 -m venv .venv
+              .venv/bin/pip install -U pip wheel
+              .venv/bin/pip install -r tests/requirements.txt
+              .venv/bin/pip install ormsgpack --no-index -f target/wheels
+              .venv/bin/pytest
+            '
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: target/wheels
+          retention-days: 1
+
   build-windows:
     name: Build Windows wheel
     runs-on: windows-latest
@@ -157,6 +210,7 @@ jobs:
       TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
     needs: [
       build-linux-x86_64,
+      build-linux-cross,
       build-windows,
       build-macos-x86_64,
       build-macos-universal,
