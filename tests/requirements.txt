@@ -1,7 +1,6 @@
 arrow
-numpy
-pendulum
-psutil;sys_platform!="windows"
+numpy;platform_machine!="armv7l"
+pendulum;platform_machine!="armv7l"
 pytest
 pytz
 xxhash==1.4.3;sys_platform!="windows" and python_version<"3.9" # creates non-compact ASCII for test_str_ascii
