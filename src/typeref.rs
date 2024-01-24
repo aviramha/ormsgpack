@@ -149,7 +149,9 @@ pub fn init_typerefs() {
         DEFAULT = PyUnicode_InternFromString("default\0".as_ptr() as *const c_char);
         EXT_HOOK = PyUnicode_InternFromString("ext_hook\0".as_ptr() as *const c_char);
         OPTION = PyUnicode_InternFromString("option\0".as_ptr() as *const c_char);
+        Py_INCREF(PyExc_TypeError);
         MsgpackEncodeError = PyExc_TypeError;
+        Py_INCREF(PyExc_ValueError);
         MsgpackDecodeError = PyExc_ValueError;
 
         HASH_BUILDER.get_or_init(ahash_init);
