@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.2
+
+### Fixed
+
+- Fix crash on termination with Python 3.11 (#223)
+
+### Changed
+
+- Add Linux aarch64 and armv7 wheels (#100, #207)
+
 ## 1.4.1 12/11/2023
 
 ### Fixed
