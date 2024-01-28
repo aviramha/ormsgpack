@@ -858,7 +858,7 @@ is:
 maturin build --release --strip
 ```
 
-ormsgpack is tested for amd64 on Linux, macOS, and Windows.
+ormsgpack is tested on Linux/amd64, Linux/aarch64, Linux/armv7, macOS/amd64 and Windows/amd64.
 
 There are no runtime dependencies other than libc.
 
