@@ -1,7 +1,5 @@
-autoflake
-black
-isort
 maturin
 mypy
+ruff
 -r tests/requirements.txt
 -r benchmarks/requirements.txt

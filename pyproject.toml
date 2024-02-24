@@ -30,12 +30,20 @@ requires = ["maturin>=1.0,<2.0"]
 python-source = "python"
 strip = true
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
-include = '\.pyi?$'
+target-version = "py38"
 
-[tool.isort]
-line_length = 88
-profile = "black"
-skip_gitignore = true
+[tool.ruff.lint]
+select = [
+  "F",
+  "E",
+  "I",
+  "RUF",
+]
+ignore = [
+  "E501",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ormsgpack"]
