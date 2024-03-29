@@ -107,7 +107,8 @@ jobs:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
-      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain ${{ env.RUST_TOOLCHAIN }}
+      - run: rustup install --profile minimal ${{ env.RUST_TOOLCHAIN }}
+      - run: rustup default ${{ env.RUST_TOOLCHAIN }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -131,7 +132,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
+      - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
+      - run: rustup default "$RUST_TOOLCHAIN"
       - run: rustup component add rust-src
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -162,7 +164,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
+      - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
+      - run: rustup default "$RUST_TOOLCHAIN"
       - run: rustup target add aarch64-apple-darwin
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -187,7 +190,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
+      - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
+      - run: rustup default "$RUST_TOOLCHAIN"
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
