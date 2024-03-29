@@ -43,7 +43,7 @@ bytecount = { version = "^0.6.7", default_features = false, features = ["runtime
 encoding_rs = { version = "0.8", default_features = false }
 itoa = { version = "1", default_features = false }
 once_cell = { version = "1", default_features = false, features = ["race"] }
-pyo3 = { version = "^0.20.3", default_features = false, features = ["extension-module"] }
+pyo3 = { version = "^0.21.0", default_features = false, features = ["extension-module"] }
 rmp = { version = "^0.8.10", default_features = false, features = ["std"] }
 rmp-serde = { version = "1", default_features = false }
 serde = { version = "1", default_features = false }
@@ -52,7 +52,7 @@ simdutf8 = { version = "0.1", default_features = false, features = ["std", "aarc
 smallvec = { version = "^1.13", default_features = false, features = ["union", "write"] }
 
 [build-dependencies]
-pyo3-build-config = { version = "^0.20.0" }
+pyo3-build-config = { version = "^0.21.0" }
 
 [profile.release]
 codegen-units = 1
