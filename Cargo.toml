@@ -48,7 +48,6 @@ rmp = { version = "^0.8.10", default_features = false, features = ["std"] }
 rmp-serde = { version = "1", default_features = false }
 serde = { version = "1", default_features = false }
 serde_bytes = { version = "0.11.14", default_features = false, features = ["std"] }
-simdutf8 = { version = "0.1", default_features = false, features = ["std", "aarch64_neon"] }
 smallvec = { version = "^1.13", default_features = false, features = ["union", "write"] }
 
 [build-dependencies]
