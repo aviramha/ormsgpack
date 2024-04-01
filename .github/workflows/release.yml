@@ -124,38 +124,6 @@ jobs:
           path: target/wheels
           retention-days: 1
 
-  build-macos-x86_64:
-    name: Build macOS x86_64 wheel
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
-      - run: rustup default "$RUST_TOOLCHAIN"
-      - run: rustup component add rust-src
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -U pip wheel maturin
-      - run: pip install -r requirements.txt
-      - env:
-          CC: "clang"
-          CFLAGS: "-O2 -fno-plt -flto=thin"
-          LDFLAGS: "-O2 -flto=thin -fuse-ld=lld -Wl,--as-needed"
-          RUSTFLAGS: "-C linker=clang -C target-feature=+sse4.2"
-          CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
-        run: maturin build --release --strip --manylinux off -i $pythonLocation/python --features=unstable-simd -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target x86_64-apple-darwin
-      - run: pip install ormsgpack --no-index -f target/wheels
-      - run: pytest
-      - uses: actions/upload-artifact@v3
-        with:
-          name: wheels
-          path: target/wheels
-          retention-days: 1
-
   build-macos-universal:
     name: Build macOS universal wheel
     strategy:
@@ -172,13 +140,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -U pip wheel maturin
+      - run: pip install -r requirements.txt
       - env:
           CC: "clang"
           CFLAGS: "-O2 -fno-plt -flto=thin"
           LDFLAGS: "-O2 -flto=thin -fuse-ld=lld -Wl,--as-needed"
           RUSTFLAGS: "-C linker=clang"
           CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
-        run: PATH=$HOME/.cargo/bin:$PATH PYO3_CROSS_LIB_DIR=$(python -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))") maturin build --release --strip --features=unstable-simd --target universal2-apple-darwin
+        run: maturin build --release --strip -i python${{ matrix.python-version }} --features=unstable-simd --target universal2-apple-darwin
+      - run: pip install ormsgpack --no-index -f target/wheels
+      - run: pytest
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
@@ -216,7 +187,6 @@ jobs:
       build-linux-x86_64,
       build-linux-cross,
       build-windows,
-      build-macos-x86_64,
       build-macos-universal,
       build-sdist,
     ]
