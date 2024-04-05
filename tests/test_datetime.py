@@ -7,6 +7,7 @@ import msgpack
 import pytest
 import pytz
 from dateutil import tz
+from dateutil.zoneinfo import get_zonefile_instance
 
 import ormsgpack
 
@@ -39,7 +40,7 @@ TIMEZONE_PARAMS = (
         ),
     ),
     pytest.param(pytz.timezone, id="pytz"),
-    pytest.param(tz.gettz, id="dateutil"),
+    pytest.param(get_zonefile_instance().get, id="dateutil"),
     pytest.param(
         ZoneInfo,
         id="zoneinfo",
@@ -238,23 +239,36 @@ def test_datetime_partial_second(timezone):
 
     https://tools.ietf.org/html/rfc3339#section-5.8
     """
+
+    # 0:17:30
     assert ormsgpack.packb(
         [
             datetime.datetime(
-                1937,
+                1892,
+                5,
                 1,
-                1,
-                12,
                 0,
-                27,
-                87,
-                tzinfo=timezone("Europe/Amsterdam"),
+                0,
+                0,
+                tzinfo=timezone("Europe/Brussels"),
             )
         ]
-    ) in {
-        msgpack.packb(["1937-01-01T12:00:27.000087+00:00"]),
-        msgpack.packb(["1937-01-01T12:00:27.000087+00:20"]),
-    }
+    ) == msgpack.packb(["1892-05-01T00:00:00+00:18"])
+
+    # 0:09:21
+    assert ormsgpack.packb(
+        [
+            datetime.datetime(
+                1911,
+                3,
+                10,
+                0,
+                0,
+                0,
+                tzinfo=timezone("Europe/Paris"),
+            )
+        ]
+    ) == msgpack.packb(["1911-03-10T00:00:00+00:09"])
 
 
 def test_datetime_microsecond_max():
@@ -337,7 +351,7 @@ def test_datetime_utc_z_without_tz():
 
 def test_datetime_utc_z_with_tz():
     """
-    datetime.datetime naive OPT_UTC_Z
+    datetime.datetime OPT_UTC_Z
     """
     assert ormsgpack.packb(
         [datetime.datetime(2000, 1, 1, 0, 0, 0, 1, tzinfo=datetime.timezone.utc)],
@@ -345,16 +359,9 @@ def test_datetime_utc_z_with_tz():
     ) == msgpack.packb(["2000-01-01T00:00:00.000001Z"])
 
     assert ormsgpack.packb(
-        [
-            datetime.datetime(
-                1937, 1, 1, 12, 0, 27, 87, tzinfo=tz.gettz("Europe/Amsterdam")
-            )
-        ],
+        [datetime.datetime(2000, 1, 1, 0, 0, 0, 1, tzinfo=tz.gettz("Europe/Brussels"))],
         option=ormsgpack.OPT_UTC_Z,
-    ) in {
-        msgpack.packb(["1937-01-01T12:00:27.000087Z"]),
-        msgpack.packb(["1937-01-01T12:00:27.000087+00:20"]),
-    }
+    ) == msgpack.packb(["2000-01-01T00:00:00.000001+01:00"])
 
 
 @pytest.mark.skipif(pendulum_timezone is None, reason="pendulum not available")
