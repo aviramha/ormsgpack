@@ -37,18 +37,18 @@ unstable-simd = [
 ]
 
 [dependencies]
-ahash = { version = "0.8", default_features = false }
-associative-cache = { version = "2", default_features = false }
-bytecount = { version = "^0.6.7", default_features = false, features = ["runtime-dispatch-simd"] }
-encoding_rs = { version = "0.8", default_features = false }
-itoa = { version = "1", default_features = false }
-once_cell = { version = "1", default_features = false, features = ["race"] }
-pyo3 = { version = "^0.21.1", default_features = false, features = ["extension-module"] }
-rmp = { version = "^0.8.10", default_features = false, features = ["std"] }
-rmp-serde = { version = "1", default_features = false }
-serde = { version = "1", default_features = false }
-serde_bytes = { version = "0.11.14", default_features = false, features = ["std"] }
-smallvec = { version = "^1.13", default_features = false, features = ["union", "write"] }
+ahash = { version = "0.8", default-features = false }
+associative-cache = { version = "2", default-features = false }
+bytecount = { version = "^0.6.7", default-features = false, features = ["runtime-dispatch-simd"] }
+encoding_rs = { version = "0.8", default-features = false }
+itoa = { version = "1", default-features = false }
+once_cell = { version = "1", default-features = false, features = ["race"] }
+pyo3 = { version = "^0.21.1", default-features = false, features = ["extension-module"] }
+rmp = { version = "^0.8.10", default-features = false, features = ["std"] }
+rmp-serde = { version = "1", default-features = false }
+serde = { version = "1", default-features = false }
+serde_bytes = { version = "0.11.14", default-features = false, features = ["std"] }
+smallvec = { version = "^1.13", default-features = false, features = ["union", "write"] }
 
 [build-dependencies]
 pyo3-build-config = { version = "^0.21.0" }
