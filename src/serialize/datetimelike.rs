@@ -1,0 +1,102 @@
+// SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+use crate::opt::*;
+
+pub type DateTimeBuffer = smallvec::SmallVec<[u8; 32]>;
+
+fn write_integer(buf: &mut DateTimeBuffer, value: i32, width: usize) {
+    let mut itoa_buf = itoa::Buffer::new();
+    let formatted = itoa_buf.format(value);
+    for _ in 0..width - formatted.len() {
+        buf.push(b'0');
+    }
+    buf.extend_from_slice(formatted.as_bytes());
+}
+
+pub trait DateLike {
+    fn year(&self) -> i32;
+    fn month(&self) -> i32;
+    fn day(&self) -> i32;
+
+    fn write_buf(&self, buf: &mut DateTimeBuffer) {
+        write_integer(buf, self.year(), 4);
+        buf.push(b'-');
+        write_integer(buf, self.month(), 2);
+        buf.push(b'-');
+        write_integer(buf, self.day(), 2);
+    }
+}
+
+pub trait TimeLike {
+    fn hour(&self) -> i32;
+    fn minute(&self) -> i32;
+    fn second(&self) -> i32;
+    fn microsecond(&self) -> i32;
+
+    fn write_buf(&self, buf: &mut DateTimeBuffer, opts: Opt) {
+        write_integer(buf, self.hour(), 2);
+        buf.push(b':');
+        write_integer(buf, self.minute(), 2);
+        buf.push(b':');
+        write_integer(buf, self.second(), 2);
+        if opts & OMIT_MICROSECONDS == 0 {
+            let microsecond = self.microsecond();
+            if microsecond != 0 {
+                buf.push(b'.');
+                write_integer(buf, microsecond, 6);
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Default)]
+pub struct Offset {
+    pub day: i32,
+    pub second: i32,
+}
+
+pub trait DateTimeLike: DateLike + TimeLike {
+    fn has_tz(&self) -> bool;
+    fn offset(&self) -> Offset;
+
+    fn write_buf(&self, buf: &mut DateTimeBuffer, opts: Opt) {
+        DateLike::write_buf(self, buf);
+        buf.push(b'T');
+        TimeLike::write_buf(self, buf, opts);
+        if self.has_tz() || opts & NAIVE_UTC != 0 {
+            let offset = self.offset();
+            if offset.second == 0 {
+                if opts & UTC_Z != 0 {
+                    buf.push(b'Z');
+                } else {
+                    buf.extend_from_slice(&[b'+', b'0', b'0', b':', b'0', b'0']);
+                }
+            } else {
+                let offset_hour: i32;
+                let mut offset_minute: i32;
+                let mut offset_second: i32;
+                if offset.day == -1 {
+                    // datetime.timedelta(days=-1, seconds=68400) -> -05:00
+                    buf.push(b'-');
+                    offset_second = 86400 - offset.second;
+                } else {
+                    // datetime.timedelta(seconds=37800) -> +10:30
+                    buf.push(b'+');
+                    offset_second = offset.second;
+                }
+                (offset_minute, offset_second) = (offset_second / 60, offset_second % 60);
+                (offset_hour, offset_minute) = (offset_minute / 60, offset_minute % 60);
+                // https://tools.ietf.org/html/rfc3339#section-5.8
+                // "exactly 19 minutes and 32.13 seconds ahead of UTC"
+                // "closest representable UTC offset"
+                //  "+20:00"
+                if offset_second >= 30 {
+                    offset_minute += 1;
+                }
+                write_integer(buf, offset_hour, 2);
+                buf.push(b':');
+                write_integer(buf, offset_minute, 2);
+            }
+        }
+    }
+}

@@ -196,11 +196,14 @@ impl Serialize for PyObjectSerializer {
             ObType::None => serializer.serialize_unit(),
             ObType::Float => serializer.serialize_f64(ffi!(PyFloat_AS_DOUBLE(self.ptr))),
             ObType::Bool => serializer.serialize_bool(unsafe { self.ptr == TRUE }),
-            ObType::Datetime => DateTime::new(self.ptr, self.opts).serialize(serializer),
+            ObType::Datetime => match DateTime::new(self.ptr, self.opts) {
+                Ok(val) => val.serialize(serializer),
+                Err(err) => err!(err),
+            },
             ObType::Date => Date::new(self.ptr).serialize(serializer),
             ObType::Time => match Time::new(self.ptr, self.opts) {
                 Ok(val) => val.serialize(serializer),
-                Err(TimeError::HasTimezone) => err!(TIME_HAS_TZINFO),
+                Err(err) => err!(err),
             },
             ObType::Uuid => UUID::new(self.ptr).serialize(serializer),
             ObType::Dict => {
