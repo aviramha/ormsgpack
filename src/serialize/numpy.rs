@@ -1,4 +1,7 @@
-use crate::typeref::{load_numpy_types, ARRAY_STRUCT_STR, NUMPY_TYPES};
+use crate::opt::*;
+use crate::serialize::datetimelike::NaiveDateTime;
+use crate::typeref::{load_numpy_types, ARRAY_STRUCT_STR, DESCR_STR, DTYPE_STR, NUMPY_TYPES};
+use chrono::{DateTime, NaiveDate};
 use pyo3::ffi::*;
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::os::raw::{c_char, c_int, c_void};
@@ -26,6 +29,7 @@ pub fn is_numpy_scalar(ob_type: *mut PyTypeObject) -> bool {
             || ob_type == scalar_types.uint16
             || ob_type == scalar_types.uint8
             || ob_type == scalar_types.bool_
+            || ob_type == scalar_types.datetime64
     }
 }
 
@@ -66,6 +70,7 @@ pub struct PyArrayInterface {
 #[derive(Clone, Copy)]
 pub enum ItemType {
     BOOL,
+    DATETIME64(NumpyDatetimeUnit),
     F32,
     F64,
     I8,
@@ -79,9 +84,13 @@ pub enum ItemType {
 }
 
 impl ItemType {
-    fn find(array: *mut PyArrayInterface) -> Option<ItemType> {
+    fn find(array: *mut PyArrayInterface, ptr: *mut PyObject) -> Option<ItemType> {
         match unsafe { ((*array).typekind, (*array).itemsize) } {
             (098, 1) => Some(ItemType::BOOL),
+            (077, 8) => {
+                let unit = NumpyDatetimeUnit::from_pyobject(ptr);
+                Some(ItemType::DATETIME64(unit))
+            }
             (102, 4) => Some(ItemType::F32),
             (102, 8) => Some(ItemType::F64),
             (105, 1) => Some(ItemType::I8),
@@ -116,11 +125,12 @@ pub struct NumpyArray {
     depth: usize,
     capsule: *mut PyCapsule,
     kind: ItemType,
+    opts: Opt,
 }
 
 impl NumpyArray {
     #[inline(never)]
-    pub fn new(ptr: *mut PyObject) -> Result<Self, PyArrayError> {
+    pub fn new(ptr: *mut PyObject, opts: Opt) -> Result<Self, PyArrayError> {
         let capsule = ffi!(PyObject_GetAttr(ptr, ARRAY_STRUCT_STR));
         let array = unsafe { (*(capsule as *mut PyCapsule)).pointer as *mut PyArrayInterface };
         if unsafe { (*array).two != 2 } {
@@ -135,7 +145,7 @@ impl NumpyArray {
                 ffi!(Py_DECREF(capsule));
                 return Err(PyArrayError::UnsupportedDataType);
             }
-            match ItemType::find(array) {
+            match ItemType::find(array, ptr) {
                 None => {
                     ffi!(Py_DECREF(capsule));
                     Err(PyArrayError::UnsupportedDataType)
@@ -148,6 +158,7 @@ impl NumpyArray {
                         depth: 0,
                         capsule: capsule as *mut PyCapsule,
                         kind: kind,
+                        opts: opts,
                     };
                     if pyarray.dimensions() > 1 {
                         pyarray.build();
@@ -166,6 +177,7 @@ impl NumpyArray {
             depth: self.depth + 1,
             capsule: self.capsule,
             kind: self.kind,
+            opts: self.opts,
         };
         arr.build();
         arr
@@ -306,6 +318,15 @@ impl Serialize for NumpyArray {
                     let slice: &[u8] = slice!(data_ptr as *const u8, num_items);
                     for &each in slice.iter() {
                         seq.serialize_element(&DataTypeBool { obj: each }).unwrap();
+                    }
+                }
+                ItemType::DATETIME64(unit) => {
+                    let slice: &[i64] = slice!(data_ptr as *const i64, num_items);
+                    for &each in slice.iter() {
+                        let dt = unit
+                            .datetime(each, self.opts)
+                            .map_err(serde::ser::Error::custom)?;
+                        seq.serialize_element(&dt).unwrap();
                     }
                 }
             }
@@ -468,14 +489,14 @@ impl Serialize for DataTypeBool {
     }
 }
 
-#[repr(transparent)]
 pub struct NumpyScalar {
     pub ptr: *mut PyObject,
+    opts: Opt,
 }
 
 impl NumpyScalar {
-    pub fn new(ptr: *mut PyObject) -> Self {
-        NumpyScalar { ptr }
+    pub fn new(ptr: *mut PyObject, opts: Opt) -> Self {
+        NumpyScalar { ptr, opts }
     }
 }
 
@@ -510,6 +531,13 @@ impl Serialize for NumpyScalar {
                 (*(self.ptr as *mut NumpyUint8)).serialize(serializer)
             } else if ob_type == scalar_types.bool_ {
                 (*(self.ptr as *mut NumpyBool)).serialize(serializer)
+            } else if ob_type == scalar_types.datetime64 {
+                let unit = NumpyDatetimeUnit::from_pyobject(self.ptr);
+                let obj = &*(self.ptr as *mut NumpyDatetime64);
+                let dt = unit
+                    .datetime(obj.value, self.opts)
+                    .map_err(serde::ser::Error::custom)?;
+                dt.serialize(serializer)
             } else {
                 unreachable!()
             }
@@ -680,4 +708,183 @@ impl Serialize for NumpyBool {
     {
         serializer.serialize_bool(self.value)
     }
+}
+
+/// This mimicks the units supported by numpy's datetime64 type.
+///
+/// See
+/// https://github.com/numpy/numpy/blob/v1.26.4/numpy/core/include/numpy/ndarraytypes.h#L244-L258
+#[derive(Clone, Copy)]
+pub enum NumpyDatetimeUnit {
+    NaT,
+    Years,
+    Months,
+    Weeks,
+    Days,
+    Hours,
+    Minutes,
+    Seconds,
+    Milliseconds,
+    Microseconds,
+    Nanoseconds,
+    Picoseconds,
+    Femtoseconds,
+    Attoseconds,
+    Generic,
+}
+
+impl std::fmt::Display for NumpyDatetimeUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let unit = match self {
+            Self::NaT => "NaT",
+            Self::Years => "years",
+            Self::Months => "months",
+            Self::Weeks => "weeks",
+            Self::Days => "days",
+            Self::Hours => "hours",
+            Self::Minutes => "minutes",
+            Self::Seconds => "seconds",
+            Self::Milliseconds => "milliseconds",
+            Self::Microseconds => "microseconds",
+            Self::Nanoseconds => "nanoseconds",
+            Self::Picoseconds => "picoseconds",
+            Self::Femtoseconds => "femtoseconds",
+            Self::Attoseconds => "attoseconds",
+            Self::Generic => "generic",
+        };
+        write!(f, "{}", unit)
+    }
+}
+
+enum NumpyDateTimeError {
+    UnsupportedUnit(NumpyDatetimeUnit),
+    Unrepresentable { unit: NumpyDatetimeUnit, val: i64 },
+}
+
+impl std::fmt::Display for NumpyDateTimeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnsupportedUnit(unit) => write!(f, "unsupported numpy.datetime64 unit: {}", unit),
+            Self::Unrepresentable { unit, val } => {
+                write!(f, "unrepresentable numpy.datetime64: {} {}", val, unit)
+            }
+        }
+    }
+}
+
+impl NumpyDatetimeUnit {
+    /// Create a `NumpyDatetimeUnit` from a pointer to a Python object holding a
+    /// numpy array.
+    ///
+    /// This function must only be called with pointers to numpy arrays.
+    ///
+    /// We need to look inside the `obj.dtype.descr` attribute of the Python
+    /// object rather than using the `descr` field of the `__array_struct__`
+    /// because that field isn't populated for datetime64 arrays; see
+    /// https://github.com/numpy/numpy/issues/5350.
+    fn from_pyobject(ptr: *mut PyObject) -> Self {
+        let dtype = ffi!(PyObject_GetAttr(ptr, DTYPE_STR));
+        let descr = ffi!(PyObject_GetAttr(dtype, DESCR_STR));
+        let el0 = ffi!(PyList_GET_ITEM(descr, 0));
+        let descr_str = ffi!(PyTuple_GET_ITEM(el0, 1));
+        let uni = crate::unicode::unicode_to_str(descr_str).unwrap();
+        if uni.len() < 5 {
+            return Self::NaT;
+        }
+        // unit descriptions are found at
+        // https://github.com/numpy/numpy/blob/v1.26.4/numpy/core/src/multiarray/datetime.c#L81-L98
+        let ret = match &uni[4..uni.len() - 1] {
+            "Y" => Self::Years,
+            "M" => Self::Months,
+            "W" => Self::Weeks,
+            "D" => Self::Days,
+            "h" => Self::Hours,
+            "m" => Self::Minutes,
+            "s" => Self::Seconds,
+            "ms" => Self::Milliseconds,
+            "us" => Self::Microseconds,
+            "ns" => Self::Nanoseconds,
+            "ps" => Self::Picoseconds,
+            "fs" => Self::Femtoseconds,
+            "as" => Self::Attoseconds,
+            "generic" => Self::Generic,
+            _ => unreachable!(),
+        };
+        ffi!(Py_DECREF(dtype));
+        ffi!(Py_DECREF(descr));
+        ret
+    }
+
+    /// Return a `NaiveDateTime` for a value in array with this unit.
+    ///
+    /// Returns an `Err(NumpyDateTimeError)` if the value is invalid for this unit.
+    fn datetime(&self, val: i64, opts: Opt) -> Result<NaiveDateTime, NumpyDateTimeError> {
+        match self {
+            Self::Years => Ok(NaiveDate::from_ymd_opt(
+                (val + 1970)
+                    .try_into()
+                    .map_err(|_| NumpyDateTimeError::Unrepresentable { unit: *self, val })?,
+                1,
+                1,
+            )
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()),
+            Self::Months => Ok(NaiveDate::from_ymd_opt(
+                (val / 12 + 1970)
+                    .try_into()
+                    .map_err(|_| NumpyDateTimeError::Unrepresentable { unit: *self, val })?,
+                (val % 12 + 1)
+                    .try_into()
+                    .map_err(|_| NumpyDateTimeError::Unrepresentable { unit: *self, val })?,
+                1,
+            )
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()),
+            Self::Weeks => Ok(DateTime::from_timestamp(val * 7 * 24 * 60 * 60, 0)
+                .unwrap()
+                .naive_utc()),
+            Self::Days => Ok(DateTime::from_timestamp(val * 24 * 60 * 60, 0)
+                .unwrap()
+                .naive_utc()),
+            Self::Hours => Ok(DateTime::from_timestamp(val * 60 * 60, 0)
+                .unwrap()
+                .naive_utc()),
+            Self::Minutes => Ok(DateTime::from_timestamp(val * 60, 0).unwrap().naive_utc()),
+            Self::Seconds => Ok(DateTime::from_timestamp(val, 0).unwrap().naive_utc()),
+            Self::Milliseconds => Ok(DateTime::from_timestamp(
+                val / 1_000,
+                (val % 1_000 * 1_000_000)
+                    .try_into()
+                    .map_err(|_| NumpyDateTimeError::Unrepresentable { unit: *self, val })?,
+            )
+            .unwrap()
+            .naive_utc()),
+            Self::Microseconds => Ok(DateTime::from_timestamp(
+                val / 1_000_000,
+                (val % 1_000_000 * 1_000)
+                    .try_into()
+                    .map_err(|_| NumpyDateTimeError::Unrepresentable { unit: *self, val })?,
+            )
+            .unwrap()
+            .naive_utc()),
+            Self::Nanoseconds => Ok(DateTime::from_timestamp(
+                val / 1_000_000_000,
+                (val % 1_000_000_000)
+                    .try_into()
+                    .map_err(|_| NumpyDateTimeError::Unrepresentable { unit: *self, val })?,
+            )
+            .unwrap()
+            .naive_utc()),
+            _ => Err(NumpyDateTimeError::UnsupportedUnit(*self)),
+        }
+        .map(|dt| NaiveDateTime { dt, opts })
+    }
+}
+
+#[repr(C)]
+pub struct NumpyDatetime64 {
+    pub ob_base: PyObject,
+    value: i64,
 }

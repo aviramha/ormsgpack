@@ -22,6 +22,7 @@ pub struct NumpyTypes {
     pub uint16: *mut PyTypeObject,
     pub uint8: *mut PyTypeObject,
     pub bool_: *mut PyTypeObject,
+    pub datetime64: *mut PyTypeObject,
 }
 
 pub static mut DEFAULT: *mut PyObject = null_mut();
@@ -65,6 +66,8 @@ pub static mut PYDANTIC_FIELDS_STR: *mut PyObject = null_mut();
 pub static mut PYDANTIC2_FIELDS_STR: *mut PyObject = null_mut();
 pub static mut FIELD_TYPE_STR: *mut PyObject = null_mut();
 pub static mut ARRAY_STRUCT_STR: *mut PyObject = null_mut();
+pub static mut DTYPE_STR: *mut PyObject = null_mut();
+pub static mut DESCR_STR: *mut PyObject = null_mut();
 pub static mut VALUE_STR: *mut PyObject = null_mut();
 pub static mut INT_ATTR_STR: *mut PyObject = null_mut();
 
@@ -145,6 +148,8 @@ pub fn init_typerefs() {
         FIELD_TYPE_STR = PyUnicode_InternFromString("_field_type\0".as_ptr() as *const c_char);
         ARRAY_STRUCT_STR =
             PyUnicode_InternFromString("__array_struct__\0".as_ptr() as *const c_char);
+        DTYPE_STR = PyUnicode_InternFromString("dtype\0".as_ptr() as *const c_char);
+        DESCR_STR = PyUnicode_InternFromString("descr\0".as_ptr() as *const c_char);
         VALUE_STR = PyUnicode_InternFromString("value\0".as_ptr() as *const c_char);
         DEFAULT = PyUnicode_InternFromString("default\0".as_ptr() as *const c_char);
         EXT_HOOK = PyUnicode_InternFromString("ext_hook\0".as_ptr() as *const c_char);
@@ -188,6 +193,7 @@ pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
             uint64: look_up_numpy_type(numpy_module_dict, "uint64\0"),
             uint8: look_up_numpy_type(numpy_module_dict, "uint8\0"),
             bool_: look_up_numpy_type(numpy_module_dict, "bool_\0"),
+            datetime64: look_up_numpy_type(numpy_module_dict, "datetime64\0"),
         });
         Py_XDECREF(numpy_module_dict);
         Py_XDECREF(numpy);

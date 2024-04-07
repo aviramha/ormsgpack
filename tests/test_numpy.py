@@ -111,6 +111,159 @@ def test_numpy_array_d1_bool():
     ) == msgpack.packb([True, False, False, True])
 
 
+def test_numpy_array_d1_datetime64_years():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021"),
+                numpy.datetime64("2022"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_months():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01"),
+                numpy.datetime64("2022-01"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_days():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01"),
+                numpy.datetime64("2022-01-01"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_hours():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01T00"),
+                numpy.datetime64("2022-01-01T00"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_minutes():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01T00:00"),
+                numpy.datetime64("2022-01-01T00:00"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_seconds():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01T00:00:00"),
+                numpy.datetime64("2022-01-01T00:00:00"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_milliseconds():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01T00:00:00"),
+                numpy.datetime64("2022-01-01T00:00:00.123"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00.123000",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_microseconds():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01T00:00:00"),
+                numpy.datetime64("2022-01-01T00:00:00.123456"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00.123456",
+        ],
+    )
+
+
+def test_numpy_array_d1_datetime64_nanoseconds():
+    assert ormsgpack.packb(
+        numpy.array(
+            [
+                numpy.datetime64("2021-01-01T00:00:00"),
+                numpy.datetime64("2022-01-01T00:00:00.123456789"),
+            ],
+        ),
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2022-01-01T00:00:00.123456",
+        ],
+    )
+
+
 def test_numpy_array_d2_i64():
     assert ormsgpack.packb(
         numpy.array([[1, 2, 3], [4, 5, 6]], numpy.int64),
@@ -455,3 +608,139 @@ def test_numpy_bool():
         data,
         option=ormsgpack.OPT_SERIALIZE_NUMPY,
     ) == msgpack.packb({"a": True, "b": False})
+
+
+def test_numpy_datetime64():
+    data = [
+        numpy.datetime64("2021"),
+        numpy.datetime64("2021-01"),
+        numpy.datetime64("2021-01-01"),
+        numpy.datetime64("2021-01-01T00"),
+        numpy.datetime64("2021-01-01T00:00"),
+        numpy.datetime64("2021-01-01T00:00:00"),
+        numpy.datetime64("2021-01-01T00:00:00.123"),
+        numpy.datetime64("2021-01-01T00:00:00.123456"),
+        numpy.datetime64("2021-01-01T00:00:00.123456789"),
+    ]
+    assert ormsgpack.packb(
+        data,
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00.123000",
+            "2021-01-01T00:00:00.123456",
+            "2021-01-01T00:00:00.123456",
+        ],
+    )
+
+
+def test_numpy_datetime64_naive_utc():
+    data = [
+        numpy.datetime64("2021"),
+        numpy.datetime64("2021-01"),
+        numpy.datetime64("2021-01-01"),
+        numpy.datetime64("2021-01-01T00"),
+        numpy.datetime64("2021-01-01T00:00"),
+        numpy.datetime64("2021-01-01T00:00:00"),
+        numpy.datetime64("2021-01-01T00:00:00.123"),
+        numpy.datetime64("2021-01-01T00:00:00.123456"),
+        numpy.datetime64("2021-01-01T00:00:00.123456789"),
+    ]
+    assert ormsgpack.packb(
+        data,
+        option=ormsgpack.OPT_SERIALIZE_NUMPY | ormsgpack.OPT_NAIVE_UTC,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00+00:00",
+            "2021-01-01T00:00:00+00:00",
+            "2021-01-01T00:00:00+00:00",
+            "2021-01-01T00:00:00+00:00",
+            "2021-01-01T00:00:00+00:00",
+            "2021-01-01T00:00:00+00:00",
+            "2021-01-01T00:00:00.123000+00:00",
+            "2021-01-01T00:00:00.123456+00:00",
+            "2021-01-01T00:00:00.123456+00:00",
+        ],
+    )
+
+
+def test_numpy_datetime64_utc_z():
+    data = [
+        numpy.datetime64("2021"),
+        numpy.datetime64("2021-01"),
+        numpy.datetime64("2021-01-01"),
+        numpy.datetime64("2021-01-01T00"),
+        numpy.datetime64("2021-01-01T00:00"),
+        numpy.datetime64("2021-01-01T00:00:00"),
+        numpy.datetime64("2021-01-01T00:00:00.123"),
+        numpy.datetime64("2021-01-01T00:00:00.123456"),
+        numpy.datetime64("2021-01-01T00:00:00.123456789"),
+    ]
+    assert ormsgpack.packb(
+        data,
+        option=ormsgpack.OPT_SERIALIZE_NUMPY
+        | ormsgpack.OPT_NAIVE_UTC
+        | ormsgpack.OPT_UTC_Z,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00Z",
+            "2021-01-01T00:00:00Z",
+            "2021-01-01T00:00:00Z",
+            "2021-01-01T00:00:00Z",
+            "2021-01-01T00:00:00Z",
+            "2021-01-01T00:00:00Z",
+            "2021-01-01T00:00:00.123000Z",
+            "2021-01-01T00:00:00.123456Z",
+            "2021-01-01T00:00:00.123456Z",
+        ],
+    )
+
+
+def test_numpy_datetime64_omit_microseconds():
+    data = [
+        numpy.datetime64("2021"),
+        numpy.datetime64("2021-01"),
+        numpy.datetime64("2021-01-01"),
+        numpy.datetime64("2021-01-01T00"),
+        numpy.datetime64("2021-01-01T00:00"),
+        numpy.datetime64("2021-01-01T00:00:00"),
+        numpy.datetime64("2021-01-01T00:00:00.123"),
+        numpy.datetime64("2021-01-01T00:00:00.123456"),
+        numpy.datetime64("2021-01-01T00:00:00.123456789"),
+    ]
+    assert ormsgpack.packb(
+        data,
+        option=ormsgpack.OPT_SERIALIZE_NUMPY | ormsgpack.OPT_OMIT_MICROSECONDS,
+    ) == msgpack.packb(
+        [
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+            "2021-01-01T00:00:00",
+        ],
+    )
+
+
+def test_numpy_datetime64_unsupported_unit():
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb(
+            numpy.datetime64("2022-01-01T00:00:00.123456789123"),
+            option=ormsgpack.OPT_SERIALIZE_NUMPY,
+        )
+
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb(
+            numpy.datetime64("NaT"),
+            option=ormsgpack.OPT_SERIALIZE_NUMPY,
+        )

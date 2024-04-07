@@ -6,7 +6,7 @@ authors = [
     "Emanuele Giaquinta <emanuele.giaquinta@gmail.com>",
 ]
 description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/aviramha/ormsgpack"
 homepage = "https://github.com/aviramha/ormsgpack"
@@ -40,6 +40,7 @@ unstable-simd = [
 ahash = { version = "0.8", default-features = false }
 associative-cache = { version = "2", default-features = false }
 bytecount = { version = "^0.6.7", default-features = false, features = ["runtime-dispatch-simd"] }
+chrono = { version = "0.4.37", default-features = false }
 encoding_rs = { version = "0.8", default-features = false }
 itoa = { version = "1", default-features = false }
 once_cell = { version = "1", default-features = false, features = ["race"] }
