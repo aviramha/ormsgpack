@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::opt::*;
+use chrono::{Datelike, Timelike};
+use serde::ser::{Serialize, Serializer};
 
 pub type DateTimeBuffer = smallvec::SmallVec<[u8; 32]>;
 
@@ -98,5 +100,63 @@ pub trait DateTimeLike: DateLike + TimeLike {
                 write_integer(buf, offset_minute, 2);
             }
         }
+    }
+}
+
+pub struct NaiveDateTime {
+    pub dt: chrono::NaiveDateTime,
+    pub opts: Opt,
+}
+
+impl DateLike for NaiveDateTime {
+    fn year(&self) -> i32 {
+        self.dt.year()
+    }
+
+    fn month(&self) -> i32 {
+        self.dt.month() as i32
+    }
+
+    fn day(&self) -> i32 {
+        self.dt.day() as i32
+    }
+}
+
+impl TimeLike for NaiveDateTime {
+    fn hour(&self) -> i32 {
+        self.dt.hour() as i32
+    }
+
+    fn minute(&self) -> i32 {
+        self.dt.minute() as i32
+    }
+
+    fn second(&self) -> i32 {
+        self.dt.second() as i32
+    }
+
+    fn microsecond(&self) -> i32 {
+        (self.dt.nanosecond() / 1_000) as i32
+    }
+}
+
+impl DateTimeLike for NaiveDateTime {
+    fn has_tz(&self) -> bool {
+        false
+    }
+
+    fn offset(&self) -> Offset {
+        Offset::default()
+    }
+}
+
+impl Serialize for NaiveDateTime {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut buf = DateTimeBuffer::new();
+        DateTimeLike::write_buf(self, &mut buf, self.opts);
+        serializer.serialize_str(str_from_slice!(buf.as_ptr(), buf.len()))
     }
 }
