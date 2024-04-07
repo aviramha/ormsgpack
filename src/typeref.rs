@@ -159,11 +159,9 @@ pub fn init_typerefs() {
 }
 
 #[cold]
-unsafe fn look_up_numpy_type(numpy_module: *mut PyObject, np_type: &str) -> *mut PyTypeObject {
-    let mod_dict = PyObject_GenericGetDict(numpy_module, null_mut());
-    let ptr = PyMapping_GetItemString(mod_dict, np_type.as_ptr() as *const c_char);
+unsafe fn look_up_numpy_type(numpy_module_dict: *mut PyObject, np_type: &str) -> *mut PyTypeObject {
+    let ptr = PyMapping_GetItemString(numpy_module_dict, np_type.as_ptr() as *const c_char);
     Py_XDECREF(ptr);
-    Py_XDECREF(mod_dict);
     ptr as *mut PyTypeObject
 }
 
@@ -176,20 +174,22 @@ pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
             return Box::new(None);
         }
 
+        let numpy_module_dict = PyObject_GenericGetDict(numpy, null_mut());
         let types = Box::new(NumpyTypes {
-            array: look_up_numpy_type(numpy, "ndarray\0"),
-            float32: look_up_numpy_type(numpy, "float32\0"),
-            float64: look_up_numpy_type(numpy, "float64\0"),
-            int8: look_up_numpy_type(numpy, "int8\0"),
-            int16: look_up_numpy_type(numpy, "int16\0"),
-            int32: look_up_numpy_type(numpy, "int32\0"),
-            int64: look_up_numpy_type(numpy, "int64\0"),
-            uint16: look_up_numpy_type(numpy, "uint16\0"),
-            uint32: look_up_numpy_type(numpy, "uint32\0"),
-            uint64: look_up_numpy_type(numpy, "uint64\0"),
-            uint8: look_up_numpy_type(numpy, "uint8\0"),
-            bool_: look_up_numpy_type(numpy, "bool_\0"),
+            array: look_up_numpy_type(numpy_module_dict, "ndarray\0"),
+            float32: look_up_numpy_type(numpy_module_dict, "float32\0"),
+            float64: look_up_numpy_type(numpy_module_dict, "float64\0"),
+            int8: look_up_numpy_type(numpy_module_dict, "int8\0"),
+            int16: look_up_numpy_type(numpy_module_dict, "int16\0"),
+            int32: look_up_numpy_type(numpy_module_dict, "int32\0"),
+            int64: look_up_numpy_type(numpy_module_dict, "int64\0"),
+            uint16: look_up_numpy_type(numpy_module_dict, "uint16\0"),
+            uint32: look_up_numpy_type(numpy_module_dict, "uint32\0"),
+            uint64: look_up_numpy_type(numpy_module_dict, "uint64\0"),
+            uint8: look_up_numpy_type(numpy_module_dict, "uint8\0"),
+            bool_: look_up_numpy_type(numpy_module_dict, "bool_\0"),
         });
+        Py_XDECREF(numpy_module_dict);
         Py_XDECREF(numpy);
         Box::new(Some(nonnull!(Box::<NumpyTypes>::into_raw(types))))
     }
