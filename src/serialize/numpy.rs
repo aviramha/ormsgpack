@@ -20,6 +20,7 @@ pub fn is_numpy_scalar(ob_type: *mut PyTypeObject) -> bool {
         let scalar_types = unsafe { numpy_types.unwrap().as_ref() };
         ob_type == scalar_types.float64
             || ob_type == scalar_types.float32
+            || ob_type == scalar_types.float16
             || ob_type == scalar_types.int64
             || ob_type == scalar_types.int32
             || ob_type == scalar_types.int16
@@ -71,6 +72,7 @@ pub struct PyArrayInterface {
 pub enum ItemType {
     BOOL,
     DATETIME64(NumpyDatetimeUnit),
+    F16,
     F32,
     F64,
     I8,
@@ -91,6 +93,7 @@ impl ItemType {
                 let unit = NumpyDatetimeUnit::from_pyobject(ptr);
                 Some(ItemType::DATETIME64(unit))
             }
+            (102, 2) => Some(ItemType::F16),
             (102, 4) => Some(ItemType::F32),
             (102, 8) => Some(ItemType::F64),
             (105, 1) => Some(ItemType::I8),
@@ -266,6 +269,12 @@ impl Serialize for NumpyArray {
                         seq.serialize_element(&DataTypeF32 { obj: each }).unwrap();
                     }
                 }
+                ItemType::F16 => {
+                    let slice: &[u16] = slice!(data_ptr as *const u16, num_items);
+                    for &each in slice.iter() {
+                        seq.serialize_element(&DataTypeF16 { obj: each }).unwrap();
+                    }
+                }
                 ItemType::U64 => {
                     let slice: &[u64] = slice!(data_ptr as *const u64, num_items);
                     for &each in slice.iter() {
@@ -360,6 +369,21 @@ impl Serialize for DataTypeF32 {
         S: Serializer,
     {
         serializer.serialize_f32(self.obj)
+    }
+}
+
+#[repr(transparent)]
+struct DataTypeF16 {
+    pub obj: u16,
+}
+
+impl Serialize for DataTypeF16 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let value = half::f16::from_bits(self.obj);
+        serializer.serialize_f32(value.to_f32())
     }
 }
 
@@ -513,6 +537,8 @@ impl Serialize for NumpyScalar {
                 (*(self.ptr as *mut NumpyFloat64)).serialize(serializer)
             } else if ob_type == scalar_types.float32 {
                 (*(self.ptr as *mut NumpyFloat32)).serialize(serializer)
+            } else if ob_type == scalar_types.float16 {
+                (*(self.ptr as *mut NumpyFloat16)).serialize(serializer)
             } else if ob_type == scalar_types.int64 {
                 (*(self.ptr as *mut NumpyInt64)).serialize(serializer)
             } else if ob_type == scalar_types.int32 {
@@ -662,6 +688,22 @@ impl Serialize for NumpyUint64 {
         S: Serializer,
     {
         serializer.serialize_u64(self.value)
+    }
+}
+
+#[repr(C)]
+pub struct NumpyFloat16 {
+    pub ob_base: PyObject,
+    pub value: u16,
+}
+
+impl Serialize for NumpyFloat16 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let value = half::f16::from_bits(self.value);
+        serializer.serialize_f32(value.to_f32())
     }
 }
 
