@@ -88,13 +88,10 @@ def test_numpy_array_d1_u32():
 
 def test_numpy_array_d1_f32():
     array = numpy.array([1.0, 3.4028235e38], numpy.float32)
-    py_array = [float(x) for x in array]
-    ormsgpacked = ormsgpack.packb(
+    assert ormsgpack.packb(
         array,
         option=ormsgpack.OPT_SERIALIZE_NUMPY,
-    )
-    original_msgpacked = msgpack.packb(py_array)
-    assert ormsgpack.unpackb(ormsgpacked) == msgpack.unpackb(original_msgpacked)
+    ) == msgpack.packb([1.0, 3.4028235e38], use_single_float=True)
 
 
 def test_numpy_array_d1_f64():
@@ -588,12 +585,9 @@ def test_numpy_scalar_uint64():
 
 
 def test_numpy_scalar_float32():
-    assert (
-        ormsgpack.unpackb(
-            ormsgpack.packb(numpy.float32(1.0), option=ormsgpack.OPT_SERIALIZE_NUMPY)
-        )
-        == 1.0
-    )
+    assert ormsgpack.packb(
+        numpy.float32(1.0), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(1.0, use_single_float=True)
 
 
 def test_numpy_scalar_float64():
