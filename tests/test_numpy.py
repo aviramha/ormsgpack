@@ -86,6 +86,14 @@ def test_numpy_array_d1_u32():
     ) == msgpack.packb([0, 4294967295])
 
 
+def test_numpy_array_d1_f16():
+    array = numpy.array([1.0, 65504.0], numpy.float16)
+    assert ormsgpack.packb(
+        array,
+        option=ormsgpack.OPT_SERIALIZE_NUMPY,
+    ) == msgpack.packb([1.0, 65504.0], use_single_float=True)
+
+
 def test_numpy_array_d1_f32():
     array = numpy.array([1.0, 3.4028235e38], numpy.float32)
     assert ormsgpack.packb(
@@ -336,12 +344,9 @@ def test_numpy_array_non_contiguous_message():
 
 
 def test_numpy_array_unsupported_dtype():
-    array = numpy.array([[1, 2], [3, 4]], numpy.float16)
+    array = numpy.array([[1, 2], [3, 4]], numpy.csingle)
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(array, option=ormsgpack.OPT_SERIALIZE_NUMPY)
-    assert ormsgpack.packb(
-        array, default=numpy_default, option=ormsgpack.OPT_SERIALIZE_NUMPY
-    ) == ormsgpack.packb(array.tolist())
 
 
 def test_numpy_array_d1():
@@ -582,6 +587,12 @@ def test_numpy_scalar_uint64():
     assert ormsgpack.packb(
         numpy.uint64(18446744073709551615), option=ormsgpack.OPT_SERIALIZE_NUMPY
     ) == msgpack.packb(18446744073709551615)
+
+
+def test_numpy_scalar_float16():
+    assert ormsgpack.packb(
+        numpy.float16(1.0), option=ormsgpack.OPT_SERIALIZE_NUMPY
+    ) == msgpack.packb(1.0, use_single_float=True)
 
 
 def test_numpy_scalar_float32():
