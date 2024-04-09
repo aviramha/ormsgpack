@@ -1,11 +1,8 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import ormsgpack
+from typing import TypedDict
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
+import ormsgpack
 
 
 def test_typeddict():
