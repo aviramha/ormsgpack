@@ -39,12 +39,10 @@ impl Serialize for ListSerializer {
     {
         let len = ffi!(PyList_GET_SIZE(self.ptr)) as usize;
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
-        let slice: &[*mut pyo3::ffi::PyObject] = unsafe {
-            std::slice::from_raw_parts((*(self.ptr as *mut pyo3::ffi::PyListObject)).ob_item, len)
-        };
-        for &each in slice {
+        for i in 0..len {
+            let item = ffi!(PyList_GET_ITEM(self.ptr, i as isize));
             let value = PyObjectSerializer::new(
-                each,
+                item,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
