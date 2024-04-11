@@ -195,8 +195,9 @@ constant in `ormsgpack`. To specify multiple options, mask them together, e.g.,
 
 ##### OPT_NAIVE_UTC
 
-Serialize `datetime.datetime` objects without a `tzinfo` as UTC. This
-has no effect on `datetime.datetime` objects that have `tzinfo` set.
+Serialize `datetime.datetime` objects without a `tzinfo` and `numpy.datetime64`
+objects as UTC. This has no effect on `datetime.datetime` objects that have
+`tzinfo` set.
 
 ```python
 >>> import ormsgpack, datetime
@@ -253,8 +254,8 @@ This option is not compatible with `ormsgpack.OPT_SORT_KEYS`.
 
 ##### OPT_OMIT_MICROSECONDS
 
-Do not serialize the `microsecond` field on `datetime.datetime` and
-`datetime.time` instances.
+Do not serialize the microsecond component of `datetime.datetime`,
+`datetime.time` and `numpy.datetime64` instances.
 
 ```python
 >>> import ormsgpack, datetime
@@ -434,8 +435,8 @@ b'\x83\xa1A\x03\xa1a\x01\xa2\xc3\xa4\x02'
 
 ##### OPT_UTC_Z
 
-Serialize a UTC timezone on `datetime.datetime` instances as `Z` instead
-of `+00:00`.
+Serialize a UTC timezone on `datetime.datetime` and `numpy.datetime64` instances
+as `Z` instead of `+00:00`.
 
 ```python
 >>> import ormsgpack, datetime
@@ -665,11 +666,13 @@ an unsigned 64-bit integer's maximum (18446744073709551615).
 ### numpy
 
 ormsgpack natively serializes `numpy.ndarray` and individual
-`numpy.float64`, `numpy.float32`,
+`numpy.float64`, `numpy.float32`, `numpy.float16`,
 `numpy.int64`, `numpy.int32`, `numpy.int16`, `numpy.int8`,
 `numpy.uint64`, `numpy.uint32`, `numpy.uint16`, `numpy.uint8`,
-`numpy.uintp`, `numpy.intp`, and `numpy.bool`
+`numpy.uintp`, `numpy.intp`, `numpy.datetime64`, and `numpy.bool`
 instances.
+
+`numpy.datetime64` instances are serialized as RFC 3339 strings.
 
 ormsgpack is faster than all compared libraries at serializing
 numpy instances. Serializing numpy data requires specifying
