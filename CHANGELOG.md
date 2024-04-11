@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0
+
+- Add support for numpy datetime64 and float16 types
+- Optimize serialization of dataclasses
+
 ## 1.4.2 28/01/2024
 
 ### Fixed
