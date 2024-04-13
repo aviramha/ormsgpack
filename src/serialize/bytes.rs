@@ -5,17 +5,17 @@ use crate::ffi::*;
 use serde::ser::{Serialize, Serializer};
 
 #[repr(transparent)]
-pub struct BytesSerializer {
+pub struct Bytes {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
-impl BytesSerializer {
+impl Bytes {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        BytesSerializer { ptr: ptr }
+        Bytes { ptr: ptr }
     }
 }
 
-impl Serialize for BytesSerializer {
+impl Serialize for Bytes {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

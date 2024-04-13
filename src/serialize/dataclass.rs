@@ -12,7 +12,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
 use std::ptr::NonNull;
 
-pub struct DataclassGenericSerializer {
+pub struct Dataclass {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -20,7 +20,7 @@ pub struct DataclassGenericSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl DataclassGenericSerializer {
+impl Dataclass {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -28,7 +28,7 @@ impl DataclassGenericSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        DataclassGenericSerializer {
+        Dataclass {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -38,7 +38,7 @@ impl DataclassGenericSerializer {
     }
 }
 
-impl Serialize for DataclassGenericSerializer {
+impl Serialize for Dataclass {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -48,7 +48,7 @@ impl Serialize for DataclassGenericSerializer {
         let ob_type = ob_type!(self.ptr);
         if unlikely!(dict.is_null()) {
             ffi!(PyErr_Clear());
-            DataclassFallbackSerializer::new(
+            DataclassFields::new(
                 self.ptr,
                 self.opts,
                 self.default_calls,
@@ -57,7 +57,7 @@ impl Serialize for DataclassGenericSerializer {
             )
             .serialize(serializer)
         } else if pydict_contains!(ob_type, SLOTS_STR) {
-            let ret = DataclassFallbackSerializer::new(
+            let ret = DataclassFields::new(
                 self.ptr,
                 self.opts,
                 self.default_calls,
@@ -68,7 +68,7 @@ impl Serialize for DataclassGenericSerializer {
             ffi!(Py_DECREF(dict));
             ret
         } else {
-            let ret = DataclassFastSerializer::new(
+            let ret = AttributeDict::new(
                 dict,
                 self.opts,
                 self.default_calls,
@@ -82,7 +82,7 @@ impl Serialize for DataclassGenericSerializer {
     }
 }
 
-pub struct DataclassFastSerializer {
+pub struct AttributeDict {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -90,7 +90,7 @@ pub struct DataclassFastSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl DataclassFastSerializer {
+impl AttributeDict {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -98,7 +98,7 @@ impl DataclassFastSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        DataclassFastSerializer {
+        AttributeDict {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -108,7 +108,7 @@ impl DataclassFastSerializer {
     }
 }
 
-impl Serialize for DataclassFastSerializer {
+impl Serialize for AttributeDict {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -136,7 +136,7 @@ impl Serialize for DataclassFastSerializer {
 
         let mut map = serializer.serialize_map(Some(items.len())).unwrap();
         for (key, value) in items.iter() {
-            let pyvalue = PyObjectSerializer::new(
+            let pyvalue = PyObject::new(
                 *value,
                 self.opts,
                 self.default_calls,
@@ -150,7 +150,7 @@ impl Serialize for DataclassFastSerializer {
     }
 }
 
-pub struct DataclassFallbackSerializer {
+pub struct DataclassFields {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -158,7 +158,7 @@ pub struct DataclassFallbackSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl DataclassFallbackSerializer {
+impl DataclassFields {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -166,7 +166,7 @@ impl DataclassFallbackSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        DataclassFallbackSerializer {
+        DataclassFields {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -176,7 +176,7 @@ impl DataclassFallbackSerializer {
     }
 }
 
-impl Serialize for DataclassFallbackSerializer {
+impl Serialize for DataclassFields {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -211,7 +211,7 @@ impl Serialize for DataclassFallbackSerializer {
 
         let mut map = serializer.serialize_map(Some(items.len())).unwrap();
         for (key, value) in items.iter() {
-            let pyvalue = PyObjectSerializer::new(
+            let pyvalue = PyObject::new(
                 *value,
                 self.opts,
                 self.default_calls,

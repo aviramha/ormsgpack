@@ -7,17 +7,17 @@ use serde::ser::{Serialize, Serializer};
 // "[-(2**53)+1, (2**53)-1]"
 
 #[repr(transparent)]
-pub struct IntSerializer {
+pub struct Int {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
-impl IntSerializer {
+impl Int {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        IntSerializer { ptr: ptr }
+        Int { ptr: ptr }
     }
 }
 
-impl Serialize for IntSerializer {
+impl Serialize for Int {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

@@ -15,7 +15,7 @@ fn format_err(ptr: *mut pyo3::ffi::PyObject) -> String {
     format_args!("Type is not msgpack serializable: {name}").to_string()
 }
 
-pub struct DefaultSerializer {
+pub struct Default {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -23,7 +23,7 @@ pub struct DefaultSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl DefaultSerializer {
+impl Default {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -31,7 +31,7 @@ impl DefaultSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        DefaultSerializer {
+        Default {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -41,7 +41,7 @@ impl DefaultSerializer {
     }
 }
 
-impl Serialize for DefaultSerializer {
+impl Serialize for Default {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -61,7 +61,7 @@ impl Serialize for DefaultSerializer {
                 if unlikely!(default_obj.is_null()) {
                     err!(format_err(self.ptr))
                 } else {
-                    let res = PyObjectSerializer::new(
+                    let res = PyObject::new(
                         default_obj,
                         self.opts,
                         self.default_calls + 1,
