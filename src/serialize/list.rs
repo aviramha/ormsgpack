@@ -6,7 +6,7 @@ use crate::serialize::serializer::*;
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::ptr::NonNull;
 
-pub struct ListSerializer {
+pub struct List {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -14,7 +14,7 @@ pub struct ListSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl ListSerializer {
+impl List {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -22,7 +22,7 @@ impl ListSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        ListSerializer {
+        List {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -32,7 +32,7 @@ impl ListSerializer {
     }
 }
 
-impl Serialize for ListSerializer {
+impl Serialize for List {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -41,7 +41,7 @@ impl Serialize for ListSerializer {
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
             let item = ffi!(PyList_GET_ITEM(self.ptr, i as isize));
-            let value = PyObjectSerializer::new(
+            let value = PyObject::new(
                 item,
                 self.opts,
                 self.default_calls,

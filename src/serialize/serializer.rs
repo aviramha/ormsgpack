@@ -28,7 +28,7 @@ pub fn serialize(
     opts: Opt,
 ) -> Result<NonNull<pyo3::ffi::PyObject>, String> {
     let mut buf = BytesWriter::default();
-    let obj = PyObjectSerializer::new(ptr, opts, 0, 0, default);
+    let obj = PyObject::new(ptr, opts, 0, 0, default);
     let mut ser = rmp_serde::Serializer::new(&mut buf);
     let res = obj.serialize(&mut ser);
     match res {
@@ -155,7 +155,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
     }
 }
 
-pub struct PyObjectSerializer {
+pub struct PyObject {
     ptr: *mut pyo3::ffi::PyObject,
     obtype: ObType,
     opts: Opt,
@@ -164,7 +164,7 @@ pub struct PyObjectSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl PyObjectSerializer {
+impl PyObject {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -172,7 +172,7 @@ impl PyObjectSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        PyObjectSerializer {
+        PyObject {
             ptr: ptr,
             obtype: pyobject_to_obtype(ptr, opts),
             opts: opts,
@@ -183,16 +183,16 @@ impl PyObjectSerializer {
     }
 }
 
-impl Serialize for PyObjectSerializer {
+impl Serialize for PyObject {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self.obtype {
-            ObType::Str => StrSerializer::new(self.ptr).serialize(serializer),
-            ObType::Bytes => BytesSerializer::new(self.ptr).serialize(serializer),
-            ObType::StrSubclass => StrSubclassSerializer::new(self.ptr).serialize(serializer),
-            ObType::Int => IntSerializer::new(self.ptr).serialize(serializer),
+            ObType::Str => Str::new(self.ptr).serialize(serializer),
+            ObType::Bytes => Bytes::new(self.ptr).serialize(serializer),
+            ObType::StrSubclass => StrSubclass::new(self.ptr).serialize(serializer),
+            ObType::Int => Int::new(self.ptr).serialize(serializer),
             ObType::None => serializer.serialize_unit(),
             ObType::Float => serializer.serialize_f64(ffi!(PyFloat_AS_DOUBLE(self.ptr))),
             ObType::Bool => serializer.serialize_bool(unsafe { self.ptr == TRUE }),
@@ -210,7 +210,7 @@ impl Serialize for PyObjectSerializer {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                DictGenericSerializer::new(
+                Dict::new(
                     self.ptr,
                     self.opts,
                     self.default_calls,
@@ -226,7 +226,7 @@ impl Serialize for PyObjectSerializer {
                 if unlikely!(ffi!(PyList_GET_SIZE(self.ptr)) == 0) {
                     serializer.serialize_seq(Some(0)).unwrap().end()
                 } else {
-                    ListSerializer::new(
+                    List::new(
                         self.ptr,
                         self.opts,
                         self.default_calls,
@@ -236,7 +236,7 @@ impl Serialize for PyObjectSerializer {
                     .serialize(serializer)
                 }
             }
-            ObType::Tuple => TupleSerializer::new(
+            ObType::Tuple => Tuple::new(
                 self.ptr,
                 self.opts,
                 self.default_calls,
@@ -248,7 +248,7 @@ impl Serialize for PyObjectSerializer {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                DataclassGenericSerializer::new(
+                Dataclass::new(
                     self.ptr,
                     self.opts,
                     self.default_calls,
@@ -266,7 +266,7 @@ impl Serialize for PyObjectSerializer {
                     err!(PYDANTIC_MUST_HAVE_DICT)
                 } else {
                     ffi!(Py_DECREF(dict));
-                    DataclassFastSerializer::new(
+                    AttributeDict::new(
                         dict,
                         self.opts,
                         self.default_calls,
@@ -279,7 +279,7 @@ impl Serialize for PyObjectSerializer {
             ObType::Enum => {
                 let value = ffi!(PyObject_GetAttr(self.ptr, VALUE_STR));
                 ffi!(Py_DECREF(value));
-                PyObjectSerializer::new(
+                PyObject::new(
                     value,
                     self.opts,
                     self.default_calls,
@@ -295,7 +295,7 @@ impl Serialize for PyObjectSerializer {
                     if self.default.is_none() {
                         err!("numpy array is not C contiguous; use ndarray.tolist() in default")
                     } else {
-                        DefaultSerializer::new(
+                        Default::new(
                             self.ptr,
                             self.opts,
                             self.default_calls,
@@ -307,8 +307,8 @@ impl Serialize for PyObjectSerializer {
                 }
             },
             ObType::NumpyScalar => NumpyScalar::new(self.ptr, self.opts).serialize(serializer),
-            ObType::Ext => ExtSerializer::new(self.ptr).serialize(serializer),
-            ObType::Unknown => DefaultSerializer::new(
+            ObType::Ext => Ext::new(self.ptr).serialize(serializer),
+            ObType::Unknown => Default::new(
                 self.ptr,
                 self.opts,
                 self.default_calls,

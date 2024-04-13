@@ -6,7 +6,7 @@ use crate::serialize::serializer::*;
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::ptr::NonNull;
 
-pub struct TupleSerializer {
+pub struct Tuple {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -14,7 +14,7 @@ pub struct TupleSerializer {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl TupleSerializer {
+impl Tuple {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -22,7 +22,7 @@ impl TupleSerializer {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        TupleSerializer {
+        Tuple {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -32,7 +32,7 @@ impl TupleSerializer {
     }
 }
 
-impl Serialize for TupleSerializer {
+impl Serialize for Tuple {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -42,7 +42,7 @@ impl Serialize for TupleSerializer {
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
             let item = ffi!(PyTuple_GET_ITEM(self.ptr, i as isize));
-            let value = PyObjectSerializer::new(
+            let value = PyObject::new(
                 item,
                 self.opts,
                 self.default_calls,

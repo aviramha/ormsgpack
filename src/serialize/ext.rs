@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::ext::Ext;
+use crate::ext::PyExt;
 use crate::ffi::*;
 
 use serde::ser::{Serialize, Serializer};
 use serde_bytes::ByteBuf;
 
 #[repr(transparent)]
-pub struct ExtSerializer {
+pub struct Ext {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
-impl ExtSerializer {
+impl Ext {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        ExtSerializer { ptr: ptr }
+        Ext { ptr: ptr }
     }
 }
 
-impl Serialize for ExtSerializer {
+impl Serialize for Ext {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let ext = self.ptr as *mut Ext;
+        let ext = self.ptr as *mut PyExt;
         let tag = ffi!(PyLong_AsLongLong((*ext).tag));
         if unlikely!(!(0..=127).contains(&tag)) {
             err!("Extension type out of range")

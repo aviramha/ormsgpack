@@ -6,17 +6,17 @@ use crate::unicode::*;
 use serde::ser::{Serialize, Serializer};
 
 #[repr(transparent)]
-pub struct StrSerializer {
+pub struct Str {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
-impl StrSerializer {
+impl Str {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        StrSerializer { ptr: ptr }
+        Str { ptr: ptr }
     }
 }
 
-impl Serialize for StrSerializer {
+impl Serialize for Str {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -30,17 +30,17 @@ impl Serialize for StrSerializer {
 }
 
 #[repr(transparent)]
-pub struct StrSubclassSerializer {
+pub struct StrSubclass {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
-impl StrSubclassSerializer {
+impl StrSubclass {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        StrSubclassSerializer { ptr: ptr }
+        StrSubclass { ptr: ptr }
     }
 }
 
-impl Serialize for StrSubclassSerializer {
+impl Serialize for StrSubclass {
     #[inline(never)]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
