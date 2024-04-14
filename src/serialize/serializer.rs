@@ -262,19 +262,15 @@ impl Serialize for PyObject {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
-                if unlikely!(dict.is_null()) {
-                    err!(PYDANTIC_MUST_HAVE_DICT)
-                } else {
-                    ffi!(Py_DECREF(dict));
-                    AttributeDict::new(
-                        dict,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
+                match AttributeDict::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                ) {
+                    Ok(val) => val.serialize(serializer),
+                    Err(AttributeDictError::DictMissing) => err!(PYDANTIC_MUST_HAVE_DICT),
                 }
             }
             ObType::Enum => {

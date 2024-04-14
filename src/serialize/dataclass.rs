@@ -44,10 +44,8 @@ impl Serialize for Dataclass {
     where
         S: Serializer,
     {
-        let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
         let ob_type = ob_type!(self.ptr);
-        if unlikely!(dict.is_null()) {
-            ffi!(PyErr_Clear());
+        if pydict_contains!(ob_type, SLOTS_STR) {
             DataclassFields::new(
                 self.ptr,
                 self.opts,
@@ -56,30 +54,30 @@ impl Serialize for Dataclass {
                 self.default,
             )
             .serialize(serializer)
-        } else if pydict_contains!(ob_type, SLOTS_STR) {
-            let ret = DataclassFields::new(
+        } else {
+            match AttributeDict::new(
                 self.ptr,
                 self.opts,
                 self.default_calls,
                 self.recursion,
                 self.default,
-            )
-            .serialize(serializer);
-            ffi!(Py_DECREF(dict));
-            ret
-        } else {
-            let ret = AttributeDict::new(
-                dict,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer);
-            ffi!(Py_DECREF(dict));
-            ret
+            ) {
+                Ok(val) => val.serialize(serializer),
+                Err(AttributeDictError::DictMissing) => DataclassFields::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer),
+            }
         }
     }
+}
+
+pub enum AttributeDictError {
+    DictMissing,
 }
 
 pub struct AttributeDict {
@@ -97,14 +95,25 @@ impl AttributeDict {
         default_calls: u8,
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
-    ) -> Self {
-        AttributeDict {
-            ptr: ptr,
+    ) -> Result<Self, AttributeDictError> {
+        let dict = ffi!(PyObject_GetAttr(ptr, DICT_STR));
+        if unlikely!(dict.is_null()) {
+            ffi!(PyErr_Clear());
+            return Err(AttributeDictError::DictMissing);
+        }
+        Ok(AttributeDict {
+            ptr: dict,
             opts: opts,
             default_calls: default_calls,
             recursion: recursion,
             default: default,
-        }
+        })
+    }
+}
+
+impl Drop for AttributeDict {
+    fn drop(&mut self) {
+        ffi!(Py_DECREF(self.ptr));
     }
 }
 
