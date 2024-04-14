@@ -232,14 +232,19 @@ impl Serialize for PyObject {
                 )
                 .serialize(serializer)
             }
-            ObType::Tuple => Tuple::new(
-                self.ptr,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer),
+            ObType::Tuple => {
+                if unlikely!(self.recursion == RECURSION_LIMIT) {
+                    err!(RECURSION_LIMIT_REACHED)
+                }
+                Tuple::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer)
+            }
             ObType::Dataclass => {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
