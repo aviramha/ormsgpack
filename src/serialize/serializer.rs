@@ -17,7 +17,7 @@ use crate::serialize::tuple::*;
 use crate::serialize::uuid::*;
 use crate::serialize::writer::*;
 use crate::typeref::*;
-use serde::ser::{Serialize, SerializeSeq, Serializer};
+use serde::ser::{Serialize, Serializer};
 use std::ptr::NonNull;
 
 pub const RECURSION_LIMIT: u8 = 255;
@@ -223,18 +223,14 @@ impl Serialize for PyObject {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
-                if unlikely!(ffi!(PyList_GET_SIZE(self.ptr)) == 0) {
-                    serializer.serialize_seq(Some(0)).unwrap().end()
-                } else {
-                    List::new(
-                        self.ptr,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion,
-                        self.default,
-                    )
-                    .serialize(serializer)
-                }
+                List::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer)
             }
             ObType::Tuple => Tuple::new(
                 self.ptr,
