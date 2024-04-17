@@ -8,7 +8,6 @@ use crate::typeref::*;
 use crate::unicode::*;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use serde_bytes::ByteBuf;
-use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::fmt;
 use std::os::raw::c_char;
@@ -215,30 +214,26 @@ impl<'de> Visitor<'de> for MsgpackValue {
     where
         A: SeqAccess<'de>,
     {
-        match seq.next_element_seed(self) {
-            Ok(None) => Ok(nonnull!(ffi!(PyList_New(0)))),
-            Ok(Some(elem)) => {
-                let mut elements: SmallVec<[*mut pyo3::ffi::PyObject; 8]> =
-                    SmallVec::with_capacity(8);
-                elements.push(elem.as_ptr());
-                while let Some(elem) = seq.next_element_seed(self)? {
-                    elements.push(elem.as_ptr());
-                }
-                let ptr = ffi!(PyList_New(elements.len() as pyo3::ffi::Py_ssize_t));
-                for (i, &obj) in elements.iter().enumerate() {
-                    ffi!(PyList_SET_ITEM(ptr, i as pyo3::ffi::Py_ssize_t, obj));
-                }
-                Ok(nonnull!(ptr))
-            }
-            Err(err) => std::result::Result::Err(err),
+        let size = seq.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
+        let ptr = ffi!(PyList_New(size));
+        let mut i = 0;
+        while let Some(elem) = seq.next_element_seed(self)? {
+            ffi!(PyList_SET_ITEM(
+                ptr,
+                i as pyo3::ffi::Py_ssize_t,
+                elem.as_ptr()
+            ));
+            i += 1;
         }
+        Ok(nonnull!(ptr))
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
     {
-        let dict_ptr = ffi!(PyDict_New());
+        let size = map.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
+        let dict_ptr = ffi!(_PyDict_NewPresized(size));
         while let Some(key) = map.next_key::<Cow<str>>()? {
             let value = map.next_value_seed(self)?;
             let pykey: *mut pyo3::ffi::PyObject;
@@ -389,30 +384,26 @@ impl<'de> Visitor<'de> for MsgpackNonStrDictValue {
     where
         A: SeqAccess<'de>,
     {
-        match seq.next_element_seed(self) {
-            Ok(None) => Ok(nonnull!(ffi!(PyList_New(0)))),
-            Ok(Some(elem)) => {
-                let mut elements: SmallVec<[*mut pyo3::ffi::PyObject; 8]> =
-                    SmallVec::with_capacity(8);
-                elements.push(elem.as_ptr());
-                while let Some(elem) = seq.next_element_seed(self)? {
-                    elements.push(elem.as_ptr());
-                }
-                let ptr = ffi!(PyList_New(elements.len() as pyo3::ffi::Py_ssize_t));
-                for (i, &obj) in elements.iter().enumerate() {
-                    ffi!(PyList_SET_ITEM(ptr, i as pyo3::ffi::Py_ssize_t, obj));
-                }
-                Ok(nonnull!(ptr))
-            }
-            Err(err) => std::result::Result::Err(err),
+        let size = seq.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
+        let ptr = ffi!(PyList_New(size));
+        let mut i = 0;
+        while let Some(elem) = seq.next_element_seed(self)? {
+            ffi!(PyList_SET_ITEM(
+                ptr,
+                i as pyo3::ffi::Py_ssize_t,
+                elem.as_ptr()
+            ));
+            i += 1;
         }
+        Ok(nonnull!(ptr))
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
     {
-        let dict_ptr = ffi!(PyDict_New());
+        let size = map.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
+        let dict_ptr = ffi!(_PyDict_NewPresized(size));
         while let Some((key, value)) = map.next_entry_seed(MsgpackKey {}, self)? {
             let ret = ffi!(PyDict_SetItem(dict_ptr, key.as_ptr(), value.as_ptr()));
             if unlikely!(ret == -1) {
@@ -519,22 +510,17 @@ impl<'de> Visitor<'de> for MsgpackKey {
     where
         A: SeqAccess<'de>,
     {
-        match seq.next_element_seed(self) {
-            Ok(None) => Ok(nonnull!(ffi!(PyTuple_New(0)))),
-            Ok(Some(elem)) => {
-                let mut elements: SmallVec<[*mut pyo3::ffi::PyObject; 8]> =
-                    SmallVec::with_capacity(8);
-                elements.push(elem.as_ptr());
-                while let Some(elem) = seq.next_element_seed(self)? {
-                    elements.push(elem.as_ptr());
-                }
-                let ptr = ffi!(PyTuple_New(elements.len() as pyo3::ffi::Py_ssize_t));
-                for (i, &obj) in elements.iter().enumerate() {
-                    ffi!(PyTuple_SET_ITEM(ptr, i as pyo3::ffi::Py_ssize_t, obj));
-                }
-                Ok(nonnull!(ptr))
-            }
-            Err(err) => std::result::Result::Err(err),
+        let size = seq.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
+        let ptr = ffi!(PyTuple_New(size));
+        let mut i = 0;
+        while let Some(elem) = seq.next_element_seed(self)? {
+            ffi!(PyTuple_SET_ITEM(
+                ptr,
+                i as pyo3::ffi::Py_ssize_t,
+                elem.as_ptr()
+            ));
+            i += 1;
         }
+        Ok(nonnull!(ptr))
     }
 }
