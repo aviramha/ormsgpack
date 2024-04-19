@@ -4,6 +4,7 @@
 
 - Add support for numpy datetime64 and float16 types
 - Optimize serialization of dataclasses
+- Optimize deserialization of arrays and maps
 
 ## 1.4.2 28/01/2024
 
