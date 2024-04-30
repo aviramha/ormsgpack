@@ -134,7 +134,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
       - run: rustup default "$RUST_TOOLCHAIN"
-      - run: rustup target add aarch64-apple-darwin
+      - run: rustup target add x86_64-apple-darwin
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
