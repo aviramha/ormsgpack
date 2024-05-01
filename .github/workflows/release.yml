@@ -22,8 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-path: ['cp38-cp38', 'cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
-    container: quay.io/pypa/manylinux2014_x86_64:latest
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
     env:
       CC: "gcc"
       CFLAGS: "-O2 -fno-plt"
@@ -31,18 +30,25 @@ jobs:
       CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
 
     steps:
-      - uses: actions/checkout@v3
-      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
-      - run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-      - run: /opt/python/${{ matrix.python-path }}/bin/python -m venv .venv
-      - run: .venv/bin/pip install -U pip wheel maturin
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: x86_64-unknown-linux-gnu
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          manylinux: auto
+          args: --release --strip -i python${{ matrix.python-version }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python3 -m venv .venv
+      - run: .venv/bin/pip install -U pip wheel
       - run: .venv/bin/pip install -r requirements.txt
-      - run: .venv/bin/maturin build --features=unstable-simd --release --strip --manylinux 2014 -i /opt/python/${{ matrix.python-path }}/bin/python --target x86_64-unknown-linux-gnu
       - run: .venv/bin/pip install ormsgpack --no-index -f target/wheels
       - run: .venv/bin/pytest
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: ormsgpack-x86_64-unknown-linux-gnu-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
@@ -93,9 +99,9 @@ jobs:
               .venv/bin/pip install ormsgpack --no-index -f target/wheels
               .venv/bin/pytest
             '
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: ormsgpack-${{ matrix.target.target }}-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
@@ -118,9 +124,9 @@ jobs:
       - run: maturin build --release --strip -i $pythonLocation"python.exe"
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: ormsgpack-x86_64-pc-windows-msvc-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
@@ -150,9 +156,9 @@ jobs:
         run: maturin build --release --strip -i python${{ matrix.python-version }} --features=unstable-simd --target universal2-apple-darwin
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: ormsgpack-universal-apple-darwin-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
@@ -170,9 +176,9 @@ jobs:
       - run: python -m pip install -U pip wheel maturin
       - run: pip install -r requirements.txt
       - run: maturin sdist
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: ormsgpack-sdist
           path: target/wheels
           retention-days: 1
 
@@ -190,10 +196,11 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          pattern: ormsgpack-*
           path: wheels
+          merge-multiple: true
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: wheels/
