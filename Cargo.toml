@@ -45,7 +45,7 @@ encoding_rs = { version = "0.8", default-features = false }
 half = { version = "2.4.1", default-features = false }
 itoa = { version = "1", default-features = false }
 once_cell = { version = "1", default-features = false, features = ["race"] }
-pyo3 = { version = "^0.22.0", default-features = false, features = ["extension-module"] }
+pyo3 = { version = "^0.22.1", default-features = false, features = ["extension-module"] }
 rmp = { version = "^0.8.14", default-features = false, features = ["std"] }
 rmp-serde = { version = "1", default-features = false }
 serde = { version = "1", default-features = false }
