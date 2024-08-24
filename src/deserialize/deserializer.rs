@@ -56,6 +56,26 @@ pub fn deserialize(
     }
 }
 
+fn unicode_from_map_key(key: &str) -> *mut pyo3::ffi::PyObject {
+    if unlikely!(key.len() > 64) {
+        let pykey = unicode_from_str(key);
+        hash_str(pykey);
+        pykey
+    } else {
+        let hash = cache_hash(key.as_bytes());
+        let map = unsafe { KEY_MAP.get_mut().unwrap_or_else(|| unreachable!()) };
+        let entry = map.entry(&hash).or_insert_with(
+            || hash,
+            || {
+                let pykey = unicode_from_str(key);
+                hash_str(pykey);
+                CachedKey::new(pykey)
+            },
+        );
+        entry.get()
+    }
+}
+
 #[derive(Clone, Copy)]
 struct MsgpackExtValue {
     ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
@@ -236,31 +256,8 @@ impl<'de> Visitor<'de> for MsgpackValue {
         let dict_ptr = ffi!(_PyDict_NewPresized(size));
         while let Some(key) = map.next_key::<Cow<str>>()? {
             let value = map.next_value_seed(self)?;
-            let pykey: *mut pyo3::ffi::PyObject;
-            let pyhash: pyo3::ffi::Py_hash_t;
-            if unlikely!(key.len() > 64) {
-                pykey = unicode_from_str(&key);
-                pyhash = hash_str(pykey);
-            } else {
-                let hash = cache_hash(key.as_bytes());
-                {
-                    let map = unsafe {
-                        KEY_MAP
-                            .get_mut()
-                            .unwrap_or_else(|| unsafe { std::hint::unreachable_unchecked() })
-                    };
-                    let entry = map.entry(&hash).or_insert_with(
-                        || hash,
-                        || {
-                            let pyob = unicode_from_str(&key);
-                            hash_str(pyob);
-                            CachedKey::new(pyob)
-                        },
-                    );
-                    pykey = entry.get();
-                    pyhash = unsafe { (*pykey.cast::<pyo3::ffi::PyASCIIObject>()).hash }
-                }
-            }
+            let pykey = unicode_from_map_key(&key);
+            let pyhash = unsafe { (*pykey.cast::<pyo3::ffi::PyASCIIObject>()).hash };
             let _ = ffi!(_PyDict_SetItem_KnownHash(
                 dict_ptr,
                 pykey,
@@ -480,21 +477,21 @@ impl<'de> Visitor<'de> for MsgpackKey {
     where
         E: de::Error,
     {
-        Ok(nonnull!(unicode_from_str(value.as_str())))
+        Ok(nonnull!(unicode_from_map_key(value.as_str())))
     }
 
     fn visit_borrowed_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(nonnull!(unicode_from_str(value)))
+        Ok(nonnull!(unicode_from_map_key(value)))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(nonnull!(unicode_from_str(value)))
+        Ok(nonnull!(unicode_from_map_key(value)))
     }
 
     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
