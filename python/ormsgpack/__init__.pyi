@@ -17,9 +17,6 @@ class MsgpackDecodeError(ValueError): ...
 class MsgpackEncodeError(TypeError): ...
 
 class Ext:
-    tag: int
-    data: bytes
-
     def __init__(self, tag: int, data: bytes) -> None: ...
 
 OPT_NAIVE_UTC: int
