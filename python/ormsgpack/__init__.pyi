@@ -16,6 +16,9 @@ def unpackb(
 class MsgpackDecodeError(ValueError): ...
 class MsgpackEncodeError(TypeError): ...
 
+class Ext:
+    def __init__(self, tag: int, data: bytes) -> None: ...
+
 OPT_NAIVE_UTC: int
 OPT_OMIT_MICROSECONDS: int
 OPT_PASSTHROUGH_BIG_INT: int
