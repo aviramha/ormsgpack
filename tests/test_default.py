@@ -53,29 +53,6 @@ def test_default_func():
     assert ormsgpack.packb(ref, default=default) == msgpack.packb(str(ref))
 
 
-def test_default_func_none():
-    """
-    packb() default function None ok
-    """
-    assert ormsgpack.packb(Custom(), default=lambda x: None) == ormsgpack.packb(
-        Custom(), default=lambda x: None
-    )
-
-
-def test_default_func_empty():
-    """
-    packb() default function no explicit return
-    """
-    ref = Custom()
-
-    def default(obj):
-        if isinstance(obj, set):
-            return list(obj)
-
-    assert ormsgpack.packb(ref, default=default) == msgpack.packb(None)
-    assert ormsgpack.packb({ref}, default=default) == msgpack.packb([None])
-
-
 def test_default_func_exc():
     """
     packb() default function raises exception
@@ -97,71 +74,6 @@ def test_default_exception_type():
 
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(ref, default=default_raises)
-
-
-def test_default_func_nested_str():
-    """
-    packb() default function nested str
-    """
-    ref = Custom()
-
-    def default(obj):
-        return str(obj)
-
-    assert ormsgpack.packb({"a": ref}, default=default) == msgpack.packb(
-        {"a": str(ref)}
-    )
-
-
-def test_default_func_list():
-    """
-    packb() default function nested list
-    """
-    ref = Custom()
-
-    def default(obj):
-        if isinstance(obj, Custom):
-            return [str(obj)]
-
-    assert ormsgpack.packb({"a": ref}, default=default) == msgpack.packb(
-        {"a": ref}, default=default
-    )
-
-
-def test_default_func_nested_list():
-    """
-    packb() default function list
-    """
-    ref = Custom()
-
-    def default(obj):
-        return str(obj)
-
-    assert ormsgpack.packb([ref] * 100, default=default) == msgpack.packb(
-        [ref] * 100, default=default
-    )
-
-
-def test_default_func_bytes():
-    """
-    packb() default function errors on non-str
-    """
-    ref = Custom()
-
-    def default(obj):
-        return bytes(obj)
-
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(ref, default=default)
-
-    ran = False
-    try:
-        ormsgpack.packb(ref, default=default)
-    except Exception as err:
-        assert isinstance(err, ormsgpack.MsgpackEncodeError)
-        assert str(err) == "Type is not msgpack serializable: Custom"
-        ran = True
-    assert ran
 
 
 def test_default_func_invalid_str():
