@@ -4,7 +4,6 @@ import ctypes
 import datetime
 import inspect
 import re
-import sys
 
 import msgpack
 import pytest
@@ -228,17 +227,13 @@ def test_bytes_buffer():
 
 def test_function_flags():
     """
-    Make sure we use fastcall when possible
+    Make sure we use fastcall
     """
     FASTCALL = 0x0080
     KEYWORDS = 0x0002
-    VARARGS = 0x0001
     ctypes.pythonapi.PyCFunction_GetFlags.argtypes = [ctypes.py_object]
     packb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.packb)
     unpackb_flags = ctypes.pythonapi.PyCFunction_GetFlags(ormsgpack.unpackb)
-    if sys.version_info.minor > 7:
-        flags = FASTCALL | KEYWORDS
-    else:
-        flags = KEYWORDS | VARARGS
+    flags = FASTCALL | KEYWORDS
     assert packb_flags & flags == flags
     assert unpackb_flags & flags == flags
