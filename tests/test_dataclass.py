@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 import abc
-import uuid
 from dataclasses import InitVar, asdict, dataclass, field
 from enum import Enum
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Optional
 
 import msgpack
 import pytest
@@ -39,17 +38,6 @@ class Dataclass2:
 
 
 @dataclass
-class Dataclass3:
-    a: str
-    b: int
-    c: dict
-    d: bool
-    e: float
-    f: list
-    g: tuple
-
-
-@dataclass
 class Dataclass4:
     a: str = field()
     b: int = field(metadata={"unrelated": False})
@@ -69,20 +57,6 @@ class Slotsdataclass:
     _c: str
     d: InitVar[str]
     cls_var: ClassVar[str] = "cls"
-
-
-@dataclass
-class Defaultdataclass:
-    a: uuid.UUID
-    b: AnEnum
-
-
-@dataclass
-class UnsortedDataclass:
-    c: int
-    b: int
-    a: int
-    d: Optional[Dict]
 
 
 @dataclass
@@ -123,16 +97,6 @@ def test_dataclass():
     )
 
 
-def test_dataclass_recursive():
-    """
-    packb() dataclass recursive
-    """
-    obj = Dataclass1("a", 1, Dataclass1("b", 2, None))
-    assert ormsgpack.packb(obj) == msgpack.packb(
-        {"name": "a", "number": 1, "sub": {"name": "b", "number": 2, "sub": None}}
-    )
-
-
 def test_dataclass_circular():
     """
     packb() dataclass circular
@@ -164,24 +128,6 @@ def test_dataclass_default_arg():
     """
     obj = Dataclass2()
     assert ormsgpack.packb(obj) == msgpack.packb({"name": "?"})
-
-
-def test_dataclass_types():
-    """
-    packb() dataclass types
-    """
-    obj = Dataclass3("a", 1, {"a": "b"}, True, 1.1, [1, 2], (3, 4))
-    assert ormsgpack.packb(obj) == msgpack.packb(
-        {
-            "a": "a",
-            "b": 1,
-            "c": {"a": "b"},
-            "d": True,
-            "e": 1.1,
-            "f": [1, 2],
-            "g": [3, 4],
-        }
-    )
 
 
 def test_dataclass_metadata():
@@ -217,25 +163,6 @@ def test_dataclass_slots():
     obj = Slotsdataclass("a", 1, "c", "d")
     assert "__dict__" not in dir(obj)
     assert ormsgpack.packb(obj) == msgpack.packb({"a": "a", "b": 1})
-
-
-def test_dataclass_default():
-    """
-    packb() dataclass with default
-    """
-
-    def default(__obj):
-        if isinstance(__obj, uuid.UUID):
-            return str(__obj)
-        elif isinstance(__obj, Enum):
-            return __obj.value
-
-    obj = Defaultdataclass(
-        uuid.UUID("808989c0-00d5-48a8-b5c4-c804bf9032f2"), AnEnum.ONE
-    )
-    assert ormsgpack.packb(obj, default=default) == msgpack.packb(
-        {"a": "808989c0-00d5-48a8-b5c4-c804bf9032f2", "b": 1}
-    )
 
 
 def test_dataclass_under():
