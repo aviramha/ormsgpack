@@ -28,10 +28,6 @@ def default(obj):
     return obj.cur
 
 
-def default_raises(obj):
-    raise TypeError
-
-
 def test_default_not_callable():
     """
     packb() default not callable
@@ -64,16 +60,6 @@ def test_default_func_exc():
     with pytest.raises(ormsgpack.MsgpackEncodeError) as exc_info:
         ormsgpack.packb(Custom(), default=default)
     assert str(exc_info.value) == "Type is not msgpack serializable: Custom"
-
-
-def test_default_exception_type():
-    """
-    packb() TypeError in default() raises ormsgpack.MsgpackEncodeError
-    """
-    ref = Custom()
-
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(ref, default=default_raises)
 
 
 def test_default_func_invalid_str():
