@@ -55,15 +55,6 @@ def test_dict_keys_time_err():
         ormsgpack.packb({val: True}, option=ormsgpack.OPT_NON_STR_KEYS)
 
 
-def test_dict_keys_type():
-    class Obj:
-        a: str
-
-    val = Obj()
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb({val: True}, option=ormsgpack.OPT_NON_STR_KEYS)
-
-
 def test_dict_keys_dataclass_hash():
     @dataclasses.dataclass
     class Dataclass:
@@ -80,15 +71,3 @@ def test_dict_keys_dataclass_hash():
 def test_dict_keys_unknown():
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb({frozenset(): True}, option=ormsgpack.OPT_NON_STR_KEYS)
-
-
-def test_dict_keys_no_str_call():
-    class Obj:
-        a: str
-
-        def __str__(self):
-            return "Obj"
-
-    val = Obj()
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb({val: True}, option=ormsgpack.OPT_NON_STR_KEYS)

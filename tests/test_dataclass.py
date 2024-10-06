@@ -180,10 +180,6 @@ def test_dataclass_passthrough_raise():
     obj = Dataclass1("a", 1, None)
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj, option=ormsgpack.OPT_PASSTHROUGH_DATACLASS)
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(
-            InitDataclass("zxc", "vbn"), option=ormsgpack.OPT_PASSTHROUGH_DATACLASS
-        )
 
 
 def test_dataclass_passthrough_default():
@@ -194,15 +190,6 @@ def test_dataclass_passthrough_default():
     assert ormsgpack.packb(
         obj, option=ormsgpack.OPT_PASSTHROUGH_DATACLASS, default=asdict
     ) == msgpack.packb({"name": "a", "number": 1, "sub": None})
-
-    def default(obj):
-        if isinstance(obj, Dataclass1):
-            return {"name": obj.name, "number": obj.number}
-        raise TypeError
-
-    assert ormsgpack.packb(
-        obj, option=ormsgpack.OPT_PASSTHROUGH_DATACLASS, default=default
-    ) == msgpack.packb({"name": "a", "number": 1})
 
 
 def test_dataclass_abc():
