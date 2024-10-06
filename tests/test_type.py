@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import io
-
 import pytest
 
 try:
@@ -12,14 +10,6 @@ except ImportError:
 import msgpack
 
 import ormsgpack
-
-
-def test_invalid():
-    """
-    ormsgpack.MsgpackEncodeError on invalid
-    """
-    for val in (b"\xd9\x97#DL_", b"\xc1", b"\x91\xc1"):
-        pytest.raises(ValueError, ormsgpack.unpackb, val)
 
 
 def test_str():
@@ -82,39 +72,6 @@ def test_str_ascii():
     digest = xxhash.xxh32_hexdigest("12345")
     for _ in range(2):
         assert ormsgpack.unpackb(ormsgpack.packb(digest)) == "b30d56b4"
-
-
-def test_bytes_unpackb():
-    """
-    bytes unpackb
-    """
-    assert ormsgpack.unpackb(b"\x90") == []
-
-
-def test_bytearray_unpackb():
-    """
-    bytearray unpackb
-    """
-    arr = bytearray()
-    arr.extend(b"\x90")
-    assert ormsgpack.unpackb(arr) == []
-
-
-def test_memoryview_unpackb():
-    """
-    memoryview unpackb
-    """
-    arr = bytearray()
-    arr.extend(b"\x90")
-    assert ormsgpack.unpackb(memoryview(arr)) == []
-
-
-def test_bytesio_unpackb():
-    """
-    memoryview unpackb
-    """
-    arr = io.BytesIO(b"\x90")
-    assert ormsgpack.unpackb(arr.getbuffer()) == []
 
 
 def test_bool():
