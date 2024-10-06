@@ -1,34 +1,37 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
+from typing import Dict, List
+
 import pytest
 
 import ormsgpack
 
 
-def test_circular_dict():
+def test_circular_dict() -> None:
     """
     packb() circular reference dict
     """
-    obj = {}
+    obj: Dict[str, object] = {}
     obj["obj"] = obj
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj)
 
 
-def test_circular_list():
+def test_circular_list() -> None:
     """
     packb() circular reference list
     """
-    obj = []
+    obj: List[object] = []
     obj.append(obj)
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj)
 
 
-def test_circular_nested():
+def test_circular_nested() -> None:
     """
     packb() circular reference nested dict, list
     """
-    obj = {}
+    obj: Dict[str, object] = {}
     obj["list"] = [{"obj": obj}]
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(obj)

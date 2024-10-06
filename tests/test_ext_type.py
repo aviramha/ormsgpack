@@ -4,7 +4,7 @@ import pytest
 import ormsgpack
 
 
-def test_ext_type():
+def test_ext_type() -> None:
     tag = 1
     data = b"test"
     packed = ormsgpack.packb(ormsgpack.Ext(tag, data))

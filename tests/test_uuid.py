@@ -7,7 +7,7 @@ import pytest
 import ormsgpack
 
 
-def test_uuid_subclass():
+def test_uuid_subclass() -> None:
     """
     UUID subclasses are not serialized
     """
@@ -19,7 +19,7 @@ def test_uuid_subclass():
         ormsgpack.packb(AUUID("{12345678-1234-5678-1234-567812345678}"))
 
 
-def test_nil_uuid():
+def test_nil_uuid() -> None:
     assert (
         ormsgpack.unpackb(
             ormsgpack.packb(uuid.UUID("00000000-0000-0000-0000-000000000000"))
@@ -28,7 +28,7 @@ def test_nil_uuid():
     )
 
 
-def test_all_ways_to_create_uuid_behave_equivalently():
+def test_all_ways_to_create_uuid_behave_equivalently() -> None:
     # Note that according to the docstring for the uuid.UUID class, all the
     # forms below are equivalent -- they end up with the same value for
     # `self.int`, which is all that really matters
@@ -49,12 +49,12 @@ def test_all_ways_to_create_uuid_behave_equivalently():
     assert packed == result
 
 
-def test_serializes_correctly_with_leading_zeroes():
+def test_serializes_correctly_with_leading_zeroes() -> None:
     instance = uuid.UUID(int=0x00345678123456781234567812345678)
     assert ormsgpack.unpackb(ormsgpack.packb(instance)) == str(instance)
 
 
-def test_all_uuid_creation_functions_create_serializable_uuids():
+def test_all_uuid_creation_functions_create_serializable_uuids() -> None:
     uuids = (
         uuid.uuid1(),
         uuid.uuid3(uuid.NAMESPACE_DNS, "python.org"),

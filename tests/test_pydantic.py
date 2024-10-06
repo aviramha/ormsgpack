@@ -11,7 +11,7 @@ class Model1(BaseModel):
     sub: Optional[int]
 
 
-def test_basemodel():
+def test_basemodel() -> None:
     """
     packb() pydantic basemodel
     """

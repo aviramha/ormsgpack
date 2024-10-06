@@ -2,6 +2,7 @@
 
 import datetime
 import sys
+from typing import Callable
 
 import msgpack
 import pytest
@@ -49,7 +50,7 @@ TIMEZONE_PARAMS = (
 )
 
 
-def test_datetime_naive():
+def test_datetime_naive() -> None:
     """
     datetime.datetime naive prints without offset
     """
@@ -58,7 +59,7 @@ def test_datetime_naive():
     ) == msgpack.packb(["2000-01-01T02:03:04.000123"])
 
 
-def test_datetime_naive_utc():
+def test_datetime_naive_utc() -> None:
     """
     datetime.datetime naive with opt assumes UTC
     """
@@ -68,7 +69,7 @@ def test_datetime_naive_utc():
     ) == msgpack.packb(["2000-01-01T02:03:04.000123+00:00"])
 
 
-def test_datetime_min():
+def test_datetime_min() -> None:
     """
     datetime.datetime min range
     """
@@ -78,7 +79,7 @@ def test_datetime_min():
     ) == msgpack.packb(["0001-01-01T00:00:00+00:00"])
 
 
-def test_datetime_max():
+def test_datetime_max() -> None:
     """
     datetime.datetime max range
     """
@@ -88,7 +89,7 @@ def test_datetime_max():
     ) == msgpack.packb(["9999-12-31T23:59:50.999999+00:00"])
 
 
-def test_datetime_three_digits():
+def test_datetime_three_digits() -> None:
     """
     datetime.datetime three digit year
     """
@@ -98,7 +99,7 @@ def test_datetime_three_digits():
     ) == msgpack.packb(["0312-01-01T00:00:00+00:00"])
 
 
-def test_datetime_two_digits():
+def test_datetime_two_digits() -> None:
     """
     datetime.datetime two digit year
     """
@@ -108,7 +109,7 @@ def test_datetime_two_digits():
     ) == msgpack.packb(["0046-01-01T00:00:00+00:00"])
 
 
-def test_datetime_tz_assume():
+def test_datetime_tz_assume() -> None:
     """
     datetime.datetime tz with assume UTC uses tz
     """
@@ -139,7 +140,7 @@ def test_datetime_tz_assume():
         ),
     ),
 )
-def test_datetime_utc(timezone):
+def test_datetime_utc(timezone: datetime.tzinfo) -> None:
     """
     datetime.datetime UTC
     """
@@ -149,7 +150,7 @@ def test_datetime_utc(timezone):
 
 
 @pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
-def test_datetime_positive(timezone):
+def test_datetime_positive(timezone: Callable[[str], datetime.tzinfo]) -> None:
     """
     datetime.datetime positive UTC
     """
@@ -170,7 +171,7 @@ def test_datetime_positive(timezone):
 
 
 @pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
-def test_datetime_negative_dst(timezone):
+def test_datetime_negative_dst(timezone: Callable[[str], datetime.tzinfo]) -> None:
     """
     datetime.datetime negative UTC DST
     """
@@ -191,7 +192,7 @@ def test_datetime_negative_dst(timezone):
 
 
 @pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
-def test_datetime_negative_non_dst(timezone):
+def test_datetime_negative_non_dst(timezone: Callable[[str], datetime.tzinfo]) -> None:
     """
     datetime.datetime negative UTC non-DST
     """
@@ -212,7 +213,7 @@ def test_datetime_negative_non_dst(timezone):
 
 
 @pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
-def test_datetime_partial_hour(timezone):
+def test_datetime_partial_hour(timezone: Callable[[str], datetime.tzinfo]) -> None:
     """
     datetime.datetime UTC offset partial hour
     """
@@ -233,7 +234,7 @@ def test_datetime_partial_hour(timezone):
 
 
 @pytest.mark.parametrize("timezone", TIMEZONE_PARAMS)
-def test_datetime_partial_second(timezone):
+def test_datetime_partial_second(timezone: Callable[[str], datetime.tzinfo]) -> None:
     """
     datetime.datetime UTC offset round seconds
 
@@ -271,7 +272,7 @@ def test_datetime_partial_second(timezone):
     ) == msgpack.packb(["1911-03-10T00:00:00+00:09"])
 
 
-def test_datetime_microsecond_max():
+def test_datetime_microsecond_max() -> None:
     """
     datetime.datetime microsecond max
     """
@@ -280,7 +281,7 @@ def test_datetime_microsecond_max():
     ) == msgpack.packb("2000-01-01T00:00:00.999999")
 
 
-def test_datetime_microsecond_min():
+def test_datetime_microsecond_min() -> None:
     """
     datetime.datetime microsecond min
     """
@@ -289,7 +290,7 @@ def test_datetime_microsecond_min():
     )
 
 
-def test_datetime_omit_microseconds():
+def test_datetime_omit_microseconds() -> None:
     """
     datetime.datetime OPT_OMIT_MICROSECONDS
     """
@@ -299,7 +300,7 @@ def test_datetime_omit_microseconds():
     ) == msgpack.packb(["2000-01-01T02:03:04"])
 
 
-def test_datetime_omit_microseconds_naive():
+def test_datetime_omit_microseconds_naive() -> None:
     """
     datetime.datetime naive OPT_OMIT_MICROSECONDS
     """
@@ -309,7 +310,7 @@ def test_datetime_omit_microseconds_naive():
     ) == msgpack.packb(["2000-01-01T02:03:04+00:00"])
 
 
-def test_time_omit_microseconds():
+def test_time_omit_microseconds() -> None:
     """
     datetime.time OPT_OMIT_MICROSECONDS
     """
@@ -318,7 +319,7 @@ def test_time_omit_microseconds():
     ) == msgpack.packb(["02:03:04"])
 
 
-def test_datetime_utc_z_naive_omit():
+def test_datetime_utc_z_naive_omit() -> None:
     """
     datetime.datetime naive OPT_UTC_Z
     """
@@ -330,7 +331,7 @@ def test_datetime_utc_z_naive_omit():
     ) == msgpack.packb(["2000-01-01T02:03:04Z"])
 
 
-def test_datetime_utc_z_naive():
+def test_datetime_utc_z_naive() -> None:
     """
     datetime.datetime naive OPT_UTC_Z
     """
@@ -340,7 +341,7 @@ def test_datetime_utc_z_naive():
     ) == msgpack.packb(["2000-01-01T02:03:04.000123Z"])
 
 
-def test_datetime_utc_z_without_tz():
+def test_datetime_utc_z_without_tz() -> None:
     """
     datetime.datetime naive OPT_UTC_Z
     """
@@ -349,7 +350,7 @@ def test_datetime_utc_z_without_tz():
     ) == msgpack.packb(["2000-01-01T02:03:04.000123"])
 
 
-def test_datetime_utc_z_with_tz():
+def test_datetime_utc_z_with_tz() -> None:
     """
     datetime.datetime OPT_UTC_Z
     """
@@ -364,7 +365,7 @@ def test_datetime_utc_z_with_tz():
     ) == msgpack.packb(["2000-01-01T00:00:00.000001+01:00"])
 
 
-def test_datetime_roundtrip():
+def test_datetime_roundtrip() -> None:
     """
     datetime.datetime parsed by pendulum
     """
@@ -376,7 +377,7 @@ def test_datetime_roundtrip():
         assert getattr(obj, attr) == getattr(parsed, attr)
 
 
-def test_date():
+def test_date() -> None:
     """
     datetime.date
     """
@@ -385,7 +386,7 @@ def test_date():
     )
 
 
-def test_date_min():
+def test_date_min() -> None:
     """
     datetime.date MINYEAR
     """
@@ -394,7 +395,7 @@ def test_date_min():
     )
 
 
-def test_date_max():
+def test_date_max() -> None:
     """
     datetime.date MAXYEAR
     """
@@ -403,7 +404,7 @@ def test_date_max():
     )
 
 
-def test_date_three_digits():
+def test_date_three_digits() -> None:
     """
     datetime.date three digit year
     """
@@ -412,7 +413,7 @@ def test_date_three_digits():
     ) == msgpack.packb(["0312-01-01"])
 
 
-def test_date_two_digits():
+def test_date_two_digits() -> None:
     """
     datetime.date two digit year
     """
@@ -421,7 +422,7 @@ def test_date_two_digits():
     ) == msgpack.packb(["0046-01-01"])
 
 
-def test_time():
+def test_time() -> None:
     """
     datetime.time
     """
@@ -431,7 +432,7 @@ def test_time():
     assert ormsgpack.packb([datetime.time(12, 15, 59)]) == msgpack.packb(["12:15:59"])
 
 
-def test_time_tz():
+def test_time_tz() -> None:
     """
     datetime.time with tzinfo error
     """
@@ -441,7 +442,7 @@ def test_time_tz():
         )
 
 
-def test_time_microsecond_max():
+def test_time_microsecond_max() -> None:
     """
     datetime.time microsecond max
     """
@@ -450,7 +451,7 @@ def test_time_microsecond_max():
     )
 
 
-def test_time_microsecond_min():
+def test_time_microsecond_min() -> None:
     """
     datetime.time microsecond min
     """
@@ -459,33 +460,30 @@ def test_time_microsecond_min():
     )
 
 
-def test_passthrough_datetime():
+def test_passthrough_datetime() -> None:
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(
             datetime.datetime(1970, 1, 1), option=ormsgpack.OPT_PASSTHROUGH_DATETIME
         )
 
 
-def test_passthrough_date():
+def test_passthrough_date() -> None:
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(
             datetime.date(1970, 1, 1), option=ormsgpack.OPT_PASSTHROUGH_DATETIME
         )
 
 
-def test_passthrough_time():
+def test_passthrough_time() -> None:
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(
             datetime.time(12, 0, 0), option=ormsgpack.OPT_PASSTHROUGH_DATETIME
         )
 
 
-def test_passthrough_datetime_default():
-    def default(obj):
-        return obj.strftime("%a, %d %b %Y %H:%M:%S GMT")
-
+def test_passthrough_datetime_default() -> None:
     assert ormsgpack.packb(
         datetime.datetime(1970, 1, 1),
         option=ormsgpack.OPT_PASSTHROUGH_DATETIME,
-        default=default,
+        default=lambda x: x.strftime("%a, %d %b %Y %H:%M:%S GMT"),
     ) == msgpack.packb("Thu, 01 Jan 1970 00:00:00 GMT")
