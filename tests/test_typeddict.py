@@ -5,7 +5,7 @@ from typing import TypedDict
 import ormsgpack
 
 
-def test_typeddict():
+def test_typeddict() -> None:
     """
     packb() TypedDict
     """
