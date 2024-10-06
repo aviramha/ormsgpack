@@ -29,10 +29,6 @@ class FlagEnum(enum.Flag):
     ONE = 1
 
 
-class AutoEnum(enum.auto):
-    A = "a"
-
-
 class FloatEnum(float, enum.Enum):
     ONE = 1.1
 
@@ -100,10 +96,6 @@ def test_intflag_enum():
 
 def test_flag_enum():
     assert ormsgpack.packb(FlagEnum.ONE) == msgpack.packb(1)
-
-
-def test_auto_enum():
-    assert ormsgpack.packb(AutoEnum.A) == msgpack.packb("a")
 
 
 def test_float_enum():
