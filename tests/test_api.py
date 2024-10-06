@@ -42,6 +42,24 @@ def test_unpackb_type():
             ormsgpack.unpackb(val)
 
 
+def test_unpackb_bytes():
+    assert ormsgpack.unpackb(b"\x90") == []
+
+
+def test_unpackb_bytearray():
+    assert ormsgpack.unpackb(bytearray(b"\x90")) == []
+
+
+def test_unpackb_memoryview():
+    assert ormsgpack.unpackb(memoryview(b"\x90")) == []
+
+
+def test_unpackb_invalid_data():
+    for val in (b"\xd9\x97#DL_", b"\xc1", b"\x91\xc1"):
+        with pytest.raises(ormsgpack.MsgpackDecodeError):
+            ormsgpack.unpackb(val)
+
+
 def test_loads_recursion():
     """
     unpackb() recursion limit
