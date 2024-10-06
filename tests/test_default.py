@@ -36,17 +36,9 @@ def test_default_not_callable():
     """
     packb() default not callable
     """
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
+    with pytest.raises(ormsgpack.MsgpackEncodeError) as exc_info:
         ormsgpack.packb(Custom(), default=NotImplementedError)
-
-    ran = False
-    try:
-        ormsgpack.packb(Custom(), default=NotImplementedError)
-    except Exception as err:
-        assert isinstance(err, ormsgpack.MsgpackEncodeError)
-        assert str(err) == "default serializer exceeds recursion limit"
-        ran = True
-    assert ran
+    assert str(exc_info.value) == "default serializer exceeds recursion limit"
 
 
 def test_default_func():
@@ -92,17 +84,9 @@ def test_default_func_exc():
     def default(obj):
         raise NotImplementedError
 
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
+    with pytest.raises(ormsgpack.MsgpackEncodeError) as exc_info:
         ormsgpack.packb(Custom(), default=default)
-
-    ran = False
-    try:
-        ormsgpack.packb(Custom(), default=default)
-    except Exception as err:
-        assert isinstance(err, ormsgpack.MsgpackEncodeError)
-        assert str(err) == "Type is not msgpack serializable: Custom"
-        ran = True
-    assert ran
+    assert str(exc_info.value) == "Type is not msgpack serializable: Custom"
 
 
 def test_default_exception_type():
