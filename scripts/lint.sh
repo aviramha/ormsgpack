@@ -4,6 +4,6 @@ set -eou pipefail
 
 ruff format --check .
 ruff check .
-mypy --ignore-missing-imports .
+mypy .
 cargo fmt --check
 cargo clippy -- -D warnings
