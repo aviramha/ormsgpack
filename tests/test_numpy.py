@@ -5,11 +5,7 @@ import pytest
 
 import ormsgpack
 
-try:
-    import numpy
-except ImportError:
-    numpy = None  # type: ignore
-    pytestmark = pytest.mark.skip
+numpy = pytest.importorskip("numpy")
 
 
 def numpy_default(obj):

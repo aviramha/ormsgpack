@@ -2,11 +2,6 @@
 
 import pytest
 
-try:
-    import xxhash
-except ImportError:
-    xxhash = None
-
 import msgpack
 
 import ormsgpack
@@ -62,13 +57,11 @@ def test_str_surrogates_packb():
     pytest.raises(ormsgpack.MsgpackEncodeError, ormsgpack.packb, {"\ud83d\ude80": None})
 
 
-@pytest.mark.skipif(
-    xxhash is None, reason="xxhash install broken on win, python3.9, Azure"
-)
 def test_str_ascii():
     """
     str is ASCII but not compact
     """
+    xxhash = pytest.importorskip("xxhash")
     digest = xxhash.xxh32_hexdigest("12345")
     for _ in range(2):
         assert ormsgpack.unpackb(ormsgpack.packb(digest)) == "b30d56b4"
