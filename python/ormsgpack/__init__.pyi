@@ -8,7 +8,7 @@ def packb(
     option: Optional[int] = None,
 ) -> bytes: ...
 def unpackb(
-    __obj: Union[str, bytes, bytearray, memoryview],
+    obj: Union[bytes, bytearray, memoryview],
     ext_hook: Optional[Callable[[int, bytes], Any]] = ...,
     option: Optional[int] = ...,
 ) -> Any: ...
