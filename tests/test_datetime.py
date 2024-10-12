@@ -364,11 +364,11 @@ def test_datetime_utc_z_with_tz():
     ) == msgpack.packb(["2000-01-01T00:00:00.000001+01:00"])
 
 
-@pytest.mark.skipif(pendulum_timezone is None, reason="pendulum not available")
 def test_datetime_roundtrip():
     """
     datetime.datetime parsed by pendulum
     """
+    pendulum = pytest.importorskip("pendulum")
     obj = datetime.datetime(2000, 1, 1, 0, 0, 0, 1, tzinfo=datetime.timezone.utc)
     deserialized = ormsgpack.unpackb(ormsgpack.packb(obj))
     parsed = pendulum.parse(deserialized)
