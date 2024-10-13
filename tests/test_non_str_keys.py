@@ -34,6 +34,16 @@ def test_dict_keys_datetime_passthrough() -> None:
     ) == msgpack.packb({"2000-01-01T02:03:04.000123": True})
 
 
+def test_dict_keys_tuple_passthrough() -> None:
+    """
+    OPT_PASSTHROUGH_TUPLE does not affect OPT_NON_STR_KEYS
+    """
+    obj = {(1, 2): True}
+    assert ormsgpack.packb(
+        obj, option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_PASSTHROUGH_TUPLE
+    ) == msgpack.packb(obj)
+
+
 def test_dict_non_str_and_sort_keys() -> None:
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(
