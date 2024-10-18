@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.6.0
+
+### Fixed
+
+- Deduplicate map keys also when `OPT_NON_STR_KEYS` is set [#279](/../../issues/279)
+- Add missing type information for Ext type by [trim21](https://github.com/trim21) in [#285](/../../pull/285)
+- Fix type annotation of unpackb first argument
+
+### Changed
+
+- Add support for python 3.13
+- Improve test coverage
+
 ## 1.5.0 19/04/2024
 
 - Add support for numpy datetime64 and float16 types
