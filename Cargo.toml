@@ -1,6 +1,6 @@
 [package]
 name = "ormsgpack"
-version = "1.5.0"
+version = "1.6.0"
 authors = [
     "Aviram Hassan <aviramyhassan@gmail.com>",
     "Emanuele Giaquinta <emanuele.giaquinta@gmail.com>",
