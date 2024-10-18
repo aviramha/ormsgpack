@@ -47,7 +47,7 @@
 
 ### Fixed
 
-- `once_cell` poisoning on parallel initialization by (@Quitlox)[https://github.com/Quitlox] in (#153)[https://github.com/aviramha/ormsgpack/pull/153]
+- `once_cell` poisoning on parallel initialization by [@Quitlox](https://github.com/Quitlox) in [#153](/../../pull/153)
 
 
 ## 1.2.5 02/02/2023
@@ -69,7 +69,7 @@
 
 ## 1.2.3 - 26/06/2022
 ### Misc
-- Updated dependencies. partially by [@tilman19](https://github.com/aviramha/ormsgpack/pull/101)
+- Updated dependencies. partially by [@tilman19](/../../pull/101)
 - Handle clippy warnings.
 
 
@@ -82,15 +82,15 @@
 - Update dependencies
 ## 1.2.0 - 14/2/2022
 ### Changed
-- Extended int passthrough to support u64. by [@pejter](https://github.com/aviramha/ormsgpack/pull/77)
+- Extended int passthrough to support u64. by [@pejter](/../../pull/77)
 ### Misc
-- Updated README to include new options. by [@ThomasTNO](https://github.com/aviramha/ormsgpack/pull/70)
+- Updated README to include new options. by [@ThomasTNO](/../../pull/70)
 - Updated dependencies
 - Renamed in `numpy.rs` `from_parent` to `to_children` to fix new lint rules
 ## 1.1.0 - 8/1/2022
 ### Added
-- Add optional passthrough for tuples. by [@TariqTNO](https://github.com/aviramha/ormsgpack/pull/64)
-- Add optional passthrough for ints, that do not fit into an i64. by [@TariqTNO](https://github.com/aviramha/ormsgpack/pull/64)
+- Add optional passthrough for tuples. by [@TariqTNO](/../../pull/64)
+- Add optional passthrough for ints, that do not fit into an i64. by [@TariqTNO](/../../pull/64)
 ### Changed
 - `opt` parameter can be `None`.
 ### Misc
@@ -132,7 +132,7 @@
 - Refactored adding objects to the module, creating a `__all__` object similar to the way PyO3 creates. This solves an issue with upgrading to new maturin version.
 - Changed < Py3.7 implementation to use automatic range inclusion.
 - Added test to validate correct Python method flags are used on declare.
-- Changed to use PyO3 configurations instead of our own. PR [#25](https://github.com/aviramha/ormsgpack/pull/25) by [@pejter](https://github.com/pejter).
+- Changed to use PyO3 configurations instead of our own. PR [#25](/../../pull/25) by [@pejter](https://github.com/pejter).
 ## 0.3.2 - 13/7/2021
 ### Fixed
 - Fix memory leak serializing `datetime.datetime` with `tzinfo`. (Copied from orjson)
@@ -142,9 +142,9 @@
 - Setup dependabot.
 ## 0.3.1 - 19/6/2021
 ### Changed
-- `packb` of maps and sequences is now almost 2x faster as it leverages known size. PR [#18](https://github.com/aviramha/ormsgpack/pull/18) by [@ijl](https://github.com/ijl).
+- `packb` of maps and sequences is now almost 2x faster as it leverages known size. PR [#18](/../../pull/18) by [@ijl](https://github.com/ijl).
 ### Misc
-- Added `scripts/bench_target.py` and `scripts/profile.sh` for easily benchmarking and profiling. Works only on Linux. PR [#17](https://github.com/aviramha/ormsgpack/pull/17) by [@ijl](https://github.com/ijl).
+- Added `scripts/bench_target.py` and `scripts/profile.sh` for easily benchmarking and profiling. Works only on Linux. PR [#17](/../../pull/17) by [@ijl](https://github.com/ijl).
 ## 0.3.0 - 13/6/2021
 ### Added
 - `unpackb` now accepts keyword argument `option` with argument `OPT_NON_STR_KEYS`. This option will let ormsgpack
