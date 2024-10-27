@@ -2,16 +2,20 @@
 
 use crate::deserialize::cache::*;
 use crate::deserialize::DeserializeError;
+use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
 use crate::typeref::*;
 use crate::unicode::*;
-use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
-use serde_bytes::ByteBuf;
+use byteorder::{BigEndian, ReadBytesExt};
+use rmp::Marker;
+use simdutf8::basic::{from_utf8, Utf8Error};
 use std::borrow::Cow;
-use std::fmt;
+use std::fmt::{self, Display, Formatter};
 use std::os::raw::c_char;
 use std::ptr::NonNull;
+
+const RECURSION_LIMIT: u16 = 1024;
 
 pub fn deserialize(
     ptr: *mut pyo3::ffi::PyObject,
@@ -44,15 +48,44 @@ pub fn deserialize(
     }
     let contents: &[u8] = unsafe { std::slice::from_raw_parts(buffer, length) };
 
-    let mut deserializer = rmp_serde::Deserializer::new(contents);
-    if (opts & NON_STR_KEYS) != 0 {
-        let seed = MsgpackNonStrDictValue { ext_hook };
-        seed.deserialize(&mut deserializer)
-            .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
-    } else {
-        let seed = MsgpackValue { ext_hook };
-        seed.deserialize(&mut deserializer)
-            .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
+    let mut deserializer = Deserializer::new(contents, ext_hook, opts);
+    deserializer
+        .deserialize()
+        .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
+}
+
+#[derive(Debug)]
+enum Error {
+    ExtHookFailed,
+    ExtHookMissing,
+    Internal,
+    InvalidStr,
+    InvalidType(Marker),
+    RecursionLimitReached,
+    UnexpectedEof,
+}
+
+impl Display for Error {
+    #[cold]
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        match *self {
+            Error::ExtHookFailed => fmt.write_str("ext_hook failed"),
+            Error::ExtHookMissing => fmt.write_str("ext_hook missing"),
+            Error::Internal => fmt.write_str("internal error"),
+            Error::InvalidStr => fmt.write_str(INVALID_STR),
+            Error::InvalidType(ref marker) => {
+                write!(fmt, "invalid type {marker:?}")
+            }
+            Error::RecursionLimitReached => fmt.write_str(RECURSION_LIMIT_REACHED),
+            Error::UnexpectedEof => write!(fmt, "unexpected end of file"),
+        }
+    }
+}
+
+impl From<Utf8Error> for Error {
+    #[cold]
+    fn from(_: Utf8Error) -> Error {
+        Error::InvalidStr
     }
 }
 
@@ -76,29 +109,110 @@ fn unicode_from_map_key(key: &str) -> *mut pyo3::ffi::PyObject {
     }
 }
 
-#[derive(Clone, Copy)]
-struct MsgpackExtValue {
+struct Deserializer<'de> {
+    data: &'de [u8],
     ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
+    opts: Opt,
+    recursion: u16,
 }
 
-impl<'de> Visitor<'de> for MsgpackExtValue {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("msgpack extension type")
+impl<'de> Deserializer<'de> {
+    fn new(data: &'de [u8], ext_hook: Option<NonNull<pyo3::ffi::PyObject>>, opts: Opt) -> Self {
+        Deserializer {
+            data: data,
+            ext_hook: ext_hook,
+            opts: opts,
+            recursion: 0,
+        }
     }
 
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let tag: i8 = seq
-            .next_element()?
-            .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+    fn read_slice(&mut self, len: usize) -> Result<&'de [u8], Error> {
+        if len > self.data.len() {
+            return Err(Error::UnexpectedEof);
+        }
+        let (a, b) = self.data.split_at(len);
+        self.data = b;
+        Ok(a)
+    }
 
-        let data: ByteBuf = seq
-            .next_element()?
-            .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+    #[inline(always)]
+    fn read_f32(&mut self) -> Result<f32, Error> {
+        self.data
+            .read_f32::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_f64(&mut self) -> Result<f64, Error> {
+        self.data
+            .read_f64::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_i8(&mut self) -> Result<i8, Error> {
+        self.data.read_i8().map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_i16(&mut self) -> Result<i16, Error> {
+        self.data
+            .read_i16::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_i32(&mut self) -> Result<i32, Error> {
+        self.data
+            .read_i32::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_i64(&mut self) -> Result<i64, Error> {
+        self.data
+            .read_i64::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_u8(&mut self) -> Result<u8, Error> {
+        self.data.read_u8().map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, Error> {
+        self.data
+            .read_u16::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, Error> {
+        self.data
+            .read_u32::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, Error> {
+        self.data
+            .read_u64::<BigEndian>()
+            .map_err(|_| Error::UnexpectedEof)
+    }
+
+    #[inline(always)]
+    fn read_marker(&mut self) -> Result<Marker, Error> {
+        let n = self.read_u8()?;
+        Ok(Marker::from_u8(n))
+    }
+
+    fn deserialize_ext(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let tag = self.read_i8()?;
+        let data = self.read_slice(len as usize)?;
 
         match self.ext_hook {
             Some(callable) => {
@@ -116,408 +230,389 @@ impl<'de> Visitor<'de> for MsgpackExtValue {
                 ffi!(Py_DECREF(tag_obj));
                 ffi!(Py_DECREF(data_obj));
                 if unlikely!(obj.is_null()) {
-                    Err(de::Error::custom("ext_hook failed"))
+                    Err(Error::ExtHookFailed)
                 } else {
                     Ok(nonnull!(obj))
                 }
             }
-            None => Err(de::Error::custom("ext_hook missing")),
+            None => Err(Error::ExtHookMissing),
         }
     }
-}
 
-#[derive(Clone, Copy)]
-struct MsgpackValue {
-    ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl<'de> DeserializeSeed<'de> for MsgpackValue {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(self)
-    }
-}
-
-impl<'de> Visitor<'de> for MsgpackValue {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("msgpack")
-    }
-
-    fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_tuple(
-            2,
-            MsgpackExtValue {
-                ext_hook: self.ext_hook,
-            },
-        )
-    }
-
-    fn visit_unit<E>(self) -> Result<Self::Value, E> {
+    fn deserialize_null(&self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
         ffi!(Py_INCREF(NONE));
         Ok(nonnull!(NONE))
     }
 
-    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        if value {
-            ffi!(Py_INCREF(TRUE));
-            Ok(nonnull!(TRUE))
-        } else {
-            ffi!(Py_INCREF(FALSE));
-            Ok(nonnull!(FALSE))
-        }
+    fn deserialize_true(&self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        ffi!(Py_INCREF(TRUE));
+        Ok(nonnull!(TRUE))
     }
 
-    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
+    fn deserialize_false(&self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        ffi!(Py_INCREF(FALSE));
+        Ok(nonnull!(FALSE))
+    }
+
+    fn deserialize_i64(
+        &self,
+        value: i64,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
         Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
     }
 
-    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
+    fn deserialize_u64(
+        &self,
+        value: u64,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
         Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
     }
 
-    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
+    fn deserialize_f64(
+        &self,
+        value: f64,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
         Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
     }
 
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_str(value.as_str())))
-    }
-
-    fn visit_borrowed_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
+    fn deserialize_str(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let data = self.read_slice(len as usize)?;
+        let value = from_utf8(data)?;
         Ok(nonnull!(unicode_from_str(value)))
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_str(value)))
-    }
-
-    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
+    fn deserialize_bin(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let v = self.read_slice(len as usize)?;
         let ptr = v.as_ptr() as *const c_char;
         let len = v.len() as pyo3::ffi::Py_ssize_t;
         Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
     }
 
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let size = seq.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
-        let ptr = ffi!(PyList_New(size));
-        let mut i = 0;
-        while let Some(elem) = seq.next_element_seed(self)? {
+    fn deserialize_array(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let ptr = ffi!(PyList_New(len as pyo3::ffi::Py_ssize_t));
+        for i in 0..len {
+            let elem = self.deserialize()?;
             ffi!(PyList_SET_ITEM(
                 ptr,
                 i as pyo3::ffi::Py_ssize_t,
                 elem.as_ptr()
             ));
-            i += 1;
         }
         Ok(nonnull!(ptr))
     }
 
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        let size = map.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
-        let dict_ptr = ffi!(_PyDict_NewPresized(size));
-        while let Some(key) = map.next_key::<Cow<str>>()? {
-            let value = map.next_value_seed(self)?;
-            let pykey = unicode_from_map_key(&key);
-            let pyhash = unsafe { (*pykey.cast::<pyo3::ffi::PyASCIIObject>()).hash };
+    fn deserialize_map_with_str_keys(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let dict_ptr = ffi!(_PyDict_NewPresized(len as pyo3::ffi::Py_ssize_t));
+        for _ in 0..len {
+            let marker = self.read_marker()?;
+            let key = match marker {
+                Marker::FixStr(len) => self.deserialize_map_str_key(len.into()),
+                Marker::Str8 => {
+                    let len = self.read_u8()?;
+                    self.deserialize_map_str_key(len.into())
+                }
+                Marker::Str16 => {
+                    let len = self.read_u16()?;
+                    self.deserialize_map_str_key(len.into())
+                }
+                Marker::Str32 => {
+                    let len = self.read_u32()?;
+                    self.deserialize_map_str_key(len)
+                }
+                marker => Err(Error::InvalidType(marker)),
+            }?;
+            let value = self.deserialize()?;
+            let pyhash = unsafe { (*key.as_ptr().cast::<pyo3::ffi::PyASCIIObject>()).hash };
             let _ = ffi!(_PyDict_SetItem_KnownHash(
                 dict_ptr,
-                pykey,
+                key.as_ptr(),
                 value.as_ptr(),
                 pyhash
             ));
             // counter Py_INCREF in insertdict
-            ffi!(Py_DECREF(pykey));
+            ffi!(Py_DECREF(key.as_ptr()));
             ffi!(Py_DECREF(value.as_ptr()));
         }
         Ok(nonnull!(dict_ptr))
     }
-}
 
-// Implemntation of MsgpackValue that can deserialize non-str keys also.
-#[derive(Clone, Copy)]
-struct MsgpackNonStrDictValue {
-    ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl<'de> DeserializeSeed<'de> for MsgpackNonStrDictValue {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(self)
-    }
-}
-
-impl<'de> Visitor<'de> for MsgpackNonStrDictValue {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("msgpack")
-    }
-
-    fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_tuple(
-            2,
-            MsgpackExtValue {
-                ext_hook: self.ext_hook,
-            },
-        )
-    }
-
-    fn visit_unit<E>(self) -> Result<Self::Value, E> {
-        ffi!(Py_INCREF(NONE));
-        Ok(nonnull!(NONE))
-    }
-
-    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        if value {
-            ffi!(Py_INCREF(TRUE));
-            Ok(nonnull!(TRUE))
-        } else {
-            ffi!(Py_INCREF(FALSE));
-            Ok(nonnull!(FALSE))
-        }
-    }
-
-    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
-    }
-
-    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
-    }
-
-    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_str(value.as_str())))
-    }
-
-    fn visit_borrowed_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_str(value)))
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_str(value)))
-    }
-
-    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        let ptr = v.as_ptr() as *const c_char;
-        let len = v.len() as pyo3::ffi::Py_ssize_t;
-        Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let size = seq.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
-        let ptr = ffi!(PyList_New(size));
-        let mut i = 0;
-        while let Some(elem) = seq.next_element_seed(self)? {
-            ffi!(PyList_SET_ITEM(
-                ptr,
-                i as pyo3::ffi::Py_ssize_t,
-                elem.as_ptr()
-            ));
-            i += 1;
-        }
-        Ok(nonnull!(ptr))
-    }
-
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        let size = map.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
-        let dict_ptr = ffi!(_PyDict_NewPresized(size));
-        while let Some((key, value)) = map.next_entry_seed(MsgpackKey {}, self)? {
+    fn deserialize_map_with_non_str_keys(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let dict_ptr = ffi!(_PyDict_NewPresized(len as pyo3::ffi::Py_ssize_t));
+        for _ in 0..len {
+            let key = self.deserialize_map_key()?;
+            let value = self.deserialize()?;
             let ret = ffi!(PyDict_SetItem(dict_ptr, key.as_ptr(), value.as_ptr()));
             if unlikely!(ret == -1) {
-                return Err(de::Error::custom("PyDict_SetItem failed"));
+                return Err(Error::Internal);
             }
             ffi!(Py_DECREF(key.as_ptr()));
             ffi!(Py_DECREF(value.as_ptr()));
         }
         Ok(nonnull!(dict_ptr))
     }
-}
 
-#[derive(Clone, Copy)]
-struct MsgpackKey;
-
-impl<'de> DeserializeSeed<'de> for MsgpackKey {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(self)
-    }
-}
-
-impl<'de> Visitor<'de> for MsgpackKey {
-    type Value = NonNull<pyo3::ffi::PyObject>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("msgpack")
-    }
-
-    fn visit_unit<E>(self) -> Result<Self::Value, E> {
-        ffi!(Py_INCREF(NONE));
-        Ok(nonnull!(NONE))
-    }
-
-    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        if value {
-            ffi!(Py_INCREF(TRUE));
-            Ok(nonnull!(TRUE))
+    fn deserialize_map(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        if self.opts & NON_STR_KEYS != 0 {
+            self.deserialize_map_with_non_str_keys(len)
         } else {
-            ffi!(Py_INCREF(FALSE));
-            Ok(nonnull!(FALSE))
+            self.deserialize_map_with_str_keys(len)
         }
     }
 
-    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
+    fn deserialize(&mut self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        self.recursion += 1;
+        if unlikely!(self.recursion == RECURSION_LIMIT) {
+            return Err(Error::RecursionLimitReached);
+        }
+
+        let marker = self.read_marker()?;
+        let value = match marker {
+            Marker::Null => self.deserialize_null(),
+            Marker::True => self.deserialize_true(),
+            Marker::False => self.deserialize_false(),
+            Marker::FixPos(value) => self.deserialize_u64(value.into()),
+            Marker::U8 => {
+                let value = self.read_u8()?;
+                self.deserialize_u64(value.into())
+            }
+            Marker::U16 => {
+                let value = self.read_u16()?;
+                self.deserialize_u64(value.into())
+            }
+            Marker::U32 => {
+                let value = self.read_u32()?;
+                self.deserialize_u64(value.into())
+            }
+            Marker::U64 => {
+                let value = self.read_u64()?;
+                self.deserialize_u64(value)
+            }
+            Marker::FixNeg(value) => self.deserialize_i64(value.into()),
+            Marker::I8 => {
+                let value = self.read_i8()?;
+                self.deserialize_i64(value.into())
+            }
+            Marker::I16 => {
+                let value = self.read_i16()?;
+                self.deserialize_i64(value.into())
+            }
+            Marker::I32 => {
+                let value = self.read_i32()?;
+                self.deserialize_i64(value.into())
+            }
+            Marker::I64 => {
+                let value = self.read_i64()?;
+                self.deserialize_i64(value)
+            }
+            Marker::F32 => {
+                let value = self.read_f32()?;
+                self.deserialize_f64(value.into())
+            }
+            Marker::F64 => {
+                let value = self.read_f64()?;
+                self.deserialize_f64(value)
+            }
+            Marker::FixStr(len) => self.deserialize_str(len.into()),
+            Marker::Str8 => {
+                let len = self.read_u8()?;
+                self.deserialize_str(len.into())
+            }
+            Marker::Str16 => {
+                let len = self.read_u16()?;
+                self.deserialize_str(len.into())
+            }
+            Marker::Str32 => {
+                let len = self.read_u32()?;
+                self.deserialize_str(len)
+            }
+            Marker::Bin8 => {
+                let len = self.read_u8()?;
+                self.deserialize_bin(len.into())
+            }
+            Marker::Bin16 => {
+                let len = self.read_u16()?;
+                self.deserialize_bin(len.into())
+            }
+            Marker::Bin32 => {
+                let len = self.read_u32()?;
+                self.deserialize_bin(len)
+            }
+            Marker::FixArray(len) => self.deserialize_array(len.into()),
+            Marker::Array16 => {
+                let len = self.read_u16()?;
+                self.deserialize_array(len.into())
+            }
+            Marker::Array32 => {
+                let len = self.read_u32()?;
+                self.deserialize_array(len)
+            }
+            Marker::FixMap(len) => self.deserialize_map(len.into()),
+            Marker::Map16 => {
+                let len = self.read_u16()?;
+                self.deserialize_map(len.into())
+            }
+            Marker::Map32 => {
+                let len = self.read_u32()?;
+                self.deserialize_map(len)
+            }
+            Marker::FixExt1 => self.deserialize_ext(1),
+            Marker::FixExt2 => self.deserialize_ext(2),
+            Marker::FixExt4 => self.deserialize_ext(4),
+            Marker::FixExt8 => self.deserialize_ext(8),
+            Marker::FixExt16 => self.deserialize_ext(16),
+            Marker::Ext8 => {
+                let len = self.read_u8()?;
+                self.deserialize_ext(len.into())
+            }
+            Marker::Ext16 => {
+                let len = self.read_u16()?;
+                self.deserialize_ext(len.into())
+            }
+            Marker::Ext32 => {
+                let len = self.read_u32()?;
+                self.deserialize_ext(len)
+            }
+            Marker::Reserved => Err(Error::InvalidType(Marker::Reserved)),
+        };
+
+        self.recursion -= 1;
+        value
     }
 
-    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
-    }
-
-    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_map_key(value.as_str())))
-    }
-
-    fn visit_borrowed_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
+    fn deserialize_map_str_key(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let data = self.read_slice(len as usize)?;
+        let value = from_utf8(data)?;
         Ok(nonnull!(unicode_from_map_key(value)))
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(nonnull!(unicode_from_map_key(value)))
-    }
-
-    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        let ptr = v.as_ptr() as *const c_char;
-        let len = v.len() as pyo3::ffi::Py_ssize_t;
-        Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let size = seq.size_hint().unwrap() as pyo3::ffi::Py_ssize_t;
-        let ptr = ffi!(PyTuple_New(size));
-        let mut i = 0;
-        while let Some(elem) = seq.next_element_seed(self)? {
+    fn deserialize_map_array_key(
+        &mut self,
+        len: u32,
+    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let ptr = ffi!(PyTuple_New(len as pyo3::ffi::Py_ssize_t));
+        for i in 0..len {
+            let elem = self.deserialize_map_key()?;
             ffi!(PyTuple_SET_ITEM(
                 ptr,
                 i as pyo3::ffi::Py_ssize_t,
                 elem.as_ptr()
             ));
-            i += 1;
         }
         Ok(nonnull!(ptr))
+    }
+
+    fn deserialize_map_key(&mut self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        self.recursion += 1;
+        if unlikely!(self.recursion == RECURSION_LIMIT) {
+            return Err(Error::RecursionLimitReached);
+        }
+
+        let marker = self.read_marker()?;
+        let value = match marker {
+            Marker::Null => self.deserialize_null(),
+            Marker::True => self.deserialize_true(),
+            Marker::False => self.deserialize_false(),
+            Marker::FixPos(value) => self.deserialize_u64(value.into()),
+            Marker::U8 => {
+                let value = self.read_u8()?;
+                self.deserialize_u64(value.into())
+            }
+            Marker::U16 => {
+                let value = self.read_u16()?;
+                self.deserialize_u64(value.into())
+            }
+            Marker::U32 => {
+                let value = self.read_u32()?;
+                self.deserialize_u64(value.into())
+            }
+            Marker::U64 => {
+                let value = self.read_u64()?;
+                self.deserialize_u64(value)
+            }
+            Marker::FixNeg(value) => self.deserialize_i64(value.into()),
+            Marker::I8 => {
+                let value = self.read_i8()?;
+                self.deserialize_i64(value.into())
+            }
+            Marker::I16 => {
+                let value = self.read_i16()?;
+                self.deserialize_i64(value.into())
+            }
+            Marker::I32 => {
+                let value = self.read_i32()?;
+                self.deserialize_i64(value.into())
+            }
+            Marker::I64 => {
+                let value = self.read_i64()?;
+                self.deserialize_i64(value)
+            }
+            Marker::F32 => {
+                let value = self.read_f32()?;
+                self.deserialize_f64(value.into())
+            }
+            Marker::F64 => {
+                let value = self.read_f64()?;
+                self.deserialize_f64(value)
+            }
+            Marker::FixStr(len) => self.deserialize_map_str_key(len.into()),
+            Marker::Str8 => {
+                let len = self.read_u8()?;
+                self.deserialize_map_str_key(len.into())
+            }
+            Marker::Str16 => {
+                let len = self.read_u16()?;
+                self.deserialize_map_str_key(len.into())
+            }
+            Marker::Str32 => {
+                let len = self.read_u32()?;
+                self.deserialize_map_str_key(len)
+            }
+            Marker::Bin8 => {
+                let len = self.read_u8()?;
+                self.deserialize_bin(len.into())
+            }
+            Marker::Bin16 => {
+                let len = self.read_u16()?;
+                self.deserialize_bin(len.into())
+            }
+            Marker::Bin32 => {
+                let len = self.read_u32()?;
+                self.deserialize_bin(len)
+            }
+            Marker::FixArray(len) => self.deserialize_map_array_key(len.into()),
+            Marker::Array16 => {
+                let len = self.read_u16()?;
+                self.deserialize_map_array_key(len.into())
+            }
+            Marker::Array32 => {
+                let len = self.read_u32()?;
+                self.deserialize_map_array_key(len)
+            }
+            marker => Err(Error::InvalidType(marker)),
+        };
+
+        self.recursion -= 1;
+        value
     }
 }
