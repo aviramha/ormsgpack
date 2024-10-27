@@ -38,7 +38,6 @@ unstable-simd = [
 
 [dependencies]
 ahash = { version = "0.8", default-features = false }
-associative-cache = { version = "2", default-features = false }
 bytecount = { version = "^0.6.7", default-features = false, features = ["runtime-dispatch-simd"] }
 byteorder = { version = "1.5.0", default-features = false, features = ["std"] }
 chrono = { version = "0.4.38", default-features = false }

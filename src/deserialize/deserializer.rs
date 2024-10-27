@@ -89,26 +89,6 @@ impl From<Utf8Error> for Error {
     }
 }
 
-fn unicode_from_map_key(key: &str) -> *mut pyo3::ffi::PyObject {
-    if unlikely!(key.len() > 64) {
-        let pykey = unicode_from_str(key);
-        hash_str(pykey);
-        pykey
-    } else {
-        let hash = cache_hash(key.as_bytes());
-        let map = unsafe { KEY_MAP.get_mut().unwrap_or_else(|| unreachable!()) };
-        let entry = map.entry(&hash).or_insert_with(
-            || hash,
-            || {
-                let pykey = unicode_from_str(key);
-                hash_str(pykey);
-                CachedKey::new(pykey)
-            },
-        );
-        entry.get()
-    }
-}
-
 struct Deserializer<'de> {
     data: &'de [u8],
     ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
@@ -501,9 +481,15 @@ impl<'de> Deserializer<'de> {
         &mut self,
         len: u32,
     ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        let data = self.read_slice(len as usize)?;
-        let value = from_utf8(data)?;
-        Ok(nonnull!(unicode_from_map_key(value)))
+        if unlikely!(len > 64) {
+            let value = self.deserialize_str(len)?;
+            hash_str(value.as_ptr());
+            Ok(value)
+        } else {
+            let data = self.read_slice(len as usize)?;
+            let map = unsafe { KEY_MAP.get_mut().unwrap_or_else(|| unreachable!()) };
+            Ok(map.get(data)?)
+        }
     }
 
     fn deserialize_map_array_key(
