@@ -71,7 +71,7 @@ pub trait DateTimeLike: DateLike + TimeLike {
                 if opts & UTC_Z != 0 {
                     buf.push(b'Z');
                 } else {
-                    buf.extend_from_slice(&[b'+', b'0', b'0', b':', b'0', b'0']);
+                    buf.extend_from_slice(b"+00:00");
                 }
             } else {
                 let offset_hour: i32;
