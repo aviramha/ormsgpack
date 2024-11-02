@@ -34,7 +34,6 @@ default = ["unstable-simd"]
 # Use SIMD intrinsics. This requires Rust on the nightly channel.
 unstable-simd = [
     "bytecount/generic-simd",
-    "encoding_rs/simd-accel",
 ]
 
 [dependencies]
@@ -42,7 +41,6 @@ ahash = { version = "0.8", default-features = false }
 bytecount = { version = "^0.6.7", default-features = false, features = ["runtime-dispatch-simd"] }
 byteorder = { version = "1.5.0", default-features = false, features = ["std"] }
 chrono = { version = "0.4.38", default-features = false }
-encoding_rs = { version = "0.8", default-features = false }
 half = { version = "2.4.1", default-features = false }
 itoa = { version = "1", default-features = false }
 once_cell = { version = "1", default-features = false, features = ["race"] }
