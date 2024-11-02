@@ -6,67 +6,23 @@ use pyo3::ffi::*;
 
 // see unicodeobject.h for documentation
 
-const STRIDE_SIZE: usize = 8;
-
-fn is_four_byte(buf: &str) -> bool {
-    let as_bytes = buf.as_bytes();
-    let len = as_bytes.len();
-    unsafe {
-        let mut idx = 0;
-        while idx < len.saturating_sub(STRIDE_SIZE) {
-            let mut val: bool = false;
-            val |= *as_bytes.get_unchecked(idx) > 239;
-            val |= *as_bytes.get_unchecked(idx + 1) > 239;
-            val |= *as_bytes.get_unchecked(idx + 2) > 239;
-            val |= *as_bytes.get_unchecked(idx + 3) > 239;
-            val |= *as_bytes.get_unchecked(idx + 4) > 239;
-            val |= *as_bytes.get_unchecked(idx + 5) > 239;
-            val |= *as_bytes.get_unchecked(idx + 6) > 239;
-            val |= *as_bytes.get_unchecked(idx + 7) > 239;
-            idx += STRIDE_SIZE;
-            if val {
-                return true;
-            }
-        }
-        let mut ret = false;
-        while idx < len {
-            ret |= *as_bytes.get_unchecked(idx) > 239;
-            idx += 1;
-        }
-        ret
-    }
-}
-
-enum PyUnicodeKind {
-    Ascii,
-    OneByte,
-    TwoByte,
-    FourByte,
-}
-
-fn find_str_kind(buf: &str, num_chars: usize) -> PyUnicodeKind {
-    if buf.len() == num_chars {
-        PyUnicodeKind::Ascii
-    } else if is_four_byte(buf) {
-        PyUnicodeKind::FourByte
-    } else if encoding_rs::mem::is_str_latin1(buf) {
-        PyUnicodeKind::OneByte
-    } else {
-        PyUnicodeKind::TwoByte
-    }
-}
-
 pub fn unicode_from_str(buf: &str) -> *mut PyObject {
     if buf.is_empty() {
         ffi!(Py_INCREF(EMPTY_UNICODE));
         unsafe { EMPTY_UNICODE }
     } else {
         let num_chars = bytecount::num_chars(buf.as_bytes());
-        match find_str_kind(buf, num_chars) {
-            PyUnicodeKind::Ascii => pyunicode_ascii(buf),
-            PyUnicodeKind::OneByte => pyunicode_onebyte(buf, num_chars),
-            PyUnicodeKind::TwoByte => pyunicode_twobyte(buf, num_chars),
-            PyUnicodeKind::FourByte => pyunicode_fourbyte(buf, num_chars),
+        if buf.len() == num_chars {
+            pyunicode_ascii(buf)
+        } else {
+            let max = buf.bytes().max().unwrap();
+            if max >= 0xf0 {
+                pyunicode_fourbyte(buf, num_chars)
+            } else if max >= 0xc4 {
+                pyunicode_twobyte(buf, num_chars)
+            } else {
+                pyunicode_onebyte(buf, num_chars)
+            }
         }
     }
 }
