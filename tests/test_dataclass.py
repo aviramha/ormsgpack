@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 from dataclasses import InitVar, asdict, dataclass, field
+from functools import cached_property
 from typing import ClassVar, Optional
 
 import msgpack
@@ -105,6 +106,72 @@ def test_dataclass_empty_with_slots() -> None:
         __slots__ = ()
 
     assert ormsgpack.packb(Dataclass()) == msgpack.packb({})
+
+
+def test_dataclass_with_non_init_field() -> None:
+    @dataclass
+    class Dataclass:
+        a: str
+        b: int = field(default=1, init=False)
+
+    obj = Dataclass("a")
+    assert ormsgpack.packb(obj) == msgpack.packb(
+        {
+            "a": "a",
+            "b": 1,
+        }
+    )
+
+
+def test_dataclass_with_descriptor_field() -> None:
+    class Descriptor:
+        def __init__(self, *, default: int) -> None:
+            self._default = default
+
+        def __set_name__(self, owner: object, name: str) -> None:
+            self._name = "_" + name
+
+        def __get__(self, instance: object, owner: object) -> int:
+            if instance is None:
+                return self._default
+
+            return getattr(instance, self._name, self._default)
+
+        def __set__(self, instance: object, value: int) -> None:
+            setattr(instance, self._name, value)
+
+    @dataclass
+    class Dataclass:
+        a: str
+        b: Descriptor = Descriptor(default=0)
+
+    obj = Dataclass("a", 1)
+    assert ormsgpack.packb(obj) == msgpack.packb(
+        {
+            "a": "a",
+            "b": 1,
+        }
+    )
+
+
+def test_dataclass_with_cached_property() -> None:
+    @dataclass
+    class Dataclass:
+        a: str
+        b: int
+
+        @cached_property
+        def name(self) -> str:
+            return "dataclass"
+
+    obj = Dataclass("a", 1)
+    obj.name
+    assert ormsgpack.packb(obj) == msgpack.packb(
+        {
+            "a": "a",
+            "b": 1,
+        }
+    )
 
 
 def test_dataclass_with_private_field() -> None:

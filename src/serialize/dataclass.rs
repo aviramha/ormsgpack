@@ -12,70 +12,6 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
 use std::ptr::NonNull;
 
-pub struct Dataclass {
-    ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl Dataclass {
-    pub fn new(
-        ptr: *mut pyo3::ffi::PyObject,
-        opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
-    ) -> Self {
-        Dataclass {
-            ptr: ptr,
-            opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
-            default: default,
-        }
-    }
-}
-
-impl Serialize for Dataclass {
-    #[inline(never)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let ob_type = ob_type!(self.ptr);
-        if pydict_contains!(ob_type, SLOTS_STR) {
-            DataclassFields::new(
-                self.ptr,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer)
-        } else {
-            match AttributeDict::new(
-                self.ptr,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            ) {
-                Ok(val) => val.serialize(serializer),
-                Err(AttributeDictError::DictMissing) => DataclassFields::new(
-                    self.ptr,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion,
-                    self.default,
-                )
-                .serialize(serializer),
-            }
-        }
-    }
-}
-
 pub enum AttributeDictError {
     DictMissing,
 }
@@ -159,7 +95,7 @@ impl Serialize for AttributeDict {
     }
 }
 
-pub struct DataclassFields {
+pub struct Dataclass {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
     default_calls: u8,
@@ -167,7 +103,7 @@ pub struct DataclassFields {
     default: Option<NonNull<pyo3::ffi::PyObject>>,
 }
 
-impl DataclassFields {
+impl Dataclass {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         opts: Opt,
@@ -175,7 +111,7 @@ impl DataclassFields {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
-        DataclassFields {
+        Dataclass {
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -185,7 +121,13 @@ impl DataclassFields {
     }
 }
 
-impl Serialize for DataclassFields {
+fn is_pseudo_field(field: *mut pyo3::ffi::PyObject) -> bool {
+    let field_type = ffi!(PyObject_GetAttr(field, FIELD_TYPE_STR));
+    ffi!(Py_DECREF(field_type));
+    !is_type!(field_type as *mut pyo3::ffi::PyTypeObject, FIELD_TYPE)
+}
+
+impl Serialize for Dataclass {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -196,14 +138,21 @@ impl Serialize for DataclassFields {
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
+
+        let dict = {
+            let ob_type = ob_type!(self.ptr);
+            if pydict_contains!(ob_type, SLOTS_STR) {
+                std::ptr::null_mut()
+            } else {
+                let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
+                ffi!(Py_DECREF(dict));
+                dict
+            }
+        };
+
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (attr, field) in PyDictIter::from_pyobject(fields) {
-            let field_type = ffi!(PyObject_GetAttr(field.as_ptr(), FIELD_TYPE_STR));
-            ffi!(Py_DECREF(field_type));
-            if !is_type!(field_type as *mut pyo3::ffi::PyTypeObject, FIELD_TYPE) {
-                continue;
-            }
             let data = unicode_to_str(attr.as_ptr());
             if unlikely!(data.is_none()) {
                 err!(INVALID_STR);
@@ -213,9 +162,22 @@ impl Serialize for DataclassFields {
                 continue;
             }
 
-            let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
-            ffi!(Py_DECREF(value));
-            items.push((key_as_str, value));
+            if unlikely!(dict.is_null()) {
+                if !is_pseudo_field(field.as_ptr()) {
+                    let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
+                    ffi!(Py_DECREF(value));
+                    items.push((key_as_str, value));
+                }
+            } else {
+                let value = ffi!(PyDict_GetItem(dict, attr.as_ptr()));
+                if !value.is_null() {
+                    items.push((key_as_str, value));
+                } else if !is_pseudo_field(field.as_ptr()) {
+                    let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
+                    ffi!(Py_DECREF(value));
+                    items.push((key_as_str, value));
+                }
+            }
         }
 
         let mut map = serializer.serialize_map(Some(items.len())).unwrap();
