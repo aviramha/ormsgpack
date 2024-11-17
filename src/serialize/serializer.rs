@@ -34,7 +34,7 @@ pub fn serialize(
     match res {
         Ok(_) => Ok(buf.finish()),
         Err(err) => {
-            ffi!(_Py_Dealloc(buf.finish().as_ptr()));
+            ffi!(Py_DECREF(buf.finish().as_ptr()));
             Err(err.to_string())
         }
     }
