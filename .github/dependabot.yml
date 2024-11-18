@@ -8,3 +8,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      pyo3:
+        applies-to: version-updates
+        patterns:
+          - "pyo3*"
