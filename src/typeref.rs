@@ -64,7 +64,7 @@ pub static mut DICT_STR: *mut PyObject = null_mut();
 pub static mut DATACLASS_FIELDS_STR: *mut PyObject = null_mut();
 pub static mut SLOTS_STR: *mut PyObject = null_mut();
 pub static mut PYDANTIC_FIELDS_STR: *mut PyObject = null_mut();
-pub static mut PYDANTIC2_FIELDS_STR: *mut PyObject = null_mut();
+pub static mut PYDANTIC2_VALIDATOR_STR: *mut PyObject = null_mut();
 pub static mut FIELD_TYPE_STR: *mut PyObject = null_mut();
 pub static mut ARRAY_STRUCT_STR: *mut PyObject = null_mut();
 pub static mut DTYPE_STR: *mut PyObject = null_mut();
@@ -144,8 +144,8 @@ pub fn init_typerefs() {
             PyUnicode_InternFromString("__dataclass_fields__\0".as_ptr() as *const c_char);
         SLOTS_STR = PyUnicode_InternFromString("__slots__\0".as_ptr() as *const c_char);
         PYDANTIC_FIELDS_STR = PyUnicode_InternFromString("__fields__\0".as_ptr() as *const c_char);
-        PYDANTIC2_FIELDS_STR =
-            PyUnicode_InternFromString("model_fields\0".as_ptr() as *const c_char);
+        PYDANTIC2_VALIDATOR_STR =
+            PyUnicode_InternFromString("__pydantic_validator__\0".as_ptr() as *const c_char);
         FIELD_TYPE_STR = PyUnicode_InternFromString("_field_type\0".as_ptr() as *const c_char);
         ARRAY_STRUCT_STR =
             PyUnicode_InternFromString("__array_struct__\0".as_ptr() as *const c_char);

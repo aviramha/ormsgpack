@@ -145,7 +145,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
         ObType::NumpyArray
     } else if opts & SERIALIZE_PYDANTIC != 0
         && (pydict_contains!(ob_type, PYDANTIC_FIELDS_STR)
-            || pydict_contains!(ob_type, PYDANTIC2_FIELDS_STR))
+            || pydict_contains!(ob_type, PYDANTIC2_VALIDATOR_STR))
     {
         ObType::Pydantic
     } else if is_type!(ob_type, EXT_TYPE) {
