@@ -31,9 +31,6 @@ impl Serialize for Ext {
         let length = unsafe { PyBytes_GET_SIZE((*ext).data) as usize };
         let data = unsafe { std::slice::from_raw_parts(buffer, length) };
 
-        serializer.serialize_newtype_struct(
-            rmp_serde::MSGPACK_EXT_STRUCT_NAME,
-            &(tag as i8, ByteBuf::from(data)),
-        )
+        serializer.serialize_newtype_variant("", tag as u32, "", &ByteBuf::from(data))
     }
 }
