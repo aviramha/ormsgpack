@@ -2,28 +2,13 @@
 ![PyPI](https://img.shields.io/pypi/v/ormsgpack)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/ormsgpack)
 
-ormsgpack is a fast msgpack library for Python. It is a fork/reboot of [orjson](https://github.com/ijl/orjson)
-It serializes faster than [msgpack-python](https://github.com/msgpack/msgpack-python) and deserializes a bit slower (right now).
-It supports serialization of:
-[dataclass](#dataclass),
-[datetime](#datetime),
-[numpy](#numpy),
-[pydantic](#pydantic) and
-[UUID](#uuid) instances natively.
+ormsgpack is a fast msgpack serialization library for Python derived
+from [orjson](https://github.com/ijl/orjson), with native support for
+various Python types.
 
-Its features and drawbacks compared to other Python msgpack libraries:
-
-* serializes `dataclass` instances natively.
-* serializes `datetime`, `date`, and `time` instances to RFC 3339 format,
-e.g., "1970-01-01T00:00:00+00:00"
-* serializes `numpy.ndarray` instances natively and faster.
-* serializes `pydantic.BaseModel` instances natively
-* serializes arbitrary types using a `default` hook
-
-ormsgpack supports CPython 3.8, 3.9, 3.10, 3.11, 3.12 and 3.13.
-ormsgpack does not support PyPy. Releases follow semantic
-versioning and serializing a new object type without an opt-in flag is
-considered a breaking change.
+ormsgpack supports CPython 3.9, 3.10, 3.11, 3.12 and 3.13. Releases
+follow semantic versioning and serializing a new object type without
+an opt-in flag is considered a breaking change.
 
 ormsgpack is licensed under both the Apache 2.0 and MIT licenses. The
 repository and issue tracker is
@@ -106,7 +91,7 @@ serializes subclasses of `str`, `int`, `dict`, `list`,
 of `tuple` to avoid serializing `namedtuple` objects as arrays. To avoid
 serializing subclasses, specify the option `ormsgpack.OPT_PASSTHROUGH_SUBCLASS`.
 
-The output is a `bytes` object containing UTF-8.
+The output is a `bytes` object.
 
 The global interpreter lock (GIL) is held for the duration of the call.
 
@@ -873,7 +858,7 @@ level above this.
 
 ## Packaging
 
-To package ormsgpack requires [Rust](https://www.rust-lang.org/) 1.65
+To package ormsgpack requires [Rust](https://www.rust-lang.org/) 1.70
 or newer and the [maturin](https://github.com/PyO3/maturin) build
 tool. The default feature `unstable-simd` enables the usage of SIMD
 operations and requires nightly Rust. The recommended build command
