@@ -1,5 +1,3 @@
-from typing import List
-
 import msgpack
 from pydantic import BaseModel
 
@@ -14,7 +12,7 @@ class Member(BaseModel):
 class Object(BaseModel):
     id: int
     name: str
-    members: List[Member]
+    members: list[Member]
 
 
 objects_as_pydantic = [

@@ -1,5 +1,4 @@
 import dataclasses
-from typing import List
 
 import msgpack
 
@@ -16,7 +15,7 @@ class Member:
 class Object:
     id: int
     name: str
-    members: List[Member]
+    members: list[Member]
 
 
 objects_as_dataclass = [
