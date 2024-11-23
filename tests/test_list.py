@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from typing import List
-
 import msgpack
 import pytest
 
@@ -16,7 +14,7 @@ import ormsgpack
         pytest.param([i for i in range(65536)], id="array 32"),
     ),
 )
-def test_list(value: List[int]) -> None:
+def test_list(value: list[int]) -> None:
     packed = ormsgpack.packb(value)
     assert packed == msgpack.packb(value)
     assert ormsgpack.unpackb(packed) == value

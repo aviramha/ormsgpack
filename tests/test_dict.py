@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from typing import Dict
-
 import msgpack
 import pytest
 
@@ -16,7 +14,7 @@ import ormsgpack
         pytest.param({str(i): i for i in range(65536)}, id="map 32"),
     ),
 )
-def test_dict(value: Dict[str, int]) -> None:
+def test_dict(value: dict[str, int]) -> None:
     packed = ormsgpack.packb(value)
     assert packed == msgpack.packb(value)
     assert ormsgpack.unpackb(packed) == value

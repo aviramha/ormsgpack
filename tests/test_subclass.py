@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import collections
-from typing import Dict, List, Tuple
 
 import msgpack
 import pytest
@@ -17,11 +16,11 @@ class SubInt(int):
     pass
 
 
-class SubDict(Dict[str, object]):
+class SubDict(dict[str, object]):
     pass
 
 
-class SubList(List[object]):
+class SubList(list[object]):
     pass
 
 
@@ -29,7 +28,7 @@ class SubFloat(float):
     pass
 
 
-class SubTuple(Tuple[object, object]):
+class SubTuple(tuple[object, object]):
     pass
 
 
