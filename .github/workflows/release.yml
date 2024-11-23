@@ -3,6 +3,8 @@ name: Release
 on:
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
   push:
     branches: [ master ]
