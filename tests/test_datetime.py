@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 import datetime
-import sys
+import zoneinfo
 from typing import Callable
 
 import msgpack
@@ -21,15 +21,6 @@ else:
     pendulum_timezone = pendulum.timezone
     pendulum_UTC = pendulum.UTC
 
-if sys.version_info >= (3, 9):
-    import zoneinfo
-
-    ZoneInfo = zoneinfo.ZoneInfo
-    ZoneInfoUTC = zoneinfo.ZoneInfo("UTC")
-else:
-    ZoneInfo = None
-    ZoneInfoUTC = None
-
 
 TIMEZONE_PARAMS = (
     pytest.param(
@@ -42,11 +33,7 @@ TIMEZONE_PARAMS = (
     ),
     pytest.param(pytz.timezone, id="pytz"),
     pytest.param(get_zonefile_instance().get, id="dateutil"),
-    pytest.param(
-        ZoneInfo,
-        id="zoneinfo",
-        marks=pytest.mark.skipif(ZoneInfo is None, reason="zoneinfo not available"),
-    ),
+    pytest.param(zoneinfo.ZoneInfo, id="zoneinfo"),
 )
 
 
@@ -133,11 +120,7 @@ def test_datetime_tz_assume() -> None:
         ),
         pytest.param(pytz.UTC, id="pytz"),
         pytest.param(tz.UTC, id="dateutil"),
-        pytest.param(
-            ZoneInfoUTC,
-            id="zoneinfo",
-            marks=pytest.mark.skipif(ZoneInfo is None, reason="zoneinfo not available"),
-        ),
+        pytest.param(zoneinfo.ZoneInfo("UTC"), id="zoneinfo"),
     ),
 )
 def test_datetime_utc(timezone: datetime.tzinfo) -> None:

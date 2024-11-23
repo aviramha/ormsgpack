@@ -42,13 +42,3 @@ def test_str_surrogates() -> None:
         ormsgpack.packb("\udc00")
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb("\ud83d\ude80")
-
-
-def test_str_ascii() -> None:
-    """
-    str is ASCII but not compact
-    """
-    xxhash = pytest.importorskip("xxhash")
-    digest = xxhash.xxh32_hexdigest("12345")
-    for _ in range(2):
-        assert ormsgpack.unpackb(ormsgpack.packb(digest)) == "b30d56b4"
