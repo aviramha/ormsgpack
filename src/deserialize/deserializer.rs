@@ -11,7 +11,6 @@ use byteorder::{BigEndian, ReadBytesExt};
 use rmp::Marker;
 use simdutf8::basic::{from_utf8, Utf8Error};
 use std::borrow::Cow;
-use std::fmt::{self, Display, Formatter};
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 
@@ -21,7 +20,7 @@ pub fn deserialize(
     ptr: *mut pyo3::ffi::PyObject,
     ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
     opts: Opt,
-) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
+) -> Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
     let obj_type_ptr = ob_type!(ptr);
     let buffer: *const u8;
     let length: usize;
@@ -65,19 +64,19 @@ enum Error {
     UnexpectedEof,
 }
 
-impl Display for Error {
+impl std::fmt::Display for Error {
     #[cold]
-    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Error::ExtHookFailed => fmt.write_str("ext_hook failed"),
-            Error::ExtHookMissing => fmt.write_str("ext_hook missing"),
-            Error::Internal => fmt.write_str("internal error"),
-            Error::InvalidStr => fmt.write_str(INVALID_STR),
+            Error::ExtHookFailed => f.write_str("ext_hook failed"),
+            Error::ExtHookMissing => f.write_str("ext_hook missing"),
+            Error::Internal => f.write_str("internal error"),
+            Error::InvalidStr => f.write_str(INVALID_STR),
             Error::InvalidType(ref marker) => {
-                write!(fmt, "invalid type {marker:?}")
+                write!(f, "invalid type {marker:?}")
             }
-            Error::RecursionLimitReached => fmt.write_str(RECURSION_LIMIT_REACHED),
-            Error::UnexpectedEof => write!(fmt, "unexpected end of file"),
+            Error::RecursionLimitReached => f.write_str(RECURSION_LIMIT_REACHED),
+            Error::UnexpectedEof => write!(f, "unexpected end of file"),
         }
     }
 }
@@ -187,10 +186,7 @@ impl<'de> Deserializer<'de> {
         Ok(Marker::from_u8(n))
     }
 
-    fn deserialize_ext(
-        &mut self,
-        len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_ext(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let tag = self.read_i8()?;
         let data = self.read_slice(len as usize)?;
 
@@ -219,65 +215,47 @@ impl<'de> Deserializer<'de> {
         }
     }
 
-    fn deserialize_null(&self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_null(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         ffi!(Py_INCREF(NONE));
         Ok(nonnull!(NONE))
     }
 
-    fn deserialize_true(&self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_true(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         ffi!(Py_INCREF(TRUE));
         Ok(nonnull!(TRUE))
     }
 
-    fn deserialize_false(&self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_false(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         ffi!(Py_INCREF(FALSE));
         Ok(nonnull!(FALSE))
     }
 
-    fn deserialize_i64(
-        &self,
-        value: i64,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_i64(&self, value: i64) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
     }
 
-    fn deserialize_u64(
-        &self,
-        value: u64,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_u64(&self, value: u64) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
     }
 
-    fn deserialize_f64(
-        &self,
-        value: f64,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_f64(&self, value: f64) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
     }
 
-    fn deserialize_str(
-        &mut self,
-        len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_str(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let data = self.read_slice(len as usize)?;
         let value = from_utf8(data)?;
         Ok(nonnull!(unicode_from_str(value)))
     }
 
-    fn deserialize_bin(
-        &mut self,
-        len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_bin(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let v = self.read_slice(len as usize)?;
         let ptr = v.as_ptr() as *const c_char;
         let len = v.len() as pyo3::ffi::Py_ssize_t;
         Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
     }
 
-    fn deserialize_array(
-        &mut self,
-        len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_array(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let ptr = ffi!(PyList_New(len as pyo3::ffi::Py_ssize_t));
         for i in 0..len {
             let elem = self.deserialize()?;
@@ -293,7 +271,7 @@ impl<'de> Deserializer<'de> {
     fn deserialize_map_with_str_keys(
         &mut self,
         len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let dict_ptr = ffi!(_PyDict_NewPresized(len as pyo3::ffi::Py_ssize_t));
         for _ in 0..len {
             let marker = self.read_marker()?;
@@ -331,7 +309,7 @@ impl<'de> Deserializer<'de> {
     fn deserialize_map_with_non_str_keys(
         &mut self,
         len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let dict_ptr = ffi!(_PyDict_NewPresized(len as pyo3::ffi::Py_ssize_t));
         for _ in 0..len {
             let key = self.deserialize_map_key()?;
@@ -346,10 +324,7 @@ impl<'de> Deserializer<'de> {
         Ok(nonnull!(dict_ptr))
     }
 
-    fn deserialize_map(
-        &mut self,
-        len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_map(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         if self.opts & NON_STR_KEYS != 0 {
             self.deserialize_map_with_non_str_keys(len)
         } else {
@@ -357,7 +332,7 @@ impl<'de> Deserializer<'de> {
         }
     }
 
-    fn deserialize(&mut self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize(&mut self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         self.recursion += 1;
         if unlikely!(self.recursion == RECURSION_LIMIT) {
             return Err(Error::RecursionLimitReached);
@@ -477,10 +452,7 @@ impl<'de> Deserializer<'de> {
         value
     }
 
-    fn deserialize_map_str_key(
-        &mut self,
-        len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_map_str_key(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         if unlikely!(len > 64) {
             let value = self.deserialize_str(len)?;
             hash_str(value.as_ptr());
@@ -495,7 +467,7 @@ impl<'de> Deserializer<'de> {
     fn deserialize_map_array_key(
         &mut self,
         len: u32,
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let ptr = ffi!(PyTuple_New(len as pyo3::ffi::Py_ssize_t));
         for i in 0..len {
             let elem = self.deserialize_map_key()?;
@@ -508,7 +480,7 @@ impl<'de> Deserializer<'de> {
         Ok(nonnull!(ptr))
     }
 
-    fn deserialize_map_key(&mut self) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Error> {
+    fn deserialize_map_key(&mut self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         self.recursion += 1;
         if unlikely!(self.recursion == RECURSION_LIMIT) {
             return Err(Error::RecursionLimitReached);

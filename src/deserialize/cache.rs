@@ -46,10 +46,7 @@ impl<const C: usize> KeyMap<C> {
         KeyMap { entries: entries }
     }
 
-    pub fn get(
-        &mut self,
-        key: &[u8],
-    ) -> std::result::Result<NonNull<pyo3::ffi::PyObject>, Utf8Error> {
+    pub fn get(&mut self, key: &[u8]) -> Result<NonNull<pyo3::ffi::PyObject>, Utf8Error> {
         let mut hasher = unsafe { HASH_BUILDER.get().unwrap().build_hasher() };
         let hash = {
             hasher.write(key);
