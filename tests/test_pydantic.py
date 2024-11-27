@@ -52,3 +52,22 @@ def test_pydantic_v1_model() -> None:
             "y": 0,
         },
     }
+
+
+def test_pydantic_model_sort_keys() -> None:
+    class Model(pydantic.BaseModel):
+        b: int
+        c: int
+        a: int
+
+    obj = Model(b=1, c=2, a=3)
+    packed = ormsgpack.packb(
+        obj,
+        option=ormsgpack.OPT_SERIALIZE_PYDANTIC | ormsgpack.OPT_SORT_KEYS,
+    )
+    assert list(obj.__dict__.keys()) != sorted(obj.__dict__.keys())
+    assert list(ormsgpack.unpackb(packed).items()) == [
+        ("a", 3),
+        ("b", 1),
+        ("c", 2),
+    ]
