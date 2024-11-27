@@ -749,7 +749,11 @@ b'\xd9$886313e1-3b8a-5372-9b90-0c9aee199e5d'
 ```
 
 ### Pydantic
-ormsgpack serializes `pydantic.BaseModel` instances natively.
+ormsgpack serializes `pydantic.BaseModel` instances natively, with
+[duck-typing](https://docs.pydantic.dev/2.10/concepts/serialization/#serializing-with-duck-typing).
+This is equivalent to serializing
+`model.model_dump(serialize_as_any=True)` with Pydantic V2 or
+`model.dict()`with Pydantic V1.
 
 #### Performance
 ![alt text](doc/pydantic.svg "pydantic")
