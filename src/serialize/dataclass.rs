@@ -79,6 +79,10 @@ impl Serialize for AttributeDict {
             items.push((key_as_str, value.as_ptr()));
         }
 
+        if self.opts & SORT_KEYS != 0 {
+            items.sort_unstable_by(|a, b| a.0.cmp(b.0));
+        }
+
         let mut map = serializer.serialize_map(Some(items.len())).unwrap();
         for (key, value) in items.iter() {
             let pyvalue = PyObject::new(
