@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.7.0
+
+### Fixed
+
+- Detect Pydantic 2.10 models [#311](/../../issues/311)
+- Fix serialization of dataclasses without `__slots__` and with a field defined
+  with a descriptor object as default value, a field defined with `init=False`
+  and a default value, or a cached property
+
+### Changed
+
+- Drop support for Python 3.8
+- Support `OPT_SORT_KEYS` also for Pydantic models [#312](/../../issues/312)
+- Improve deserialization performance
+
 ## 1.6.0 18/10/2024
 
 ### Fixed
