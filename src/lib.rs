@@ -53,7 +53,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
         PyMethodDef {
             ml_name: "packb\0".as_ptr() as *const c_char,
             ml_meth: PyMethodDefPointer {
-                _PyCFunctionFastWithKeywords: packb,
+                PyCFunctionFastWithKeywords: packb,
             },
             ml_flags: METH_FASTCALL | METH_KEYWORDS,
             ml_doc: PACKB_DOC.as_ptr() as *const c_char,
@@ -61,7 +61,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
         PyMethodDef {
             ml_name: "unpackb\0".as_ptr() as *const c_char,
             ml_meth: PyMethodDefPointer {
-                _PyCFunctionFastWithKeywords: unpackb,
+                PyCFunctionFastWithKeywords: unpackb,
             },
             ml_flags: METH_FASTCALL | METH_KEYWORDS,
             ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
