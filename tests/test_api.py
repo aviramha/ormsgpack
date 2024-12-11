@@ -82,44 +82,42 @@ def test_valueerror() -> None:
         ormsgpack.unpackb(b"\x91")
 
 
-def test_option_not_int() -> None:
-    """
-    packb/unpackb() option not int or None
-    """
+@pytest.mark.parametrize(
+    "option",
+    (
+        1 << 12,
+        True,
+        -1,
+        9223372036854775809,
+    ),
+)
+def test_packb_invalid_option(option: int) -> None:
     with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(True, option=True)
+        ormsgpack.packb(True, option=option)
+
+
+@pytest.mark.parametrize(
+    "option",
+    (
+        ormsgpack.OPT_NAIVE_UTC,
+        ormsgpack.OPT_OMIT_MICROSECONDS,
+        ormsgpack.OPT_PASSTHROUGH_BIG_INT,
+        ormsgpack.OPT_PASSTHROUGH_DATACLASS,
+        ormsgpack.OPT_PASSTHROUGH_DATETIME,
+        ormsgpack.OPT_PASSTHROUGH_SUBCLASS,
+        ormsgpack.OPT_PASSTHROUGH_TUPLE,
+        ormsgpack.OPT_SERIALIZE_NUMPY,
+        ormsgpack.OPT_SERIALIZE_PYDANTIC,
+        ormsgpack.OPT_SORT_KEYS,
+        ormsgpack.OPT_UTC_Z,
+        True,
+        -1,
+        9223372036854775809,
+    ),
+)
+def test_unpackb_invalid_option(option: int) -> None:
     with pytest.raises(ormsgpack.MsgpackDecodeError):
-        ormsgpack.unpackb(b"\x00", option=True)
-
-
-def test_option_invalid_int() -> None:
-    """
-    packb/unpackb() option invalid 64-bit number
-    """
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(True, option=9223372036854775809)
-    with pytest.raises(ormsgpack.MsgpackDecodeError):
-        ormsgpack.unpackb(b"\x00", option=9223372036854775809)
-
-
-def test_option_range_low() -> None:
-    """
-    packb/unpackb() option out of range low
-    """
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(True, option=-1)
-    with pytest.raises(ormsgpack.MsgpackDecodeError):
-        ormsgpack.unpackb(b"\x00", option=-1)
-
-
-def test_option_range_high() -> None:
-    """
-    packb/unpackb() option out of range high
-    """
-    with pytest.raises(ormsgpack.MsgpackEncodeError):
-        ormsgpack.packb(True, option=1 << 14)
-    with pytest.raises(ormsgpack.MsgpackDecodeError):
-        ormsgpack.unpackb(b"\x00", option=1 << 14)
+        ormsgpack.unpackb(b"\x00", option=option)
 
 
 def test_opts_multiple() -> None:
