@@ -122,15 +122,15 @@ fn utcoffset(ptr: *mut pyo3::ffi::PyObject) -> Result<Offset, DateTimeError> {
     let py_offset: *mut pyo3::ffi::PyObject;
     if ffi!(PyObject_HasAttr(tzinfo, CONVERT_METHOD_STR)) == 1 {
         // pendulum
-        py_offset = call_method!(ptr, UTCOFFSET_METHOD_STR);
+        py_offset = ffi!(PyObject_CallMethodNoArgs(ptr, UTCOFFSET_METHOD_STR));
     } else if ffi!(PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR)) == 1 {
         // pytz
-        let normalized = call_method!(tzinfo, NORMALIZE_METHOD_STR, ptr);
-        py_offset = call_method!(normalized, UTCOFFSET_METHOD_STR);
+        let normalized = ffi!(PyObject_CallMethodOneArg(tzinfo, NORMALIZE_METHOD_STR, ptr));
+        py_offset = ffi!(PyObject_CallMethodNoArgs(normalized, UTCOFFSET_METHOD_STR));
         ffi!(Py_DECREF(normalized));
     } else if ffi!(PyObject_HasAttr(tzinfo, DST_STR)) == 1 {
         // dateutil/arrow, datetime.timezone.utc
-        py_offset = call_method!(tzinfo, UTCOFFSET_METHOD_STR, ptr);
+        py_offset = ffi!(PyObject_CallMethodOneArg(tzinfo, UTCOFFSET_METHOD_STR, ptr));
     } else {
         return Err(DateTimeError::LibraryUnsupported);
     }
