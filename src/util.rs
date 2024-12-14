@@ -66,39 +66,6 @@ macro_rules! ffi {
     };
 }
 
-#[cfg(Py_3_9)]
-macro_rules! call_method {
-    ($obj1:expr, $obj2:expr) => {
-        unsafe { pyo3::ffi::PyObject_CallMethodNoArgs($obj1, $obj2) }
-    };
-    ($obj1:expr, $obj2:expr, $obj3:expr) => {
-        unsafe { pyo3::ffi::PyObject_CallMethodOneArg($obj1, $obj2, $obj3) }
-    };
-}
-
-#[cfg(not(Py_3_9))]
-macro_rules! call_method {
-    ($obj1:expr, $obj2:expr) => {
-        unsafe {
-            pyo3::ffi::PyObject_CallMethodObjArgs(
-                $obj1,
-                $obj2,
-                std::ptr::null_mut() as *mut pyo3::ffi::PyObject,
-            )
-        }
-    };
-    ($obj1:expr, $obj2:expr, $obj3:expr) => {
-        unsafe {
-            pyo3::ffi::PyObject_CallMethodObjArgs(
-                $obj1,
-                $obj2,
-                $obj3,
-                std::ptr::null_mut() as *mut pyo3::ffi::PyObject,
-            )
-        }
-    };
-}
-
 #[cfg(not(Py_3_12))]
 macro_rules! pydict_contains {
     ($obj1:expr, $obj2:expr) => {
