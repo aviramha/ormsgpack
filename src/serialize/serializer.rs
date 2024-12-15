@@ -569,7 +569,7 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
         ObType::Int
     } else if py_is!(ob_type, BOOL_TYPE) {
         ObType::Bool
-    } else if py_is!(ob_type, NONE_TYPE) {
+    } else if py_is!(obj, NONE) {
         ObType::None
     } else if py_is!(ob_type, FLOAT_TYPE) {
         ObType::Float

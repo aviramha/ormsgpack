@@ -41,7 +41,6 @@ pub static mut MEMORYVIEW_TYPE: *mut PyTypeObject = null_mut();
 pub static mut STR_TYPE: *mut PyTypeObject = null_mut();
 pub static mut INT_TYPE: *mut PyTypeObject = null_mut();
 pub static mut BOOL_TYPE: *mut PyTypeObject = null_mut();
-pub static mut NONE_TYPE: *mut PyTypeObject = null_mut();
 pub static mut FLOAT_TYPE: *mut PyTypeObject = null_mut();
 pub static mut LIST_TYPE: *mut PyTypeObject = null_mut();
 pub static mut DICT_TYPE: *mut PyTypeObject = null_mut();
@@ -107,26 +106,16 @@ pub fn init_typerefs() {
         TRUE = Py_True();
         FALSE = Py_False();
         EMPTY_UNICODE = PyUnicode_New(0, 255);
-        STR_TYPE = (*EMPTY_UNICODE).ob_type;
-        BYTES_TYPE = (*PyBytes_FromStringAndSize("".as_ptr() as *const c_char, 0)).ob_type;
-
-        {
-            let bytearray = PyByteArray_FromStringAndSize("".as_ptr() as *const c_char, 0);
-            BYTEARRAY_TYPE = (*bytearray).ob_type;
-
-            let memoryview = PyMemoryView_FromObject(bytearray);
-            MEMORYVIEW_TYPE = (*memoryview).ob_type;
-            Py_DECREF(memoryview);
-            Py_DECREF(bytearray);
-        }
-
-        DICT_TYPE = (*PyDict_New()).ob_type;
-        LIST_TYPE = (*PyList_New(0)).ob_type;
-        TUPLE_TYPE = (*PyTuple_New(0)).ob_type;
-        NONE_TYPE = (*NONE).ob_type;
-        BOOL_TYPE = (*TRUE).ob_type;
-        INT_TYPE = (*PyLong_FromLongLong(0)).ob_type;
-        FLOAT_TYPE = (*PyFloat_FromDouble(0.0)).ob_type;
+        STR_TYPE = &mut PyUnicode_Type;
+        BYTES_TYPE = &mut PyBytes_Type;
+        BYTEARRAY_TYPE = &mut PyByteArray_Type;
+        MEMORYVIEW_TYPE = &mut PyMemoryView_Type;
+        DICT_TYPE = &mut PyDict_Type;
+        LIST_TYPE = &mut PyList_Type;
+        TUPLE_TYPE = &mut PyTuple_Type;
+        BOOL_TYPE = &mut PyBool_Type;
+        INT_TYPE = &mut PyLong_Type;
+        FLOAT_TYPE = &mut PyFloat_Type;
         DATETIME_TYPE = look_up_datetime_type();
         DATE_TYPE = look_up_date_type();
         TIME_TYPE = look_up_time_type();
