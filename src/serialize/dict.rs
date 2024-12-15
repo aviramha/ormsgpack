@@ -114,7 +114,7 @@ impl Serialize for DictWithStrKeys {
         let len = ffi!(Py_SIZE(self.ptr)) as usize;
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!is_type!(ob_type!(key.as_ptr()), STR_TYPE)) {
+            if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
             }
             let data = unicode_to_str(key.as_ptr());
@@ -171,7 +171,7 @@ impl Serialize for DictWithSortedStrKeys {
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!is_type!(ob_type!(key.as_ptr()), STR_TYPE)) {
+            if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
             }
             let data = unicode_to_str(key.as_ptr());
@@ -235,7 +235,7 @@ impl Serialize for DictWithNonStrKeys {
         let len = ffi!(Py_SIZE(self.ptr)) as usize;
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if is_type!(ob_type!(key.as_ptr()), STR_TYPE) {
+            if py_is!(ob_type!(key.as_ptr()), STR_TYPE) {
                 let data = unicode_to_str(key.as_ptr());
                 if unlikely!(data.is_none()) {
                     err!(INVALID_STR)

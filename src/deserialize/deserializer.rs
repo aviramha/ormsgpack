@@ -25,10 +25,10 @@ pub fn deserialize(
     let buffer: *const u8;
     let length: usize;
 
-    if is_type!(obj_type_ptr, BYTES_TYPE) {
+    if py_is!(obj_type_ptr, BYTES_TYPE) {
         buffer = unsafe { PyBytes_AS_STRING(ptr) as *const u8 };
         length = unsafe { PyBytes_GET_SIZE(ptr) as usize };
-    } else if is_type!(obj_type_ptr, MEMORYVIEW_TYPE) {
+    } else if py_is!(obj_type_ptr, MEMORYVIEW_TYPE) {
         let membuf = unsafe { PyMemoryView_GET_BUFFER(ptr) };
         if unsafe { pyo3::ffi::PyBuffer_IsContiguous(membuf, b'C' as c_char) == 0 } {
             return Err(DeserializeError::new(Cow::Borrowed(
@@ -37,7 +37,7 @@ pub fn deserialize(
         }
         buffer = unsafe { (*membuf).buf as *const u8 };
         length = unsafe { (*membuf).len as usize };
-    } else if is_type!(obj_type_ptr, BYTEARRAY_TYPE) {
+    } else if py_is!(obj_type_ptr, BYTEARRAY_TYPE) {
         buffer = ffi!(PyByteArray_AsString(ptr)) as *const u8;
         length = ffi!(PyByteArray_Size(ptr)) as usize;
     } else {

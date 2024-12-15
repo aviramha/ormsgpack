@@ -552,11 +552,11 @@ pub enum ObType {
 
 pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
     let ob_type = ob_type!(obj);
-    if is_type!(ob_type, STR_TYPE) {
+    if py_is!(ob_type, STR_TYPE) {
         ObType::Str
-    } else if is_type!(ob_type, BYTES_TYPE) {
+    } else if py_is!(ob_type, BYTES_TYPE) {
         ObType::Bytes
-    } else if is_type!(ob_type, INT_TYPE)
+    } else if py_is!(ob_type, INT_TYPE)
         && (opts & PASSTHROUGH_BIG_INT == 0
             || ffi!(_PyLong_NumBits(obj)) <= {
                 if pylong_is_positive(obj) {
@@ -567,17 +567,17 @@ pub fn pyobject_to_obtype(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
             })
     {
         ObType::Int
-    } else if is_type!(ob_type, BOOL_TYPE) {
+    } else if py_is!(ob_type, BOOL_TYPE) {
         ObType::Bool
-    } else if is_type!(ob_type, NONE_TYPE) {
+    } else if py_is!(ob_type, NONE_TYPE) {
         ObType::None
-    } else if is_type!(ob_type, FLOAT_TYPE) {
+    } else if py_is!(ob_type, FLOAT_TYPE) {
         ObType::Float
-    } else if is_type!(ob_type, LIST_TYPE) {
+    } else if py_is!(ob_type, LIST_TYPE) {
         ObType::List
-    } else if is_type!(ob_type, DICT_TYPE) {
+    } else if py_is!(ob_type, DICT_TYPE) {
         ObType::Dict
-    } else if is_type!(ob_type, DATETIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
+    } else if py_is!(ob_type, DATETIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
         ObType::Datetime
     } else {
         pyobject_to_obtype_unlikely(obj, opts)
@@ -593,15 +593,15 @@ macro_rules! is_subclass {
 #[inline(never)]
 pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
     let ob_type = ob_type!(obj);
-    if is_type!(ob_type, DATE_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
+    if py_is!(ob_type, DATE_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
         ObType::Date
-    } else if is_type!(ob_type, TIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
+    } else if py_is!(ob_type, TIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
         ObType::Time
-    } else if is_type!(ob_type, TUPLE_TYPE) && opts & PASSTHROUGH_TUPLE == 0 {
+    } else if py_is!(ob_type, TUPLE_TYPE) && opts & PASSTHROUGH_TUPLE == 0 {
         ObType::Tuple
-    } else if is_type!(ob_type, UUID_TYPE) {
+    } else if py_is!(ob_type, UUID_TYPE) {
         ObType::Uuid
-    } else if is_type!(ob_type!(ob_type), ENUM_TYPE) {
+    } else if py_is!(ob_type!(ob_type), ENUM_TYPE) {
         ObType::Enum
     } else if opts & PASSTHROUGH_SUBCLASS == 0 && is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS)
     {
@@ -633,7 +633,7 @@ pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> 
             || pydict_contains!(ob_type, PYDANTIC2_VALIDATOR_STR))
     {
         ObType::Pydantic
-    } else if is_type!(ob_type, EXT_TYPE) {
+    } else if py_is!(ob_type, EXT_TYPE) {
         ObType::Ext
     } else {
         ObType::Unknown
