@@ -541,7 +541,19 @@ pub enum ObType {
     Tuple,
     Uuid,
     Dataclass,
-    NumpyScalar,
+    NumpyBool,
+    NumpyDatetime64,
+    NumpyFloat16,
+    NumpyFloat32,
+    NumpyFloat64,
+    NumpyInt8,
+    NumpyInt16,
+    NumpyInt32,
+    NumpyInt64,
+    NumpyUint8,
+    NumpyUint16,
+    NumpyUint32,
+    NumpyUint64,
     NumpyArray,
     Pydantic,
     Enum,
@@ -655,11 +667,50 @@ fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObTy
     }
 
     if opts & SERIALIZE_NUMPY != 0 {
-        if is_numpy_scalar(ob_type) {
-            return ObType::NumpyScalar;
-        }
-        if is_numpy_array(ob_type) {
-            return ObType::NumpyArray;
+        if let Some(numpy_types) = unsafe { NUMPY_TYPES.get_or_init(load_numpy_types) } {
+            let numpy_types_ref = unsafe { numpy_types.as_ref() };
+            if ob_type == numpy_types_ref.bool_ {
+                return ObType::NumpyBool;
+            }
+            if ob_type == numpy_types_ref.datetime64 {
+                return ObType::NumpyDatetime64;
+            }
+            if ob_type == numpy_types_ref.float16 {
+                return ObType::NumpyFloat16;
+            }
+            if ob_type == numpy_types_ref.float32 {
+                return ObType::NumpyFloat32;
+            }
+            if ob_type == numpy_types_ref.float64 {
+                return ObType::NumpyFloat64;
+            }
+            if ob_type == numpy_types_ref.int8 {
+                return ObType::NumpyInt8;
+            }
+            if ob_type == numpy_types_ref.int16 {
+                return ObType::NumpyInt16;
+            }
+            if ob_type == numpy_types_ref.int32 {
+                return ObType::NumpyInt32;
+            }
+            if ob_type == numpy_types_ref.int64 {
+                return ObType::NumpyInt64;
+            }
+            if ob_type == numpy_types_ref.uint8 {
+                return ObType::NumpyUint8;
+            }
+            if ob_type == numpy_types_ref.uint16 {
+                return ObType::NumpyUint16;
+            }
+            if ob_type == numpy_types_ref.uint32 {
+                return ObType::NumpyUint32;
+            }
+            if ob_type == numpy_types_ref.uint64 {
+                return ObType::NumpyUint64;
+            }
+            if ob_type == numpy_types_ref.array {
+                return ObType::NumpyArray;
+            }
         }
     }
 
@@ -814,7 +865,21 @@ impl Serialize for PyObject {
                     }
                 }
             },
-            ObType::NumpyScalar => NumpyScalar::new(self.ptr, self.opts).serialize(serializer),
+            ObType::NumpyBool => NumpyBool::new(self.ptr).serialize(serializer),
+            ObType::NumpyDatetime64 => {
+                NumpyDatetime64::new(self.ptr, self.opts).serialize(serializer)
+            }
+            ObType::NumpyFloat16 => NumpyFloat16::new(self.ptr).serialize(serializer),
+            ObType::NumpyFloat32 => NumpyFloat32::new(self.ptr).serialize(serializer),
+            ObType::NumpyFloat64 => NumpyFloat64::new(self.ptr).serialize(serializer),
+            ObType::NumpyInt8 => NumpyInt8::new(self.ptr).serialize(serializer),
+            ObType::NumpyInt16 => NumpyInt16::new(self.ptr).serialize(serializer),
+            ObType::NumpyInt32 => NumpyInt32::new(self.ptr).serialize(serializer),
+            ObType::NumpyInt64 => NumpyInt64::new(self.ptr).serialize(serializer),
+            ObType::NumpyUint8 => NumpyUint8::new(self.ptr).serialize(serializer),
+            ObType::NumpyUint16 => NumpyUint16::new(self.ptr).serialize(serializer),
+            ObType::NumpyUint32 => NumpyUint32::new(self.ptr).serialize(serializer),
+            ObType::NumpyUint64 => NumpyUint64::new(self.ptr).serialize(serializer),
             ObType::Ext => Ext::new(self.ptr).serialize(serializer),
             ObType::Unknown => Default::new(
                 self.ptr,
