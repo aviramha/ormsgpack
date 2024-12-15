@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-macro_rules! is_type {
-    ($obj_ptr:expr, $type_ptr:expr) => {
-        unsafe { $obj_ptr == $type_ptr }
+macro_rules! py_is {
+    ($x:expr, $y:expr) => {
+        unsafe { $x == $y }
     };
 }
 

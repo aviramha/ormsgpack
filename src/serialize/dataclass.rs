@@ -65,7 +65,7 @@ impl Serialize for AttributeDict {
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!is_type!(ob_type!(key.as_ptr()), STR_TYPE)) {
+            if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
                 err!(KEY_MUST_BE_STR)
             }
             let data = unicode_to_str(key.as_ptr());
@@ -128,7 +128,7 @@ impl Dataclass {
 fn is_pseudo_field(field: *mut pyo3::ffi::PyObject) -> bool {
     let field_type = ffi!(PyObject_GetAttr(field, FIELD_TYPE_STR));
     ffi!(Py_DECREF(field_type));
-    !is_type!(field_type as *mut pyo3::ffi::PyTypeObject, FIELD_TYPE)
+    !py_is!(field_type as *mut pyo3::ffi::PyTypeObject, FIELD_TYPE)
 }
 
 impl Serialize for Dataclass {
