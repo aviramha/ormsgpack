@@ -252,16 +252,23 @@ impl Serialize for DictWithNonStrKeys {
                 )?;
             } else {
                 match pyobject_to_obtype(key.as_ptr(), opts) {
-                    ObType::NumpyScalar
-                    | ObType::NumpyArray
-                    | ObType::Dict
-                    | ObType::List
-                    | ObType::Dataclass
-                    | ObType::Pydantic
-                    | ObType::Unknown => {
+                    ObType::Bool
+                    | ObType::Bytes
+                    | ObType::Date
+                    | ObType::Datetime
+                    | ObType::Enum
+                    | ObType::Ext
+                    | ObType::Float
+                    | ObType::Int
+                    | ObType::None
+                    | ObType::Str
+                    | ObType::StrSubclass
+                    | ObType::Time
+                    | ObType::Tuple
+                    | ObType::Uuid => (),
+                    _ => {
                         err!("Dict key must a type serializable with OPT_NON_STR_KEYS")
                     }
-                    _ => (),
                 }
                 map.serialize_entry(
                     &PyObject::new(
