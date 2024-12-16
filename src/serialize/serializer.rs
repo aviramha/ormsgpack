@@ -591,53 +591,79 @@ macro_rules! is_subclass {
 }
 
 #[inline(never)]
-pub fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
+fn pyobject_to_obtype_unlikely(obj: *mut pyo3::ffi::PyObject, opts: Opt) -> ObType {
     let ob_type = ob_type!(obj);
-    if py_is!(ob_type, DATE_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
-        ObType::Date
-    } else if py_is!(ob_type, TIME_TYPE) && opts & PASSTHROUGH_DATETIME == 0 {
-        ObType::Time
-    } else if py_is!(ob_type, TUPLE_TYPE) && opts & PASSTHROUGH_TUPLE == 0 {
-        ObType::Tuple
-    } else if py_is!(ob_type, UUID_TYPE) {
-        ObType::Uuid
-    } else if py_is!(ob_type!(ob_type), ENUM_TYPE) {
-        ObType::Enum
-    } else if opts & PASSTHROUGH_SUBCLASS == 0 && is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS)
-    {
-        ObType::StrSubclass
-    } else if opts & PASSTHROUGH_SUBCLASS == 0
-        && is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS)
-        && (opts & PASSTHROUGH_BIG_INT == 0
-            || ffi!(_PyLong_NumBits(obj)) <= {
-                if pylong_is_positive(obj) {
-                    64
-                } else {
-                    63
-                }
-            })
-    {
-        ObType::Int
-    } else if opts & PASSTHROUGH_SUBCLASS == 0 && is_subclass!(ob_type, Py_TPFLAGS_LIST_SUBCLASS) {
-        ObType::List
-    } else if opts & PASSTHROUGH_SUBCLASS == 0 && is_subclass!(ob_type, Py_TPFLAGS_DICT_SUBCLASS) {
-        ObType::Dict
-    } else if opts & PASSTHROUGH_DATACLASS == 0 && pydict_contains!(ob_type, DATACLASS_FIELDS_STR) {
-        ObType::Dataclass
-    } else if opts & SERIALIZE_NUMPY != 0 && is_numpy_scalar(ob_type) {
-        ObType::NumpyScalar
-    } else if opts & SERIALIZE_NUMPY != 0 && is_numpy_array(ob_type) {
-        ObType::NumpyArray
-    } else if opts & SERIALIZE_PYDANTIC != 0
+
+    if opts & PASSTHROUGH_DATETIME == 0 {
+        if py_is!(ob_type, DATE_TYPE) {
+            return ObType::Date;
+        }
+        if py_is!(ob_type, TIME_TYPE) {
+            return ObType::Time;
+        }
+    }
+
+    if opts & PASSTHROUGH_TUPLE == 0 && py_is!(ob_type, TUPLE_TYPE) {
+        return ObType::Tuple;
+    }
+
+    if py_is!(ob_type, UUID_TYPE) {
+        return ObType::Uuid;
+    }
+
+    if py_is!(ob_type!(ob_type), ENUM_TYPE) {
+        return ObType::Enum;
+    }
+
+    if opts & PASSTHROUGH_SUBCLASS == 0 {
+        if is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS) {
+            return ObType::StrSubclass;
+        }
+        if is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS)
+            && (opts & PASSTHROUGH_BIG_INT == 0
+                || ffi!(_PyLong_NumBits(obj)) <= {
+                    if pylong_is_positive(obj) {
+                        64
+                    } else {
+                        63
+                    }
+                })
+        {
+            return ObType::Int;
+        }
+        if is_subclass!(ob_type, Py_TPFLAGS_LIST_SUBCLASS) {
+            return ObType::List;
+        }
+        if is_subclass!(ob_type, Py_TPFLAGS_DICT_SUBCLASS) {
+            return ObType::Dict;
+        }
+    }
+
+    if py_is!(ob_type, EXT_TYPE) {
+        return ObType::Ext;
+    }
+
+    if opts & PASSTHROUGH_DATACLASS == 0 && pydict_contains!(ob_type, DATACLASS_FIELDS_STR) {
+        return ObType::Dataclass;
+    }
+
+    if opts & SERIALIZE_PYDANTIC != 0
         && (pydict_contains!(ob_type, PYDANTIC_FIELDS_STR)
             || pydict_contains!(ob_type, PYDANTIC2_VALIDATOR_STR))
     {
-        ObType::Pydantic
-    } else if py_is!(ob_type, EXT_TYPE) {
-        ObType::Ext
-    } else {
-        ObType::Unknown
+        return ObType::Pydantic;
     }
+
+    if opts & SERIALIZE_NUMPY != 0 {
+        if is_numpy_scalar(ob_type) {
+            return ObType::NumpyScalar;
+        }
+        if is_numpy_array(ob_type) {
+            return ObType::NumpyArray;
+        }
+    }
+
+    ObType::Unknown
 }
 
 pub struct PyObject {
