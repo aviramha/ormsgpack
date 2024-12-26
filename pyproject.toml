@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Rust",
     "Typing :: Typed",
 ]
+dynamic = ["version"]
 
 [build-system]
 build-backend = "maturin"
