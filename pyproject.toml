@@ -29,7 +29,6 @@ requires = ["maturin>=1.0,<2.0"]
 
 [tool.maturin]
 python-source = "python"
-strip = true
 
 [tool.mypy]
 exclude = "benchmarks"

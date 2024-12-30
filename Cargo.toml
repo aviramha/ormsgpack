@@ -61,3 +61,4 @@ incremental = false
 lto = "thin"
 opt-level = 3
 panic = "abort"
+strip = "symbols"

@@ -38,7 +38,7 @@ jobs:
           target: x86_64-unknown-linux-gnu
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           manylinux: auto
-          args: --release --strip -i python${{ matrix.python-version }}
+          args: --release -i python${{ matrix.python-version }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -85,7 +85,7 @@ jobs:
           target: ${{ matrix.target.target }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           manylinux: auto
-          args: --release --strip -i python${{ matrix.python-version }} ${{ matrix.target.maturin_args }}
+          args: --release -i python${{ matrix.python-version }} ${{ matrix.target.maturin_args }}
       - uses: docker/setup-qemu-action@v3
       - run: |
           docker run \
@@ -123,7 +123,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install --user -U pip wheel maturin
       - run: pip install -r requirements.txt
-      - run: maturin build --release --strip -i $pythonLocation"python.exe"
+      - run: maturin build --release -i $pythonLocation"python.exe"
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
       - uses: actions/upload-artifact@v4
@@ -155,7 +155,7 @@ jobs:
           LDFLAGS: "-O2 -flto=thin -fuse-ld=lld -Wl,--as-needed"
           RUSTFLAGS: "-C linker=clang"
           CARGO_UNSTABLE_SPARSE_REGISTRY: "true"
-        run: maturin build --release --strip -i python${{ matrix.python-version }} --features=unstable-simd --target universal2-apple-darwin
+        run: maturin build --release -i python${{ matrix.python-version }} --target universal2-apple-darwin
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
       - uses: actions/upload-artifact@v4
