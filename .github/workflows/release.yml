@@ -105,15 +105,17 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
-      - run: rustup install --profile minimal ${{ env.RUST_TOOLCHAIN }}
-      - run: rustup default ${{ env.RUST_TOOLCHAIN }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install --user -U pip wheel maturin
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: x86_64-pc-windows-msvc
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          args: --release -i ${{ env.pythonLocation }}\python.exe
+      - run: python -m pip install --user -U pip wheel
       - run: pip install -r requirements.txt
-      - run: maturin build --release -i $pythonLocation"python.exe"
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
       - uses: actions/upload-artifact@v4
@@ -130,16 +132,17 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
-      - run: rustup default "$RUST_TOOLCHAIN"
-      - run: rustup target add x86_64-apple-darwin
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -U pip wheel maturin
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: universal2-apple-darwin
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          args: --release -i python${{ matrix.python-version }}
+      - run: python -m pip install -U pip wheel
       - run: pip install -r requirements.txt
-      - run: maturin build --release -i python${{ matrix.python-version }} --target universal2-apple-darwin
       - run: pip install ormsgpack --no-index -f target/wheels
       - run: pytest
       - uses: actions/upload-artifact@v4
@@ -153,15 +156,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
-      - run: rustup default "$RUST_TOOLCHAIN"
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.11
-      - run: python -m pip install -U pip wheel maturin
-      - run: pip install -r requirements.txt
-      - run: maturin sdist
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
       - uses: actions/upload-artifact@v4
         with:
           name: ormsgpack-sdist
