@@ -1,9 +1,0 @@
-arrow
-numpy;platform_machine!="armv7l"
-pendulum;platform_machine!="armv7l" and python_version<"3.13"
-pytest
-pytz
-msgpack
-pydantic
-tzdata
-types-pytz
