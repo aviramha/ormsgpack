@@ -23,6 +23,23 @@ classifiers = [
 ]
 dynamic = ["version"]
 
+[dependency-groups]
+dev = [
+    "msgpack",
+    "mypy",
+    "numpy; platform_machine != 'armv7l'",
+    "pendulum; platform_machine != 'armv7l' and python_version < '3.13'",
+    "pydantic",
+    "pytest",
+    "pytest-benchmark",
+    "python-dateutil",
+    "pytz",
+    "ruff",
+    "types-python-dateutil",
+    "types-pytz",
+    "tzdata",
+]
+
 [build-system]
 build-backend = "maturin"
 requires = ["maturin>=1.0,<2.0"]

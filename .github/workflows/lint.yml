@@ -13,6 +13,8 @@ concurrency:
 
 env:
   RUST_TOOLCHAIN: nightly-2024-10-18
+  UV_PYTHON: 3.11
+  UV_VERSION: 0.5.14
 
 jobs:
   lint:
@@ -24,6 +26,8 @@ jobs:
       - run: rustup component add clippy rustfmt
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - run: pip install -r requirements.txt
+          python-version: ${{ env.UV_PYTHON }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
       - run: scripts/lint.sh
