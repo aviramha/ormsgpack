@@ -3,7 +3,6 @@
 use crate::exc::*;
 use crate::ffi::PyDictIter;
 use crate::opt::*;
-use crate::serialize::serializer::pyobject_to_obtype;
 use crate::serialize::serializer::*;
 use crate::typeref::*;
 use crate::unicode::*;
@@ -251,33 +250,8 @@ impl Serialize for DictWithNonStrKeys {
                     ),
                 )?;
             } else {
-                match pyobject_to_obtype(key.as_ptr(), opts) {
-                    ObType::Bool
-                    | ObType::Bytes
-                    | ObType::Date
-                    | ObType::Datetime
-                    | ObType::Enum
-                    | ObType::Ext
-                    | ObType::Float
-                    | ObType::Int
-                    | ObType::None
-                    | ObType::Str
-                    | ObType::StrSubclass
-                    | ObType::Time
-                    | ObType::Tuple
-                    | ObType::Uuid => (),
-                    _ => {
-                        err!("Dict key must a type serializable with OPT_NON_STR_KEYS")
-                    }
-                }
                 map.serialize_entry(
-                    &PyObject::new(
-                        key.as_ptr(),
-                        opts,
-                        self.default_calls,
-                        self.recursion + 1,
-                        self.default,
-                    ),
+                    &DictKey::new(key.as_ptr(), opts, self.recursion + 1),
                     &PyObject::new(
                         value.as_ptr(),
                         self.opts,
