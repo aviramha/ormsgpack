@@ -7,12 +7,12 @@ from dataclasses import dataclass, make_dataclass
 
 import msgpack
 import pytest
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, ConfigDict, create_model
 
 import ormsgpack
 
 
-@dataclass
+@dataclass(frozen=True)
 class Dataclass:
     a: str
 
@@ -22,6 +22,7 @@ class Enum(enum.Enum):
 
 
 class Model(BaseModel):
+    model_config = ConfigDict(frozen=True)
     a: str
 
 
@@ -273,6 +274,32 @@ def test_dict_key(value: object, converted_value: object, option: int) -> None:
         with pytest.raises(ormsgpack.MsgpackDecodeError):
             ormsgpack.unpackb(packed)
     assert ormsgpack.unpackb(packed, option=ormsgpack.OPT_NON_STR_KEYS) == converted_obj
+
+
+@pytest.mark.parametrize(
+    ("value", "converted_value", "option"),
+    (
+        param
+        for param in TYPE_PARAMS
+        if param.id
+        in {
+            "dataclass",
+            "pydantic",
+        }
+    ),
+)
+def test_invalid_dict_key(value: object, converted_value: object, option: int) -> None:
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb({value: True}, option=option | ormsgpack.OPT_NON_STR_KEYS)
+
+    class TestEnum(enum.Enum):
+        A = value
+
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb({TestEnum.A: True}, option=option | ormsgpack.OPT_NON_STR_KEYS)
+
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb({(value,): True}, option=option | ormsgpack.OPT_NON_STR_KEYS)
 
 
 def test_object() -> None:
