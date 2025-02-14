@@ -14,7 +14,7 @@ concurrency:
 env:
   RUST_TOOLCHAIN: nightly-2024-10-18
   UV_PYTHON: 3.11
-  UV_VERSION: 0.5.14
+  UV_VERSION: 0.5.31
 
 jobs:
   lint:
