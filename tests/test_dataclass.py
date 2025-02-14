@@ -143,7 +143,7 @@ def test_dataclass_with_descriptor_field() -> None:
     @dataclass
     class Dataclass:
         a: str
-        b: Descriptor = Descriptor(default=0)
+        b: Descriptor = Descriptor(default=0)  # noqa: RUF009
 
     obj = Dataclass("a", 1)
     assert ormsgpack.packb(obj) == msgpack.packb(
