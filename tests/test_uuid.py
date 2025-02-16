@@ -63,3 +63,16 @@ def test_all_uuid_creation_functions_create_serializable_uuids() -> None:
     )
     for val in uuids:
         assert ormsgpack.unpackb(ormsgpack.packb(val)) == str(val)
+
+
+def test_uuid_passthrough() -> None:
+    obj = uuid.uuid4()
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb(obj, option=ormsgpack.OPT_PASSTHROUGH_UUID)
+
+
+def test_uuid_passthrough_default() -> None:
+    obj = uuid.uuid4()
+    assert ormsgpack.packb(
+        obj, option=ormsgpack.OPT_PASSTHROUGH_UUID, default=str
+    ) == ormsgpack.packb(str(obj))

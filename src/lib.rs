@@ -130,6 +130,7 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
     module_add_int!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
     module_add_int!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
     module_add_int!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
+    module_add_int!(mptr, "OPT_PASSTHROUGH_UUID\0", opt::PASSTHROUGH_UUID);
 
     typeref::init_typerefs();
 
