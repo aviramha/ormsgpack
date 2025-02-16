@@ -605,7 +605,7 @@ impl PyObject {
             .serialize(serializer);
         }
 
-        if py_is!(ob_type, UUID_TYPE) {
+        if self.opts & PASSTHROUGH_UUID == 0 && py_is!(ob_type, UUID_TYPE) {
             return UUID::new(self.ptr).serialize(serializer);
         }
 

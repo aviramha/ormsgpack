@@ -14,12 +14,14 @@ pub const SERIALIZE_NUMPY: Opt = 1 << 8;
 pub const SERIALIZE_PYDANTIC: Opt = 1 << 9;
 pub const SORT_KEYS: Opt = 1 << 10;
 pub const UTC_Z: Opt = 1 << 11;
+pub const PASSTHROUGH_UUID: Opt = 1 << 12;
 
 pub const NOT_PASSTHROUGH: Opt = !(PASSTHROUGH_BIG_INT
     | PASSTHROUGH_DATACLASS
     | PASSTHROUGH_DATETIME
     | PASSTHROUGH_SUBCLASS
-    | PASSTHROUGH_TUPLE);
+    | PASSTHROUGH_TUPLE
+    | PASSTHROUGH_UUID);
 
 pub const PACKB_OPT_MASK: i32 = (NAIVE_UTC
     | NON_STR_KEYS
@@ -32,6 +34,7 @@ pub const PACKB_OPT_MASK: i32 = (NAIVE_UTC
     | SERIALIZE_NUMPY
     | SERIALIZE_PYDANTIC
     | SORT_KEYS
-    | UTC_Z) as i32;
+    | UTC_Z
+    | PASSTHROUGH_UUID) as i32;
 
 pub const UNPACKB_OPT_MASK: i32 = NON_STR_KEYS as i32;

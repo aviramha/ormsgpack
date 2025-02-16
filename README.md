@@ -385,6 +385,10 @@ b'\x82\xa4type\xa5tuple\xa5value\x93\xcd#\xe9\xa4test*'
 {'type': 'tuple', 'value': [9193, 'test', 42]}
 ```
 
+##### OPT_PASSTHROUGH_UUID
+
+Enable passthrough of `uuid.UUID` instances to `default`.
+
 ##### OPT_SERIALIZE_NUMPY
 
 Serialize `numpy.ndarray` instances. For more, see
