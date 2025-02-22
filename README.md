@@ -88,8 +88,7 @@ It natively serializes
 `None` instances. It supports arbitrary types through `default`. It
 serializes subclasses of `str`, `int`, `dict`, `list`,
 `dataclasses.dataclass`, and `enum.Enum`. It does not serialize subclasses
-of `tuple` to avoid serializing `namedtuple` objects as arrays. To avoid
-serializing subclasses, specify the option `ormsgpack.OPT_PASSTHROUGH_SUBCLASS`.
+of `tuple` to avoid serializing `namedtuple` objects as arrays.
 
 The output is a `bytes` object.
 
@@ -173,13 +172,16 @@ value, respectively.
 b'\xc7\x18\x000.0842389659712649442845'
 ```
 
+`default` can also be used to serialize some supported types to a custom
+format by enabling the corresponding passthrough options.
+
 #### option
 
 To modify how data is serialized, specify `option`. Each `option` is an integer
 constant in `ormsgpack`. To specify multiple options, mask them together, e.g.,
 `option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_NAIVE_UTC`.
 
-##### OPT_NAIVE_UTC
+##### `OPT_NAIVE_UTC`
 
 Serialize `datetime.datetime` objects without a `tzinfo` and `numpy.datetime64`
 objects as UTC. This has no effect on `datetime.datetime` objects that have
@@ -202,11 +204,13 @@ b'\xb91970-01-01T00:00:00+00:00'
 '1970-01-01T00:00:00+00:00'
 ```
 
-##### OPT_NON_STR_KEYS
+##### `OPT_NON_STR_KEYS`
 
 Serialize `dict` keys of type other than `str`. This allows `dict` keys
 to be one of `str`, `int`, `float`, `bool`, `None`, `datetime.datetime`,
 `datetime.date`, `datetime.time`, `enum.Enum`, and `uuid.UUID`.
+`dict` keys of unsupported types are not handled using `default` and
+result in `MsgpackEncodeError` being raised.
 
 ```python
 >>> import ormsgpack, datetime, uuid
@@ -238,7 +242,7 @@ occurrence of a key (in the above, `false`). The first value will be lost.
 
 This option is not compatible with `ormsgpack.OPT_SORT_KEYS`.
 
-##### OPT_OMIT_MICROSECONDS
+##### `OPT_OMIT_MICROSECONDS`
 
 Do not serialize the microsecond component of `datetime.datetime`,
 `datetime.time` and `numpy.datetime64` instances.
@@ -260,9 +264,10 @@ b'\xb31970-01-01T00:00:00'
 '1970-01-01T00:00:00'
 ```
 
-##### OPT_PASSTHROUGH_BIG_INT
+##### `OPT_PASSTHROUGH_BIG_INT`
 
-Enables passthrough of big (Python) ints. By setting this option, one can set a `default` function for ints larger than 63 bits, smaller ints are still serialized efficiently.
+Enable passthrough of `int` instances smaller than -9223372036854775807 or
+larger than 18446744073709551615 to `default`.
 
 ```python
 >>> import ormsgpack
@@ -280,10 +285,9 @@ b'\x82\xa4type\xa6bigint\xa5value\xb436893488147419103232'
 {'type': 'bigint', 'value': '36893488147419103232'}
 ```
 
-##### OPT_PASSTHROUGH_DATACLASS
+##### `OPT_PASSTHROUGH_DATACLASS`
 
-Passthrough `dataclasses.dataclass` instances to `default`. This allows
-customizing their output but is much slower.
+Enable passthrough of `dataclasses.dataclass` instances to `default`.
 
 
 ```python
@@ -311,11 +315,10 @@ TypeError: Type is not msgpack serializable: User
 b'\x82\xa2id\xa33b1\xa4name\xa3asd'
 ```
 
-##### OPT_PASSTHROUGH_DATETIME
+##### `OPT_PASSTHROUGH_DATETIME`
 
-Passthrough `datetime.datetime`, `datetime.date`, and `datetime.time` instances
-to `default`. This allows serializing datetimes to a custom format, e.g.,
-HTTP dates:
+Enable passthrough of `datetime.datetime`, `datetime.date`, and
+`datetime.time` instances to `default`.
 
 ```python
 >>> import ormsgpack, datetime
@@ -336,11 +339,10 @@ TypeError: Type is not msgpack serializable: datetime.datetime
 b'\x81\xaacreated_at\xbdThu, 01 Jan 1970 00:00:00 GMT'
 ```
 
-This does not affect datetimes in `dict` keys if using OPT_NON_STR_KEYS.
+##### `OPT_PASSTHROUGH_SUBCLASS`
 
-##### OPT_PASSTHROUGH_SUBCLASS
-
-Passthrough subclasses of builtin types to `default`.
+Enable passthrough of subclasses of `str`, `int`, `dict` and `list` to
+`default`.
 
 ```python
 >>> import ormsgpack
@@ -360,12 +362,9 @@ TypeError: Type is not msgpack serializable: Secret
 b'\xa6******'
 ```
 
-This does not affect serializing subclasses as `dict` keys if using
-OPT_NON_STR_KEYS.
+##### `OPT_PASSTHROUGH_TUPLE`
 
-##### OPT_PASSTHROUGH_TUPLE
-
-Passthrough tuples to `default`.
+Enable passthrough of `tuple` instances to `default`.
 
 ```python
 >>> import ormsgpack
@@ -385,19 +384,19 @@ b'\x82\xa4type\xa5tuple\xa5value\x93\xcd#\xe9\xa4test*'
 {'type': 'tuple', 'value': [9193, 'test', 42]}
 ```
 
-##### OPT_PASSTHROUGH_UUID
+##### `OPT_PASSTHROUGH_UUID`
 
 Enable passthrough of `uuid.UUID` instances to `default`.
 
-##### OPT_SERIALIZE_NUMPY
+##### `OPT_SERIALIZE_NUMPY`
 
 Serialize `numpy.ndarray` instances. For more, see
 [numpy](#numpy).
 
-##### OPT_SERIALIZE_PYDANTIC
+##### `OPT_SERIALIZE_PYDANTIC`
 Serialize `pydantic.BaseModel` instances.
 
-##### OPT_SORT_KEYS
+##### `OPT_SORT_KEYS`
 
 Serialize `dict` keys and pydantic model fields in sorted order. The default
 is to serialize in an unspecified order.
@@ -423,7 +422,7 @@ b'\x83\xa1A\x03\xa1a\x01\xa2\xc3\xa4\x02'
 
 `dataclass` also serialize as maps but this has no effect on them.
 
-##### OPT_UTC_Z
+##### `OPT_UTC_Z`
 
 Serialize a UTC timezone on `datetime.datetime` and `numpy.datetime64` instances
 as `Z` instead of `+00:00`.
@@ -591,9 +590,6 @@ b'\xaa1900-01-02'
 ```
 
 Errors with `tzinfo` result in `MsgpackEncodeError` being raised.
-
-To disable serialization of `datetime` objects specify the option
-`ormsgpack.OPT_PASSTHROUGH_DATETIME`.
 
 To use "Z" suffix instead of "+00:00" to indicate UTC ("Zulu") time, use the option
 `ormsgpack.OPT_UTC_Z`.
