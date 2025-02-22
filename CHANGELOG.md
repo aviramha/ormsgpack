@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.8.0
+
+### Fixed
+
+- `packb` now rejects dictionary keys with nested dataclasses or pydantic models
+
+### Changed
+
+- Add `packb` option `OPT_PASSTHROUGH_UUID` to enable passthrough of UUID objects [#338](/../../issues/338)
+- Update dependencies
+
 ## 1.7.0 29/11/2024
 
 ### Fixed
