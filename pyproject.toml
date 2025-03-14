@@ -74,3 +74,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["ormsgpack"]
+
+[project.entry-points.pyinstaller40]
+hook-dirs = "ormsgpack._pyinstaller:get_hook_dirs"
