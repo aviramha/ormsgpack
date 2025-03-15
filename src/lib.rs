@@ -3,6 +3,7 @@
 #![allow(internal_features)]
 #![allow(static_mut_refs)]
 #![allow(unused_unsafe)]
+#![allow(clippy::manual_c_str_literals)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::redundant_field_names)]
 #![allow(clippy::upper_case_acronyms)]
