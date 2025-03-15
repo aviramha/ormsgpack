@@ -2,6 +2,7 @@
 
 use crate::exc::*;
 use crate::ffi::*;
+use crate::msgpack;
 use crate::opt::*;
 use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
@@ -38,9 +39,9 @@ impl std::fmt::Display for Error {
     }
 }
 
-impl From<rmp::encode::ValueWriteError> for Error {
+impl From<std::io::Error> for Error {
     #[cold]
-    fn from(_: rmp::encode::ValueWriteError) -> Error {
+    fn from(_: std::io::Error) -> Error {
         Error::Write
     }
 }
@@ -91,8 +92,8 @@ where
     type SerializeStructVariant = Impossible<(), Error>;
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_ext_meta(self.writer, value.len() as u32, self.tag)?;
-        self.writer.write_all(value).map_err(|_| Error::Write)
+        msgpack::write_ext(self.writer, value, self.tag)?;
+        Ok(())
     }
 
     fn serialize_bool(self, _value: bool) -> Result<Self::Ok, Self::Error> {
@@ -327,7 +328,8 @@ where
     type SerializeStructVariant = Impossible<(), Error>;
 
     fn serialize_bool(self, value: bool) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_bool(&mut self.writer, value).map_err(|_| Error::Write)
+        msgpack::write_bool(&mut self.writer, value)?;
+        Ok(())
     }
 
     fn serialize_i8(self, value: i8) -> Result<Self::Ok, Self::Error> {
@@ -343,7 +345,7 @@ where
     }
 
     fn serialize_i64(self, value: i64) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_sint(&mut self.writer, value)?;
+        msgpack::write_i64(&mut self.writer, value)?;
         Ok(())
     }
 
@@ -364,7 +366,7 @@ where
     }
 
     fn serialize_u64(self, value: u64) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_uint(&mut self.writer, value)?;
+        msgpack::write_u64(&mut self.writer, value)?;
         Ok(())
     }
 
@@ -373,12 +375,12 @@ where
     }
 
     fn serialize_f32(self, value: f32) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_f32(&mut self.writer, value)?;
+        msgpack::write_f32(&mut self.writer, value)?;
         Ok(())
     }
 
     fn serialize_f64(self, value: f64) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_f64(&mut self.writer, value)?;
+        msgpack::write_f64(&mut self.writer, value)?;
         Ok(())
     }
 
@@ -387,12 +389,12 @@ where
     }
 
     fn serialize_str(self, value: &str) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_str(&mut self.writer, value)?;
+        msgpack::write_str(&mut self.writer, value)?;
         Ok(())
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_bin(&mut self.writer, value)?;
+        msgpack::write_bin(&mut self.writer, value)?;
         Ok(())
     }
 
@@ -408,7 +410,8 @@ where
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        rmp::encode::write_nil(&mut self.writer).map_err(|_| Error::Write)
+        msgpack::write_nil(&mut self.writer)?;
+        Ok(())
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
@@ -449,7 +452,7 @@ where
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Error> {
         match len {
             Some(len) => {
-                rmp::encode::write_array_len(&mut self.writer, len as u32)?;
+                msgpack::write_array_len(&mut self.writer, len)?;
                 Ok(Compound { se: self })
             }
             None => unreachable!(),
@@ -481,7 +484,7 @@ where
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Error> {
         match len {
             Some(len) => {
-                rmp::encode::write_map_len(&mut self.writer, len as u32)?;
+                msgpack::write_map_len(&mut self.writer, len)?;
                 Ok(Compound { se: self })
             }
             None => unreachable!(),

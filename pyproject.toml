@@ -57,6 +57,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
+src = ["python"]
 target-version = "py39"
 
 [tool.ruff.lint]
