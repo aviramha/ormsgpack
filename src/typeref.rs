@@ -116,9 +116,9 @@ pub fn init_typerefs() {
         BOOL_TYPE = &mut PyBool_Type;
         INT_TYPE = &mut PyLong_Type;
         FLOAT_TYPE = &mut PyFloat_Type;
-        DATETIME_TYPE = look_up_datetime_type();
-        DATE_TYPE = look_up_date_type();
-        TIME_TYPE = look_up_time_type();
+        DATETIME_TYPE = (*PyDateTimeAPI()).DateTimeType;
+        DATE_TYPE = (*PyDateTimeAPI()).DateType;
+        TIME_TYPE = (*PyDateTimeAPI()).TimeType;
         UUID_TYPE = look_up_uuid_type();
         ENUM_TYPE = look_up_enum_type();
         FIELD_TYPE = look_up_field_type();
@@ -223,42 +223,5 @@ unsafe fn look_up_uuid_type() -> *mut PyTypeObject {
     Py_DECREF(uuid);
     Py_DECREF(uuid_mod_dict);
     Py_DECREF(uuid_mod);
-    ptr
-}
-
-#[cold]
-unsafe fn look_up_datetime_type() -> *mut PyTypeObject {
-    let datetime_api = *PyDateTimeAPI();
-    let datetime = (datetime_api.DateTime_FromDateAndTime)(
-        1970,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        NONE,
-        datetime_api.DateTimeType,
-    );
-    let ptr = (*datetime).ob_type;
-    Py_DECREF(datetime);
-    ptr
-}
-
-#[cold]
-unsafe fn look_up_date_type() -> *mut PyTypeObject {
-    let datetime_api = *PyDateTimeAPI();
-    let date = (datetime_api.Date_FromDate)(1970, 1, 1, datetime_api.DateType);
-    let ptr = (*date).ob_type;
-    Py_DECREF(date);
-    ptr
-}
-
-#[cold]
-unsafe fn look_up_time_type() -> *mut PyTypeObject {
-    let datetime_api = *PyDateTimeAPI();
-    let time = (datetime_api.Time_FromTime)(0, 0, 0, 0, NONE, datetime_api.TimeType);
-    let ptr = (*time).ob_type;
-    Py_DECREF(time);
     ptr
 }
