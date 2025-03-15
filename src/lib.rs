@@ -16,6 +16,7 @@ mod deserialize;
 mod exc;
 mod ext;
 mod ffi;
+mod msgpack;
 mod opt;
 mod serialize;
 mod typeref;
