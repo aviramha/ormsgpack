@@ -862,7 +862,7 @@ level above this.
 
 ## Packaging
 
-To package ormsgpack requires [Rust](https://www.rust-lang.org/) 1.70
+To package ormsgpack requires [Rust](https://www.rust-lang.org/) 1.81
 or newer and the [maturin](https://github.com/PyO3/maturin) build
 tool. The default feature `unstable-simd` enables the usage of SIMD
 operations and requires nightly Rust. The recommended build command

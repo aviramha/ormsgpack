@@ -7,7 +7,7 @@ authors = [
 ]
 description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.81"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/aviramha/ormsgpack"
 homepage = "https://github.com/aviramha/ormsgpack"
