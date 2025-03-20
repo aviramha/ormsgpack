@@ -85,7 +85,7 @@ def test_valueerror() -> None:
 @pytest.mark.parametrize(
     "option",
     (
-        1 << 13,
+        1 << 14,
         True,
         -1,
         9223372036854775809,

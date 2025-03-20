@@ -610,16 +610,27 @@ impl PyObject {
         }
 
         if py_is!(ob_type!(ob_type), ENUM_TYPE) {
-            let value = ffi!(PyObject_GetAttr(self.ptr, VALUE_STR));
-            ffi!(Py_DECREF(value));
-            return PyObject::new(
-                value,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer);
+            if self.opts & PASSTHROUGH_ENUM == 0 {
+                let value = ffi!(PyObject_GetAttr(self.ptr, VALUE_STR));
+                ffi!(Py_DECREF(value));
+                return PyObject::new(
+                    value,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer);
+            } else {
+                return Default::new(
+                    self.ptr,
+                    self.opts,
+                    self.default_calls,
+                    self.recursion,
+                    self.default,
+                )
+                .serialize(serializer);
+            }
         }
 
         if self.opts & PASSTHROUGH_SUBCLASS == 0 {
