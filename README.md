@@ -339,6 +339,10 @@ TypeError: Type is not msgpack serializable: datetime.datetime
 b'\x81\xaacreated_at\xbdThu, 01 Jan 1970 00:00:00 GMT'
 ```
 
+##### `OPT_PASSTHROUGH_ENUM`
+
+Enable passthrough of `enum.Enum` instances to `default`.
+
 ##### `OPT_PASSTHROUGH_SUBCLASS`
 
 Enable passthrough of subclasses of `str`, `int`, `dict` and `list` to

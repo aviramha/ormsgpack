@@ -73,3 +73,36 @@ def test_bool_enum() -> None:
 
         class BoolEnum(bool, enum.Enum):  # type: ignore
             TRUE = True
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        FlagEnum.ONE,
+        FloatEnum.ONE,
+        IntEnum.ONE,
+        IntEnumEnum.ONE,
+        IntFlagEnum.ONE,
+        StrEnum.AAA,
+    ),
+)
+def test_enum_passthrough(value: enum.Enum) -> None:
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        assert ormsgpack.packb(value, option=ormsgpack.OPT_PASSTHROUGH_ENUM)
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        FlagEnum.ONE,
+        FloatEnum.ONE,
+        IntEnum.ONE,
+        IntEnumEnum.ONE,
+        IntFlagEnum.ONE,
+        StrEnum.AAA,
+    ),
+)
+def test_enum_passthrough_default(value: enum.Enum) -> None:
+    assert ormsgpack.packb(
+        value, option=ormsgpack.OPT_PASSTHROUGH_ENUM, default=str
+    ) == msgpack.packb(str(value))

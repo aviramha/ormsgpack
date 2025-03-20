@@ -121,17 +121,18 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
         "OPT_PASSTHROUGH_DATETIME\0",
         opt::PASSTHROUGH_DATETIME
     );
+    module_add_int!(mptr, "OPT_PASSTHROUGH_ENUM\0", opt::PASSTHROUGH_ENUM);
     module_add_int!(
         mptr,
         "OPT_PASSTHROUGH_SUBCLASS\0",
         opt::PASSTHROUGH_SUBCLASS
     );
+    module_add_int!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
+    module_add_int!(mptr, "OPT_PASSTHROUGH_UUID\0", opt::PASSTHROUGH_UUID);
     module_add_int!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
     module_add_int!(mptr, "OPT_SERIALIZE_PYDANTIC\0", opt::SERIALIZE_PYDANTIC);
-    module_add_int!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
     module_add_int!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
     module_add_int!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
-    module_add_int!(mptr, "OPT_PASSTHROUGH_UUID\0", opt::PASSTHROUGH_UUID);
 
     typeref::init_typerefs();
 
