@@ -3,7 +3,6 @@
 #![allow(internal_features)]
 #![allow(static_mut_refs)]
 #![allow(unused_unsafe)]
-#![allow(clippy::manual_c_str_literals)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::redundant_field_names)]
 #![allow(clippy::upper_case_acronyms)]
@@ -23,26 +22,27 @@ mod typeref;
 mod unicode;
 
 use pyo3::ffi::*;
+use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::os::raw::c_int;
 use std::os::raw::c_long;
 use std::os::raw::c_void;
 use std::ptr::NonNull;
 
-const PACKB_DOC: &str =
-    "packb(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to msgpack.\0";
-const UNPACKB_DOC: &str =
-    "unpackb(obj, /, ext_hook=None, option=None)\n--\n\nDeserialize msgpack to Python objects.\0";
+const PACKB_DOC: &CStr =
+    c"packb(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to msgpack.";
+const UNPACKB_DOC: &CStr =
+    c"unpackb(obj, /, ext_hook=None, option=None)\n--\n\nDeserialize msgpack to Python objects.";
 
 macro_rules! module_add_object {
     ($mptr: expr, $name: expr, $object:expr) => {
-        PyModule_AddObject($mptr, $name.as_ptr() as *const c_char, $object);
+        PyModule_AddObject($mptr, $name.as_ptr(), $object);
     };
 }
 
 macro_rules! module_add_int {
     ($mptr:expr, $name:expr, $int:expr) => {
-        PyModule_AddIntConstant($mptr, $name.as_ptr() as *const c_char, $int as c_long);
+        PyModule_AddIntConstant($mptr, $name.as_ptr(), $int as c_long);
     };
 }
 
@@ -52,20 +52,20 @@ macro_rules! module_add_int {
 pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
     let methods: Box<[PyMethodDef; 3]> = Box::new([
         PyMethodDef {
-            ml_name: "packb\0".as_ptr() as *const c_char,
+            ml_name: c"packb".as_ptr(),
             ml_meth: PyMethodDefPointer {
                 PyCFunctionFastWithKeywords: packb,
             },
             ml_flags: METH_FASTCALL | METH_KEYWORDS,
-            ml_doc: PACKB_DOC.as_ptr() as *const c_char,
+            ml_doc: PACKB_DOC.as_ptr(),
         },
         PyMethodDef {
-            ml_name: "unpackb\0".as_ptr() as *const c_char,
+            ml_name: c"unpackb".as_ptr(),
             ml_meth: PyMethodDefPointer {
                 PyCFunctionFastWithKeywords: unpackb,
             },
             ml_flags: METH_FASTCALL | METH_KEYWORDS,
-            ml_doc: UNPACKB_DOC.as_ptr() as *const c_char,
+            ml_doc: UNPACKB_DOC.as_ptr(),
         },
         PyMethodDef::zeroed(),
     ]);
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
 
     let init = Box::new(PyModuleDef {
         m_base: PyModuleDef_HEAD_INIT,
-        m_name: "ormsgpack\0".as_ptr() as *const c_char,
+        m_name: c"ormsgpack".as_ptr(),
         m_doc: std::ptr::null(),
         m_size: 0,
         m_methods: Box::into_raw(methods) as *mut PyMethodDef,
@@ -104,42 +104,34 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
     let version = env!("CARGO_PKG_VERSION");
     module_add_object!(
         mptr,
-        "__version__\0",
+        c"__version__",
         PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
     );
 
-    module_add_int!(mptr, "OPT_NAIVE_UTC\0", opt::NAIVE_UTC);
-    module_add_int!(mptr, "OPT_NON_STR_KEYS\0", opt::NON_STR_KEYS);
-    module_add_int!(mptr, "OPT_OMIT_MICROSECONDS\0", opt::OMIT_MICROSECONDS);
-    module_add_int!(mptr, "OPT_PASSTHROUGH_BIG_INT\0", opt::PASSTHROUGH_BIG_INT);
+    module_add_int!(mptr, c"OPT_NAIVE_UTC", opt::NAIVE_UTC);
+    module_add_int!(mptr, c"OPT_NON_STR_KEYS", opt::NON_STR_KEYS);
+    module_add_int!(mptr, c"OPT_OMIT_MICROSECONDS", opt::OMIT_MICROSECONDS);
+    module_add_int!(mptr, c"OPT_PASSTHROUGH_BIG_INT", opt::PASSTHROUGH_BIG_INT);
     module_add_int!(
         mptr,
-        "OPT_PASSTHROUGH_DATACLASS\0",
+        c"OPT_PASSTHROUGH_DATACLASS",
         opt::PASSTHROUGH_DATACLASS
     );
-    module_add_int!(
-        mptr,
-        "OPT_PASSTHROUGH_DATETIME\0",
-        opt::PASSTHROUGH_DATETIME
-    );
-    module_add_int!(mptr, "OPT_PASSTHROUGH_ENUM\0", opt::PASSTHROUGH_ENUM);
-    module_add_int!(
-        mptr,
-        "OPT_PASSTHROUGH_SUBCLASS\0",
-        opt::PASSTHROUGH_SUBCLASS
-    );
-    module_add_int!(mptr, "OPT_PASSTHROUGH_TUPLE\0", opt::PASSTHROUGH_TUPLE);
-    module_add_int!(mptr, "OPT_PASSTHROUGH_UUID\0", opt::PASSTHROUGH_UUID);
-    module_add_int!(mptr, "OPT_SERIALIZE_NUMPY\0", opt::SERIALIZE_NUMPY);
-    module_add_int!(mptr, "OPT_SERIALIZE_PYDANTIC\0", opt::SERIALIZE_PYDANTIC);
-    module_add_int!(mptr, "OPT_SORT_KEYS\0", opt::SORT_KEYS);
-    module_add_int!(mptr, "OPT_UTC_Z\0", opt::UTC_Z);
+    module_add_int!(mptr, c"OPT_PASSTHROUGH_DATETIME", opt::PASSTHROUGH_DATETIME);
+    module_add_int!(mptr, c"OPT_PASSTHROUGH_ENUM", opt::PASSTHROUGH_ENUM);
+    module_add_int!(mptr, c"OPT_PASSTHROUGH_SUBCLASS", opt::PASSTHROUGH_SUBCLASS);
+    module_add_int!(mptr, c"OPT_PASSTHROUGH_TUPLE", opt::PASSTHROUGH_TUPLE);
+    module_add_int!(mptr, c"OPT_PASSTHROUGH_UUID", opt::PASSTHROUGH_UUID);
+    module_add_int!(mptr, c"OPT_SERIALIZE_NUMPY", opt::SERIALIZE_NUMPY);
+    module_add_int!(mptr, c"OPT_SERIALIZE_PYDANTIC", opt::SERIALIZE_PYDANTIC);
+    module_add_int!(mptr, c"OPT_SORT_KEYS", opt::SORT_KEYS);
+    module_add_int!(mptr, c"OPT_UTC_Z", opt::UTC_Z);
 
     typeref::init_typerefs();
 
-    module_add_object!(mptr, "MsgpackDecodeError\0", typeref::MsgpackDecodeError);
-    module_add_object!(mptr, "MsgpackEncodeError\0", typeref::MsgpackEncodeError);
-    module_add_object!(mptr, "Ext\0", typeref::EXT_TYPE as *mut PyObject);
+    module_add_object!(mptr, c"MsgpackDecodeError", typeref::MsgpackDecodeError);
+    module_add_object!(mptr, c"MsgpackEncodeError", typeref::MsgpackEncodeError);
+    module_add_object!(mptr, c"Ext", typeref::EXT_TYPE as *mut PyObject);
 
     0
 }
