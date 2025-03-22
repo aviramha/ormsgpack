@@ -4,7 +4,6 @@ use ahash::RandomState;
 use once_cell::race::OnceBox;
 use pyo3::ffi::*;
 use std::ffi::CStr;
-use std::os::raw::c_char;
 use std::ptr::{null_mut, NonNull};
 use std::sync::Once;
 
@@ -124,27 +123,24 @@ pub fn init_typerefs() {
         ENUM_TYPE = look_up_type(c"enum", c"EnumMeta");
         FIELD_TYPE = look_up_type(c"dataclasses", c"_FIELD");
         EXT_TYPE = create_ext_type();
-        INT_ATTR_STR = PyUnicode_InternFromString("int\0".as_ptr() as *const c_char);
-        UTCOFFSET_METHOD_STR = PyUnicode_InternFromString("utcoffset\0".as_ptr() as *const c_char);
-        NORMALIZE_METHOD_STR = PyUnicode_InternFromString("normalize\0".as_ptr() as *const c_char);
-        CONVERT_METHOD_STR = PyUnicode_InternFromString("convert\0".as_ptr() as *const c_char);
-        DST_STR = PyUnicode_InternFromString("dst\0".as_ptr() as *const c_char);
-        DICT_STR = PyUnicode_InternFromString("__dict__\0".as_ptr() as *const c_char);
-        DATACLASS_FIELDS_STR =
-            PyUnicode_InternFromString("__dataclass_fields__\0".as_ptr() as *const c_char);
-        SLOTS_STR = PyUnicode_InternFromString("__slots__\0".as_ptr() as *const c_char);
-        PYDANTIC_FIELDS_STR = PyUnicode_InternFromString("__fields__\0".as_ptr() as *const c_char);
-        PYDANTIC2_VALIDATOR_STR =
-            PyUnicode_InternFromString("__pydantic_validator__\0".as_ptr() as *const c_char);
-        FIELD_TYPE_STR = PyUnicode_InternFromString("_field_type\0".as_ptr() as *const c_char);
-        ARRAY_STRUCT_STR =
-            PyUnicode_InternFromString("__array_struct__\0".as_ptr() as *const c_char);
-        DTYPE_STR = PyUnicode_InternFromString("dtype\0".as_ptr() as *const c_char);
-        DESCR_STR = PyUnicode_InternFromString("descr\0".as_ptr() as *const c_char);
-        VALUE_STR = PyUnicode_InternFromString("value\0".as_ptr() as *const c_char);
-        DEFAULT = PyUnicode_InternFromString("default\0".as_ptr() as *const c_char);
-        EXT_HOOK = PyUnicode_InternFromString("ext_hook\0".as_ptr() as *const c_char);
-        OPTION = PyUnicode_InternFromString("option\0".as_ptr() as *const c_char);
+        INT_ATTR_STR = PyUnicode_InternFromString(c"int".as_ptr());
+        UTCOFFSET_METHOD_STR = PyUnicode_InternFromString(c"utcoffset".as_ptr());
+        NORMALIZE_METHOD_STR = PyUnicode_InternFromString(c"normalize".as_ptr());
+        CONVERT_METHOD_STR = PyUnicode_InternFromString(c"convert".as_ptr());
+        DST_STR = PyUnicode_InternFromString(c"dst".as_ptr());
+        DICT_STR = PyUnicode_InternFromString(c"__dict__".as_ptr());
+        DATACLASS_FIELDS_STR = PyUnicode_InternFromString(c"__dataclass_fields__".as_ptr());
+        SLOTS_STR = PyUnicode_InternFromString(c"__slots__".as_ptr());
+        PYDANTIC_FIELDS_STR = PyUnicode_InternFromString(c"__fields__".as_ptr());
+        PYDANTIC2_VALIDATOR_STR = PyUnicode_InternFromString(c"__pydantic_validator__".as_ptr());
+        FIELD_TYPE_STR = PyUnicode_InternFromString(c"_field_type".as_ptr());
+        ARRAY_STRUCT_STR = PyUnicode_InternFromString(c"__array_struct__".as_ptr());
+        DTYPE_STR = PyUnicode_InternFromString(c"dtype".as_ptr());
+        DESCR_STR = PyUnicode_InternFromString(c"descr".as_ptr());
+        VALUE_STR = PyUnicode_InternFromString(c"value".as_ptr());
+        DEFAULT = PyUnicode_InternFromString(c"default".as_ptr());
+        EXT_HOOK = PyUnicode_InternFromString(c"ext_hook".as_ptr());
+        OPTION = PyUnicode_InternFromString(c"option".as_ptr());
         Py_INCREF(PyExc_TypeError);
         MsgpackEncodeError = PyExc_TypeError;
         Py_INCREF(PyExc_ValueError);
@@ -155,15 +151,18 @@ pub fn init_typerefs() {
 }
 
 #[cold]
-unsafe fn look_up_numpy_type(numpy_module_dict: *mut PyObject, np_type: &str) -> *mut PyTypeObject {
-    let ptr = PyMapping_GetItemString(numpy_module_dict, np_type.as_ptr() as *const c_char);
+unsafe fn look_up_numpy_type(
+    numpy_module_dict: *mut PyObject,
+    np_type: &CStr,
+) -> *mut PyTypeObject {
+    let ptr = PyMapping_GetItemString(numpy_module_dict, np_type.as_ptr());
     ptr as *mut PyTypeObject
 }
 
 #[cold]
 pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
     unsafe {
-        let numpy = PyImport_ImportModule("numpy\0".as_ptr() as *const c_char);
+        let numpy = PyImport_ImportModule(c"numpy".as_ptr());
         if numpy.is_null() {
             PyErr_Clear();
             return Box::new(None);
@@ -171,20 +170,20 @@ pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
 
         let numpy_module_dict = PyObject_GenericGetDict(numpy, null_mut());
         let types = Box::new(NumpyTypes {
-            array: look_up_numpy_type(numpy_module_dict, "ndarray\0"),
-            float16: look_up_numpy_type(numpy_module_dict, "half\0"),
-            float32: look_up_numpy_type(numpy_module_dict, "float32\0"),
-            float64: look_up_numpy_type(numpy_module_dict, "float64\0"),
-            int8: look_up_numpy_type(numpy_module_dict, "int8\0"),
-            int16: look_up_numpy_type(numpy_module_dict, "int16\0"),
-            int32: look_up_numpy_type(numpy_module_dict, "int32\0"),
-            int64: look_up_numpy_type(numpy_module_dict, "int64\0"),
-            uint16: look_up_numpy_type(numpy_module_dict, "uint16\0"),
-            uint32: look_up_numpy_type(numpy_module_dict, "uint32\0"),
-            uint64: look_up_numpy_type(numpy_module_dict, "uint64\0"),
-            uint8: look_up_numpy_type(numpy_module_dict, "uint8\0"),
-            bool_: look_up_numpy_type(numpy_module_dict, "bool_\0"),
-            datetime64: look_up_numpy_type(numpy_module_dict, "datetime64\0"),
+            array: look_up_numpy_type(numpy_module_dict, c"ndarray"),
+            float16: look_up_numpy_type(numpy_module_dict, c"half"),
+            float32: look_up_numpy_type(numpy_module_dict, c"float32"),
+            float64: look_up_numpy_type(numpy_module_dict, c"float64"),
+            int8: look_up_numpy_type(numpy_module_dict, c"int8"),
+            int16: look_up_numpy_type(numpy_module_dict, c"int16"),
+            int32: look_up_numpy_type(numpy_module_dict, c"int32"),
+            int64: look_up_numpy_type(numpy_module_dict, c"int64"),
+            uint16: look_up_numpy_type(numpy_module_dict, c"uint16"),
+            uint32: look_up_numpy_type(numpy_module_dict, c"uint32"),
+            uint64: look_up_numpy_type(numpy_module_dict, c"uint64"),
+            uint8: look_up_numpy_type(numpy_module_dict, c"uint8"),
+            bool_: look_up_numpy_type(numpy_module_dict, c"bool_"),
+            datetime64: look_up_numpy_type(numpy_module_dict, c"datetime64"),
         });
         Py_DECREF(numpy_module_dict);
         Py_DECREF(numpy);
