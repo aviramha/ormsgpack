@@ -13,6 +13,7 @@ use crate::serialize::ext::*;
 use crate::serialize::int::*;
 use crate::serialize::list::*;
 use crate::serialize::numpy::*;
+use crate::serialize::pydantic::*;
 use crate::serialize::str::*;
 use crate::serialize::tuple::*;
 use crate::serialize::uuid::*;
@@ -699,7 +700,7 @@ impl PyObject {
             if unlikely!(self.recursion == RECURSION_LIMIT) {
                 err!(RECURSION_LIMIT_REACHED)
             }
-            match AttributeDict::new(
+            match PydanticModel::new(
                 self.ptr,
                 self.opts,
                 self.default_calls,
@@ -707,7 +708,7 @@ impl PyObject {
                 self.default,
             ) {
                 Ok(val) => return val.serialize(serializer),
-                Err(AttributeDictError::DictMissing) => err!(PYDANTIC_MUST_HAVE_DICT),
+                Err(err) => err!(err),
             };
         }
 

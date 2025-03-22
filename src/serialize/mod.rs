@@ -10,6 +10,7 @@ mod ext;
 mod int;
 mod list;
 mod numpy;
+mod pydantic;
 mod serializer;
 mod str;
 mod tuple;
