@@ -3,6 +3,7 @@
 use ahash::RandomState;
 use once_cell::race::OnceBox;
 use pyo3::ffi::*;
+use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::ptr::{null_mut, NonNull};
 use std::sync::Once;
@@ -119,9 +120,9 @@ pub fn init_typerefs() {
         DATETIME_TYPE = (*PyDateTimeAPI()).DateTimeType;
         DATE_TYPE = (*PyDateTimeAPI()).DateType;
         TIME_TYPE = (*PyDateTimeAPI()).TimeType;
-        UUID_TYPE = look_up_uuid_type();
-        ENUM_TYPE = look_up_enum_type();
-        FIELD_TYPE = look_up_field_type();
+        UUID_TYPE = look_up_type(c"uuid", c"UUID");
+        ENUM_TYPE = look_up_type(c"enum", c"EnumMeta");
+        FIELD_TYPE = look_up_type(c"dataclasses", c"_FIELD");
         EXT_TYPE = create_ext_type();
         INT_ATTR_STR = PyUnicode_InternFromString("int\0".as_ptr() as *const c_char);
         UTCOFFSET_METHOD_STR = PyUnicode_InternFromString("utcoffset\0".as_ptr() as *const c_char);
@@ -156,7 +157,6 @@ pub fn init_typerefs() {
 #[cold]
 unsafe fn look_up_numpy_type(numpy_module_dict: *mut PyObject, np_type: &str) -> *mut PyTypeObject {
     let ptr = PyMapping_GetItemString(numpy_module_dict, np_type.as_ptr() as *const c_char);
-    Py_XDECREF(ptr);
     ptr as *mut PyTypeObject
 }
 
@@ -186,42 +186,18 @@ pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
             bool_: look_up_numpy_type(numpy_module_dict, "bool_\0"),
             datetime64: look_up_numpy_type(numpy_module_dict, "datetime64\0"),
         });
-        Py_XDECREF(numpy_module_dict);
-        Py_XDECREF(numpy);
+        Py_DECREF(numpy_module_dict);
+        Py_DECREF(numpy);
         Box::new(Some(nonnull!(Box::<NumpyTypes>::into_raw(types))))
     }
 }
 
 #[cold]
-unsafe fn look_up_field_type() -> *mut PyTypeObject {
-    let module = PyImport_ImportModule("dataclasses\0".as_ptr() as *const c_char);
+unsafe fn look_up_type(module_name: &CStr, type_name: &CStr) -> *mut PyTypeObject {
+    let module = PyImport_ImportModule(module_name.as_ptr());
     let module_dict = PyObject_GenericGetDict(module, null_mut());
-    let ptr = PyMapping_GetItemString(module_dict, "_FIELD\0".as_ptr() as *const c_char)
-        as *mut PyTypeObject;
+    let ptr = PyMapping_GetItemString(module_dict, type_name.as_ptr()) as *mut PyTypeObject;
     Py_DECREF(module_dict);
     Py_DECREF(module);
-    ptr
-}
-
-#[cold]
-unsafe fn look_up_enum_type() -> *mut PyTypeObject {
-    let module = PyImport_ImportModule("enum\0".as_ptr() as *const c_char);
-    let module_dict = PyObject_GenericGetDict(module, null_mut());
-    let ptr = PyMapping_GetItemString(module_dict, "EnumMeta\0".as_ptr() as *const c_char)
-        as *mut PyTypeObject;
-    Py_DECREF(module_dict);
-    Py_DECREF(module);
-    ptr
-}
-
-#[cold]
-unsafe fn look_up_uuid_type() -> *mut PyTypeObject {
-    let uuid_mod = PyImport_ImportModule("uuid\0".as_ptr() as *const c_char);
-    let uuid_mod_dict = PyObject_GenericGetDict(uuid_mod, null_mut());
-    let uuid = PyMapping_GetItemString(uuid_mod_dict, "NAMESPACE_DNS\0".as_ptr() as *const c_char);
-    let ptr = (*uuid).ob_type;
-    Py_DECREF(uuid);
-    Py_DECREF(uuid_mod_dict);
-    Py_DECREF(uuid_mod);
     ptr
 }
