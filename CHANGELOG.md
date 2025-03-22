@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.0
+
+### Changed
+
+- Add `packb` option `OPT_PASSTHROUGH_ENUM` to enable passthrough of Enum objects by [hinthornw](https://github.com/hinthornw) in [#361](/../../pull/361)
+- Add PyInstaller hook [#354](/../../issues/354)
+- Update dependencies
+
 ## 1.8.0 22/02/2025
 
 ### Fixed
