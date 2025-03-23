@@ -101,7 +101,7 @@ checksum = "d75b0bedcc4fe52caa0e03d9f1151a323e4aa5e2d78ba3580400cd3c9e2bc4bc"
 
 [[package]]
 name = "ormsgpack"
-version = "1.8.0"
+version = "1.9.0"
 dependencies = [
  "ahash",
  "bytecount",
