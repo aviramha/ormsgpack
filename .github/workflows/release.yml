@@ -108,6 +108,12 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        target: [
+          {
+            name: 'x86_64-pc-windows-msvc',
+            target: 'x86_64-pc-windows-msvc',
+          }
+        ]
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
@@ -118,9 +124,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: PyO3/maturin-action@v1
         with:
-          target: x86_64-pc-windows-msvc
+          target: ${{ matrix.target.target }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-          args: --release -i ${{ env.pythonLocation }}\python.exe
+          args: --release -i python${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.UV_VERSION }}
@@ -129,7 +135,7 @@ jobs:
       - run: uv run --no-sync pytest
       - uses: actions/upload-artifact@v4
         with:
-          name: ormsgpack-x86_64-pc-windows-msvc-${{ matrix.python-version }}
+          name: ormsgpack-${{ matrix.target.name }}-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
@@ -183,6 +189,61 @@ jobs:
           path: target/wheels
           retention-days: 1
 
+  build-musllinux:
+    name: Build musl Linux wheel
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        target: [
+          {
+            platform: 'linux/amd64',
+            target: 'x86_64-unknown-linux-musl',
+            maturin_args: '',
+          },
+          {
+            platform: 'linux/arm64',
+            target: 'aarch64-unknown-linux-musl',
+            maturin_args: '',
+          },
+          {
+            platform: 'linux/arm/v7',
+            target: 'armv7-unknown-linux-musleabihf',
+            maturin_args: '--no-default-features',
+          },
+        ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target.target }}
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          manylinux: musllinux_1_2
+          args: --release -i python${{ matrix.python-version }} ${{ matrix.target.maturin_args }}
+      - uses: docker/setup-qemu-action@v3
+      - run: |
+          docker run \
+            --rm \
+            -e UV_CACHE_DIR=/work/.uv_cache \
+            -v "$GITHUB_WORKSPACE":/work \
+            -w /work \
+            --platform ${{ matrix.target.platform }} \
+            python:${{ matrix.python-version }}-alpine \
+            sh -e -c '
+              apk add --no-cache curl build-base
+              curl --proto =https --tlsv1.2 -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
+              export PATH=$PATH:$HOME/.local/bin
+              uv sync --frozen --no-install-project
+              uv pip install ormsgpack --no-index -f target/wheels
+              uv run --no-sync pytest
+            '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ormsgpack-${{ matrix.target.target }}-${{ matrix.python-version }}
+          path: target/wheels
+          retention-days: 1
+
   release:
     if: startsWith(github.ref, 'refs/tags/')
     name: Release
@@ -190,6 +251,7 @@ jobs:
     needs: [
       build-linux-x86_64,
       build-linux-cross,
+      build-musllinux,
       build-windows,
       build-macos-universal,
       build-sdist,
