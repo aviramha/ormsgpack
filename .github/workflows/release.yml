@@ -71,6 +71,11 @@ jobs:
               target: "armv7-unknown-linux-gnueabihf",
               maturin_args: "--no-default-features",
             },
+            {
+              platform: "linux/386",
+              target: "i686-unknown-linux-gnu",
+              maturin_args: "",
+            },
           ]
 
     steps:
@@ -110,7 +115,10 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         target:
-          [{ name: "x86_64-pc-windows-msvc", target: "x86_64-pc-windows-msvc" }]
+          [
+            { name: "x86_64-pc-windows-msvc", target: "x86_64-pc-windows-msvc" },
+            { name: "i686-pc-windows-msvc", target: "i686-pc-windows-msvc" }
+          ]
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
@@ -215,6 +223,11 @@ jobs:
               platform: "linux/arm/v7",
               target: "armv7-unknown-linux-musleabihf",
               maturin_args: "--no-default-features",
+            },
+            {
+              platform: "linux/386",
+              target: "i686-unknown-linux-musl",
+              maturin_args: "",
             },
           ]
 
