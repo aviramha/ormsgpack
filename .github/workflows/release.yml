@@ -2,14 +2,14 @@ name: Release
 # This should almost always run, but upload binaries only on tag.
 on:
   pull_request:
-    branches: [ master ]
+    branches: [master]
     paths-ignore:
-      - '**.md'
+      - "**.md"
   workflow_dispatch:
   push:
-    branches: [ master ]
+    branches: [master]
     tags:
-      - '*.*.*'
+      - "*.*.*"
 # Cancel previous runs on the same PR.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     env:
       UV_PYTHON: ${{ matrix.python-version }}
 
@@ -58,19 +58,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        target: [
-          {
-            platform: 'linux/arm64',
-            target: 'aarch64-unknown-linux-gnu',
-            maturin_args: '',
-          },
-          {
-            platform: 'linux/arm/v7',
-            target: 'armv7-unknown-linux-gnueabihf',
-            maturin_args: '--no-default-features',
-          },
-        ]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        target:
+          [
+            {
+              platform: "linux/arm64",
+              target: "aarch64-unknown-linux-gnu",
+              maturin_args: "",
+            },
+            {
+              platform: "linux/arm/v7",
+              target: "armv7-unknown-linux-gnueabihf",
+              maturin_args: "--no-default-features",
+            },
+          ]
 
     steps:
       - uses: actions/checkout@v4
@@ -107,13 +108,9 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        target: [
-          {
-            name: 'x86_64-pc-windows-msvc',
-            target: 'x86_64-pc-windows-msvc',
-          }
-        ]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        target:
+          [{ name: "x86_64-pc-windows-msvc", target: "x86_64-pc-windows-msvc" }]
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
@@ -143,7 +140,7 @@ jobs:
     name: Build macOS universal wheel
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     runs-on: macos-latest
@@ -194,24 +191,32 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        target: [
-          {
-            platform: 'linux/amd64',
-            target: 'x86_64-unknown-linux-musl',
-            maturin_args: '',
-          },
-          {
-            platform: 'linux/arm64',
-            target: 'aarch64-unknown-linux-musl',
-            maturin_args: '',
-          },
-          {
-            platform: 'linux/arm/v7',
-            target: 'armv7-unknown-linux-musleabihf',
-            maturin_args: '--no-default-features',
-          },
-        ]
+        python:
+          [
+            { "version": "3.9", "pytest": "0" },
+            { "version": "3.10", "pytest": "0" },
+            { "version": "3.11", "pytest": "0" },
+            { "version": "3.12", "pytest": "0" },
+            { "version": "3.13", "pytest": "1" },
+          ]
+        target:
+          [
+            {
+              platform: "linux/amd64",
+              target: "x86_64-unknown-linux-musl",
+              maturin_args: "",
+            },
+            {
+              platform: "linux/arm64",
+              target: "aarch64-unknown-linux-musl",
+              maturin_args: "",
+            },
+            {
+              platform: "linux/arm/v7",
+              target: "armv7-unknown-linux-musleabihf",
+              maturin_args: "--no-default-features",
+            },
+          ]
 
     steps:
       - uses: actions/checkout@v4
@@ -220,7 +225,7 @@ jobs:
           target: ${{ matrix.target.target }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           manylinux: musllinux_1_2
-          args: --release -i python${{ matrix.python-version }} ${{ matrix.target.maturin_args }}
+          args: --release -i python${{ matrix.python.version }} ${{ matrix.target.maturin_args }}
       - uses: docker/setup-qemu-action@v3
       - run: |
           docker run \
@@ -229,18 +234,22 @@ jobs:
             -v "$GITHUB_WORKSPACE":/work \
             -w /work \
             --platform ${{ matrix.target.platform }} \
-            python:${{ matrix.python-version }}-alpine \
+            python:${{ matrix.python.version }}-alpine \
             sh -e -c '
               apk add --no-cache curl build-base
               curl --proto =https --tlsv1.2 -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
               export PATH=$PATH:$HOME/.local/bin
               uv sync --frozen --no-install-project
               uv pip install ormsgpack --no-index -f target/wheels
-              uv run --no-sync pytest
+              # https://github.com/ijl/orjson/blob/1d8b3526a45ebfba7256289216aa4d36c6fc2e82/.github/workflows/artifact.yaml#L328
+              # segfault on starting pytest after January 2025 on 3.11 and older; artifact works fine
+              if [ "${{ matrix.python.pytest }}" = "1" ]; then
+                uv run --no-sync pytest
+              fi
             '
       - uses: actions/upload-artifact@v4
         with:
-          name: ormsgpack-${{ matrix.target.target }}-${{ matrix.python-version }}
+          name: ormsgpack-${{ matrix.target.target }}-${{ matrix.python.version }}
           path: target/wheels
           retention-days: 1
 
@@ -248,14 +257,15 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     name: Release
     runs-on: ubuntu-latest
-    needs: [
-      build-linux-x86_64,
-      build-linux-cross,
-      build-musllinux,
-      build-windows,
-      build-macos-universal,
-      build-sdist,
-    ]
+    needs:
+      [
+        build-linux-x86_64,
+        build-linux-cross,
+        build-musllinux,
+        build-windows,
+        build-macos-universal,
+        build-sdist,
+      ]
     permissions:
       id-token: write
     steps:
