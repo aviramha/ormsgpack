@@ -59,27 +59,47 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        target: [
-          {
-            platform: 'linux/arm64',
-            target: 'aarch64-unknown-linux-gnu',
-            maturin_args: '',
-          },
-          {
-            platform: 'linux/arm/v7',
-            target: 'armv7-unknown-linux-gnueabihf',
-            maturin_args: '--no-default-features',
-          },
-        ]
+        platform: ['linux/amd64', 'linux/arm64', 'linux/arm/v7']
+        libc: ['gnu', 'musl']
+        include:
+          - libc: 'gnu'
+            manylinux: 'auto'
+            os: 'bookworm'
+            install_deps_command: ''
+          - libc: 'musl'
+            manylinux: 'musllinux_1_2'
+            os: 'alpine'
+            install_deps_command: 'apk add --no-cache build-base curl'
+          - platform: 'linux/amd64'
+            libc: 'musl'
+            target: 'x86_64-unknown-linux-musl'
+          - platform: 'linux/arm64'
+            libc: 'gnu'
+            target: 'aarch64-unknown-linux-gnu'
+          - platform: 'linux/arm64'
+            libc: 'musl'
+            target: 'aarch64-unknown-linux-musl'
+          - platform: 'linux/arm/v7'
+            libc: 'gnu'
+            target: 'armv7-unknown-linux-gnueabihf'
+          - platform: 'linux/arm/v7'
+            libc: 'musl'
+            target: 'armv7-unknown-linux-musleabihf'
+          - maturin_args: ''
+          - platform: 'linux/arm/v7'
+            maturin_args: '--no-default-features'
+        exclude:
+          - platform: 'linux/amd64'
+            libc: 'gnu'
 
     steps:
       - uses: actions/checkout@v4
       - uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target.target }}
+          target: ${{ matrix.target }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-          manylinux: auto
-          args: --release -i python${{ matrix.python-version }} ${{ matrix.target.maturin_args }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release -i python${{ matrix.python-version }} ${{ matrix.maturin_args }}
       - uses: docker/setup-qemu-action@v3
       - run: |
           docker run \
@@ -87,9 +107,10 @@ jobs:
             -e UV_CACHE_DIR=/work/.uv_cache \
             -v "$GITHUB_WORKSPACE":/work \
             -w /work \
-            --platform ${{ matrix.target.platform }} \
-            python:${{ matrix.python-version }}-bookworm \
-            bash -e -c '
+            --platform ${{ matrix.platform }} \
+            python:${{ matrix.python-version }}-${{ matrix.os }} \
+            sh -e -c '
+              ${{ matrix.install_deps_command }}
               curl --proto =https --tlsv1.2 -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
               export PATH=$PATH:$HOME/.local/bin
               uv sync --frozen --no-install-project
@@ -98,7 +119,7 @@ jobs:
             '
       - uses: actions/upload-artifact@v4
         with:
-          name: ormsgpack-${{ matrix.target.target }}-${{ matrix.python-version }}
+          name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
