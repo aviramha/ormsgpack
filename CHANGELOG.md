@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.1
+
+### Changed
+
+- Add musllinux wheels [#366](/../../issues/366)
+
 ## 1.9.0 23/03/2025
 
 ### Changed
