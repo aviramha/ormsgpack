@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+mod bytearray;
 mod bytes;
 mod dataclass;
 mod datetime;
@@ -9,6 +10,7 @@ mod dict;
 mod ext;
 mod int;
 mod list;
+mod memoryview;
 mod numpy;
 mod pydantic;
 mod serializer;
