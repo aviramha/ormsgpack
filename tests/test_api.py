@@ -51,6 +51,27 @@ def test_unpackb_memoryview() -> None:
     assert ormsgpack.unpackb(memoryview(b"\x90")) == []
 
 
+def test_bytes_round_trip() -> None:
+    assert (
+        ormsgpack.unpackb(ormsgpack.packb(b"\x01\x02\x03"), option=None)
+        == b"\x01\x02\x03"
+    )
+
+
+def test_bytearray_round_trip() -> None:
+    assert (
+        ormsgpack.unpackb(ormsgpack.packb(bytearray(b"\x01\x02\x03")), option=None)
+        == b"\x01\x02\x03"
+    )
+
+
+def test_memoryview_round_trip() -> None:
+    assert (
+        ormsgpack.unpackb(ormsgpack.packb(memoryview(b"\x01\x02\x03")), option=None)
+        == b"\x01\x02\x03"
+    )
+
+
 def test_unpackb_invalid_data() -> None:
     for val in (b"\xd9\x97#DL_", b"\xc1", b"\x91\xc1"):
         with pytest.raises(ormsgpack.MsgpackDecodeError):

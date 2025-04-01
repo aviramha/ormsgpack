@@ -68,6 +68,18 @@ TYPE_PARAMS = (
         id="bytes",
     ),
     pytest.param(
+        memoryview(b"a"),
+        b"a",
+        0,
+        id="memoryview",
+    ),
+    pytest.param(
+        bytearray(b"a"),
+        b"a",
+        0,
+        id="bytearray",
+    ),
+    pytest.param(
         "a",
         "a",
         0,
@@ -216,6 +228,8 @@ def test_tuple(value: object, converted_value: object, option: int) -> None:
         if param.id
         not in {
             "str subclass",
+            "memoryview",
+            "bytearray",
             "unknown",
         }
     ),
@@ -250,6 +264,7 @@ def test_default(value: object, converted_value: object, option: int) -> None:
         for param in TYPE_PARAMS
         if param.id
         not in {
+            "bytearray",
             "dict",
             "list",
             "dataclass",

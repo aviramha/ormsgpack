@@ -4,6 +4,7 @@ use crate::exc::*;
 use crate::ffi::*;
 use crate::msgpack;
 use crate::opt::*;
+use crate::serialize::bytearray::*;
 use crate::serialize::bytes::*;
 use crate::serialize::dataclass::*;
 use crate::serialize::datetime::*;
@@ -12,6 +13,7 @@ use crate::serialize::dict::*;
 use crate::serialize::ext::*;
 use crate::serialize::int::*;
 use crate::serialize::list::*;
+use crate::serialize::memoryview::*;
 use crate::serialize::numpy::*;
 use crate::serialize::pydantic::*;
 use crate::serialize::str::*;
@@ -769,6 +771,13 @@ impl PyObject {
             }
         }
 
+        if py_is!(ob_type, BYTEARRAY_TYPE) {
+            return ByteArray::new(self.ptr).serialize(serializer);
+        }
+        if py_is!(ob_type, MEMORYVIEW_TYPE) {
+            return MemoryView::new(self.ptr).serialize(serializer);
+        }
+
         Default::new(
             self.ptr,
             self.opts,
@@ -927,6 +936,10 @@ impl DictKey {
 
         if py_is!(ob_type, EXT_TYPE) {
             return Ext::new(self.ptr).serialize(serializer);
+        }
+
+        if py_is!(ob_type, MEMORYVIEW_TYPE) {
+            return MemoryView::new(self.ptr).serialize(serializer);
         }
 
         err!("Dict key must a type serializable with OPT_NON_STR_KEYS")
