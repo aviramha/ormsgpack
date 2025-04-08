@@ -41,7 +41,7 @@ ahash = { version = "0.8", default-features = false }
 bytecount = { version = "^0.6.7", default-features = false, features = ["runtime-dispatch-simd"] }
 byteorder = { version = "1.5.0", default-features = false, features = ["std"] }
 chrono = { version = "0.4.40", default-features = false }
-half = { version = "2.4.1", default-features = false }
+half = { version = "2.6.0", default-features = false }
 itoa = { version = "1", default-features = false }
 once_cell = { version = "1", default-features = false, features = ["race"] }
 pyo3 = { version = "^0.24.1", default-features = false, features = ["extension-module"] }
