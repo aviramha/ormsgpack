@@ -48,7 +48,7 @@ pyo3 = { version = "^0.24.1", default-features = false, features = ["extension-m
 serde = { version = "1", default-features = false }
 serde_bytes = { version = "0.11.16", default-features = false, features = ["std"] }
 simdutf8 = { version = "0.1.5", default-features = false, features = ["std"] }
-smallvec = { version = "^1.13", default-features = false, features = ["union", "write"] }
+smallvec = { version = "^1.15", default-features = false, features = ["union", "write"] }
 
 [build-dependencies]
 pyo3-build-config = { version = "^0.24.0" }
