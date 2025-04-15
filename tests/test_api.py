@@ -104,6 +104,70 @@ def test_valueerror() -> None:
 
 
 @pytest.mark.parametrize(
+    "args",
+    (
+        [],
+        [None],
+        [None, None],
+        [None, None, None],
+    ),
+)
+@pytest.mark.parametrize(
+    "kwargs",
+    (
+        {},
+        {"default": None},
+        {"option": None},
+        {"default": None, "option": None},
+    ),
+)
+def test_packb_args(args: list[None], kwargs: dict[str, None]) -> None:
+    if (
+        args
+        and not (len(args) >= 2 and "default" in kwargs)
+        and not (len(args) >= 3 and "option" in kwargs)
+    ):
+        assert ormsgpack.packb(*args, **kwargs) == b"\xc0"
+    else:
+        with pytest.raises(TypeError):
+            ormsgpack.packb(*args, **kwargs)
+
+
+def test_packb_unknown_kwarg() -> None:
+    with pytest.raises(TypeError):
+        ormsgpack.packb(None, zxc=None)  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize(
+    "args",
+    (
+        [],
+        [b"\xc0"],
+    ),
+)
+@pytest.mark.parametrize(
+    "kwargs",
+    (
+        {},
+        {"ext_hook": None},
+        {"option": None},
+        {"ext_hook": None, "option": None},
+    ),
+)
+def test_unpackb_args(args: list[bytes], kwargs: dict[str, None]) -> None:
+    if args:
+        assert ormsgpack.unpackb(*args, **kwargs) is None
+    else:
+        with pytest.raises(ValueError):
+            ormsgpack.unpackb(*args, **kwargs)
+
+
+def test_unpackb_unknown_kwarg() -> None:
+    with pytest.raises(ValueError):
+        ormsgpack.unpackb(b"\xc0", zxc=None)  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize(
     "option",
     (
         1 << 14,
@@ -151,67 +215,6 @@ def test_opts_multiple() -> None:
     ) == msgpack.packb([1, "2000-01-01T02:03:04+00:00"])
 
 
-def test_default_positional() -> None:
-    """
-    packb() positional arg
-    """
-    with pytest.raises(TypeError):
-        ormsgpack.packb(__obj={})  # type: ignore[call-arg]
-    with pytest.raises(TypeError):
-        ormsgpack.packb(zxc={})  # type: ignore[call-arg]
-
-
-def test_default_unknown_kwarg() -> None:
-    """
-    packb() unknown kwarg
-    """
-    with pytest.raises(TypeError):
-        ormsgpack.packb({}, zxc={})  # type: ignore[call-arg]
-    with pytest.raises(ValueError):
-        ormsgpack.unpackb(b"\x00", zxc={})  # type: ignore[call-arg]
-
-
-def test_default_empty_kwarg() -> None:
-    """
-    unpackb/packb() empty kwarg
-    """
-    assert ormsgpack.packb(None, **{}) == b"\xc0"
-    assert ormsgpack.unpackb(b"\xc0", **{}) is None
-
-
-def test_default_twice() -> None:
-    """
-    packb() default twice
-    """
-    with pytest.raises(TypeError):
-        ormsgpack.packb({}, None, default=None)  # type: ignore[misc]
-
-
-def test_option_twice() -> None:
-    """
-    packb() option twice
-    """
-    with pytest.raises(TypeError):
-        ormsgpack.packb(
-            {},
-            None,
-            ormsgpack.OPT_NAIVE_UTC,
-            option=ormsgpack.OPT_NAIVE_UTC,  # type: ignore[misc]
-        )
-
-
-def test_option_mixed() -> None:
-    """
-    packb() option one arg, one kwarg
-    """
-
-    assert ormsgpack.packb(
-        [{1, 2}, datetime.datetime(2000, 1, 1, 2, 3, 4)],
-        default=lambda x: str(x),
-        option=ormsgpack.OPT_NAIVE_UTC,
-    ) == msgpack.packb(["{1, 2}", "2000-01-01T02:03:04+00:00"])
-
-
 def test_packb_signature() -> None:
     """
     packb() valid __text_signature__
@@ -229,7 +232,7 @@ def test_unpackb_signature() -> None:
     """
     assert (
         str(inspect.signature(ormsgpack.unpackb))
-        == "(obj, /, ext_hook=None, option=None)"
+        == "(obj, /, *, ext_hook=None, option=None)"
     )
     inspect.signature(ormsgpack.unpackb).bind("[]")
 
