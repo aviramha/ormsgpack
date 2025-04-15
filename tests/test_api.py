@@ -138,6 +138,19 @@ def test_packb_unknown_kwarg() -> None:
         ormsgpack.packb(None, zxc=None)  # type: ignore[call-arg]
 
 
+def test_packb_non_interned_kwarg() -> None:
+    assert (
+        ormsgpack.packb(
+            None,
+            **{
+                b"default".decode(): None,
+                b"option".decode(): None,
+            },
+        )
+        == b"\xc0"
+    )
+
+
 @pytest.mark.parametrize(
     "args",
     (
@@ -165,6 +178,19 @@ def test_unpackb_args(args: list[bytes], kwargs: dict[str, None]) -> None:
 def test_unpackb_unknown_kwarg() -> None:
     with pytest.raises(ValueError):
         ormsgpack.unpackb(b"\xc0", zxc=None)  # type: ignore[call-arg]
+
+
+def test_unpackb_non_interned_kwarg() -> None:
+    assert (
+        ormsgpack.unpackb(
+            b"\xc0",
+            **{
+                b"ext_hook".decode(): None,
+                b"option".decode(): None,
+            },
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize(
