@@ -200,9 +200,9 @@ pub unsafe extern "C" fn unpackb(
         let tuple_size = PyTuple_GET_SIZE(kwnames);
         for i in 0..tuple_size {
             let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
-            if arg == typeref::EXT_HOOK {
+            if PyUnicode_Compare(arg, typeref::EXT_HOOK) == 0 {
                 ext_hook = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
-            } else if arg == typeref::OPTION {
+            } else if PyUnicode_Compare(arg, typeref::OPTION) == 0 {
                 optsptr = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
             } else {
                 return raise_unpackb_exception("unpackb() got an unexpected keyword argument");
@@ -248,14 +248,14 @@ pub unsafe extern "C" fn packb(
         let tuple_size = PyTuple_GET_SIZE(kwnames);
         for i in 0..tuple_size {
             let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
-            if arg == typeref::DEFAULT {
+            if PyUnicode_Compare(arg, typeref::DEFAULT) == 0 {
                 if unlikely!(default.is_some()) {
                     return raise_packb_exception(
                         "packb() got multiple values for argument: 'default'",
                     );
                 }
                 default = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
-            } else if arg == typeref::OPTION {
+            } else if PyUnicode_Compare(arg, typeref::OPTION) == 0 {
                 if unlikely!(optsptr.is_some()) {
                     return raise_packb_exception(
                         "packb() got multiple values for argument: 'option'",
