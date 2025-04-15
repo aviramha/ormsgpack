@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 const PACKB_DOC: &CStr =
     c"packb(obj, /, default=None, option=None)\n--\n\nSerialize Python objects to msgpack.";
 const UNPACKB_DOC: &CStr =
-    c"unpackb(obj, /, ext_hook=None, option=None)\n--\n\nDeserialize msgpack to Python objects.";
+    c"unpackb(obj, /, *, ext_hook=None, option=None)\n--\n\nDeserialize msgpack to Python objects.";
 
 macro_rules! module_add_object {
     ($mptr: expr, $name: expr, $object:expr) => {

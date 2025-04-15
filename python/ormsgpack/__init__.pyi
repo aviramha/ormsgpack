@@ -4,11 +4,14 @@ __version__: str
 
 def packb(
     obj: Any,
+    /,
     default: Optional[Callable[[Any], Any]] = ...,
     option: Optional[int] = None,
 ) -> bytes: ...
 def unpackb(
     obj: Union[bytes, bytearray, memoryview],
+    /,
+    *,
     ext_hook: Optional[Callable[[int, bytes], Any]] = ...,
     option: Optional[int] = ...,
 ) -> Any: ...
