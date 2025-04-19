@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::*;
 use crate::typeref::*;
-use crate::unicode::*;
 use once_cell::unsync::OnceCell;
 use simdutf8::basic::{from_utf8, Utf8Error};
 use std::hash::BuildHasher;

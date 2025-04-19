@@ -8,7 +8,6 @@ mod datetimelike;
 mod default;
 mod dict;
 mod ext;
-mod int;
 mod list;
 mod memoryview;
 mod numpy;
