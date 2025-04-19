@@ -27,8 +27,8 @@ impl Serialize for Ext {
         if unlikely!(!(0..=127).contains(&tag)) {
             err!("Extension type out of range")
         }
-        let buffer = unsafe { PyBytes_AS_STRING((*ext).data) as *const u8 };
-        let length = unsafe { PyBytes_GET_SIZE((*ext).data) as usize };
+        let buffer = unsafe { pybytes_as_u8((*ext).data) };
+        let length = unsafe { pyo3::ffi::Py_SIZE((*ext).data) as usize };
         let data = unsafe { std::slice::from_raw_parts(buffer, length) };
 
         serializer.serialize_newtype_variant("", tag as u32, "", &ByteBuf::from(data))

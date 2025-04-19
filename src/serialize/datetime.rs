@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::datetimelike::{DateLike, DateTimeBuffer, DateTimeLike, Offset, TimeLike};
 use crate::typeref::*;
@@ -61,7 +62,8 @@ pub struct Time {
 
 impl Time {
     pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, TimeError> {
-        if unsafe { (*(ptr as *mut pyo3::ffi::PyDateTime_Time)).hastzinfo != 0 } {
+        let tzinfo = ffi!(PyDateTime_TIME_GET_TZINFO(ptr));
+        if !py_is!(tzinfo, NONE) {
             return Err(TimeError::HasTimezone);
         }
         Ok(Time {
@@ -113,44 +115,43 @@ impl std::fmt::Display for DateTimeError {
     }
 }
 
-fn utcoffset(ptr: *mut pyo3::ffi::PyObject) -> Result<Offset, DateTimeError> {
-    if !unsafe { (*(ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo == 1 } {
-        return Ok(Offset::default());
+unsafe fn utcoffset(ptr: *mut pyo3::ffi::PyObject) -> Result<Option<Offset>, DateTimeError> {
+    let tzinfo = pyo3::ffi::PyDateTime_DATE_GET_TZINFO(ptr);
+    if py_is!(tzinfo, NONE) {
+        return Ok(None);
     }
-
-    let tzinfo = ffi!(PyDateTime_DATE_GET_TZINFO(ptr));
     let py_offset: *mut pyo3::ffi::PyObject;
-    if ffi!(PyObject_HasAttr(tzinfo, CONVERT_METHOD_STR)) == 1 {
+    if pyo3::ffi::PyObject_HasAttr(tzinfo, CONVERT_METHOD_STR) == 1 {
         // pendulum
-        py_offset = ffi!(PyObject_CallMethodNoArgs(ptr, UTCOFFSET_METHOD_STR));
-    } else if ffi!(PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR)) == 1 {
+        py_offset = pyobject_call_method_no_args(ptr, UTCOFFSET_METHOD_STR);
+    } else if pyo3::ffi::PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR) == 1 {
         // pytz
-        let normalized = ffi!(PyObject_CallMethodOneArg(tzinfo, NORMALIZE_METHOD_STR, ptr));
-        py_offset = ffi!(PyObject_CallMethodNoArgs(normalized, UTCOFFSET_METHOD_STR));
-        ffi!(Py_DECREF(normalized));
-    } else if ffi!(PyObject_HasAttr(tzinfo, DST_STR)) == 1 {
+        let normalized = pyobject_call_method_one_arg(tzinfo, NORMALIZE_METHOD_STR, ptr);
+        py_offset = pyobject_call_method_no_args(normalized, UTCOFFSET_METHOD_STR);
+        pyo3::ffi::Py_DECREF(normalized);
+    } else if pyo3::ffi::PyObject_HasAttr(tzinfo, DST_STR) == 1 {
         // dateutil/arrow, datetime.timezone.utc
-        py_offset = ffi!(PyObject_CallMethodOneArg(tzinfo, UTCOFFSET_METHOD_STR, ptr));
+        py_offset = pyobject_call_method_one_arg(tzinfo, UTCOFFSET_METHOD_STR, ptr);
     } else {
         return Err(DateTimeError::LibraryUnsupported);
     }
     let offset = Offset {
-        day: ffi!(PyDateTime_DELTA_GET_DAYS(py_offset)),
-        second: ffi!(PyDateTime_DELTA_GET_SECONDS(py_offset)),
+        day: pyo3::ffi::PyDateTime_DELTA_GET_DAYS(py_offset),
+        second: pyo3::ffi::PyDateTime_DELTA_GET_SECONDS(py_offset),
     };
-    ffi!(Py_DECREF(py_offset));
-    Ok(offset)
+    pyo3::ffi::Py_DECREF(py_offset);
+    Ok(Some(offset))
 }
 
 pub struct DateTime {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
-    offset: Offset,
+    offset: Option<Offset>,
 }
 
 impl DateTime {
     pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, DateTimeError> {
-        let offset = utcoffset(ptr)?;
+        let offset = unsafe { utcoffset(ptr)? };
         Ok(DateTime {
             ptr: ptr,
             opts: opts,
@@ -192,11 +193,7 @@ impl TimeLike for DateTime {
 }
 
 impl DateTimeLike for DateTime {
-    fn has_tz(&self) -> bool {
-        unsafe { (*(self.ptr as *mut pyo3::ffi::PyDateTime_DateTime)).hastzinfo == 1 }
-    }
-
-    fn offset(&self) -> Offset {
+    fn offset(&self) -> Option<Offset> {
         self.offset
     }
 }

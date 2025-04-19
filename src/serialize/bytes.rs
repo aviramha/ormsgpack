@@ -20,8 +20,8 @@ impl Serialize for Bytes {
     where
         S: Serializer,
     {
-        let buffer = unsafe { PyBytes_AS_STRING(self.ptr) as *const u8 };
-        let length = unsafe { PyBytes_GET_SIZE(self.ptr) as usize };
+        let buffer = unsafe { pybytes_as_u8(self.ptr) };
+        let length = unsafe { pyo3::ffi::Py_SIZE(self.ptr) as usize };
         let contents = unsafe { std::slice::from_raw_parts(buffer, length) };
         serializer.serialize_bytes(contents)
     }

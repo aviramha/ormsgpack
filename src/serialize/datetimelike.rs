@@ -58,15 +58,14 @@ pub struct Offset {
 }
 
 pub trait DateTimeLike: DateLike + TimeLike {
-    fn has_tz(&self) -> bool;
-    fn offset(&self) -> Offset;
+    fn offset(&self) -> Option<Offset>;
 
     fn write_buf(&self, buf: &mut DateTimeBuffer, opts: Opt) {
         DateLike::write_buf(self, buf);
         buf.push(b'T');
         TimeLike::write_buf(self, buf, opts);
-        if self.has_tz() || opts & NAIVE_UTC != 0 {
-            let offset = self.offset();
+        if self.offset().is_some() || opts & NAIVE_UTC != 0 {
+            let offset = self.offset().unwrap_or_default();
             if offset.second == 0 {
                 if opts & UTC_Z != 0 {
                     buf.push(b'Z');
@@ -141,12 +140,8 @@ impl TimeLike for NaiveDateTime {
 }
 
 impl DateTimeLike for NaiveDateTime {
-    fn has_tz(&self) -> bool {
-        false
-    }
-
-    fn offset(&self) -> Offset {
-        Offset::default()
+    fn offset(&self) -> Option<Offset> {
+        None
     }
 }
 
