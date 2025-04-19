@@ -1,3 +1,4 @@
+use crate::ffi::*;
 use pyo3::ffi::*;
 use std::os::raw::{c_int, c_uint, c_void};
 use std::ptr::null_mut;
@@ -15,14 +16,14 @@ unsafe extern "C" fn ext_new(
     args: *mut PyObject,
     kwds: *mut PyObject,
 ) -> *mut PyObject {
-    if Py_SIZE(args) != 2 || !kwds.is_null() {
+    if Py_SIZE(args) != 2 || (!kwds.is_null() && pydict_size(kwds) != 0) {
         PyErr_SetString(
             PyExc_TypeError,
             c"Ext.__new__() takes 2 positional arguments".as_ptr(),
         );
         return null_mut();
     }
-    let tag = PyTuple_GET_ITEM(args, 0);
+    let tag = pytuple_get_item(args, 0);
     if PyLong_Check(tag) == 0 {
         PyErr_SetString(
             PyExc_TypeError,
@@ -30,7 +31,7 @@ unsafe extern "C" fn ext_new(
         );
         return null_mut();
     }
-    let data = PyTuple_GET_ITEM(args, 1);
+    let data = pytuple_get_item(args, 1);
     if PyBytes_Check(data) == 0 {
         PyErr_SetString(
             PyExc_TypeError,

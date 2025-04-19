@@ -1,3 +1,4 @@
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::datetimelike::NaiveDateTime;
 use crate::typeref::{ARRAY_STRUCT_STR, DESCR_STR, DTYPE_STR};
@@ -393,8 +394,8 @@ impl NumpyDatetimeUnit {
         let dtype = ffi!(PyObject_GetAttr(ptr, DTYPE_STR));
         let descr = ffi!(PyObject_GetAttr(dtype, DESCR_STR));
         let el0 = ffi!(PyList_GET_ITEM(descr, 0));
-        let descr_str = ffi!(PyTuple_GET_ITEM(el0, 1));
-        let uni = crate::unicode::unicode_to_str(descr_str).unwrap();
+        let descr_str = unsafe { pytuple_get_item(el0, 1) };
+        let uni = unicode_to_str(descr_str).unwrap();
         if uni.len() < 5 {
             return Self::NaT;
         }

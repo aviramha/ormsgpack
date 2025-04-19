@@ -1,12 +1,22 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+#[cfg_attr(any(PyPy, GraalPy), path = "base/mod.rs")]
+#[cfg_attr(not(any(PyPy, GraalPy)), path = "cpython/mod.rs")]
+mod impl_;
+mod int;
+mod unicode;
+
+pub use impl_::*;
+pub use int::*;
+pub use unicode::*;
+
 use pyo3::ffi::*;
 use std::os::raw::{c_char, c_int};
 use std::ptr::NonNull;
 
 #[inline(always)]
 pub unsafe fn pybytes_as_bytes(op: *mut PyObject) -> &'static [u8] {
-    let buffer = (*op.cast::<PyBytesObject>()).ob_sval.as_mut_ptr() as *const u8;
+    let buffer = pybytes_as_mut_u8(op) as *const u8;
     let length = Py_SIZE(op) as usize;
     std::slice::from_raw_parts(buffer, length)
 }
@@ -19,6 +29,7 @@ pub unsafe fn pybytearray_as_bytes(op: *mut PyObject) -> &'static [u8] {
 }
 
 #[repr(C)]
+#[cfg(not(PyPy))]
 pub struct _PyManagedBufferObject {
     pub ob_base: *mut PyObject,
     pub flags: c_int,
@@ -27,6 +38,7 @@ pub struct _PyManagedBufferObject {
 }
 
 #[repr(C)]
+#[cfg(not(PyPy))]
 pub struct PyMemoryViewObject {
     pub ob_base: PyVarObject,
     pub mbuf: *mut _PyManagedBufferObject,
@@ -36,6 +48,13 @@ pub struct PyMemoryViewObject {
     pub view: Py_buffer,
     pub weakreflist: *mut PyObject,
     pub ob_array: [Py_ssize_t; 1],
+}
+
+#[repr(C)]
+#[cfg(PyPy)]
+pub struct PyMemoryViewObject {
+    pub ob_base: PyObject,
+    pub view: Py_buffer,
 }
 
 #[inline(always)]
@@ -48,32 +67,6 @@ pub unsafe fn pymemoryview_as_bytes(op: *mut PyObject) -> Option<&'static [u8]> 
         let length = view.len as usize;
         Some(std::slice::from_raw_parts(buffer, length))
     }
-}
-
-#[repr(C)]
-#[cfg(Py_3_12)]
-struct _PyLongValue {
-    pub lv_tag: usize,
-}
-
-#[repr(C)]
-#[cfg(Py_3_12)]
-struct PyLongObject {
-    pub ob_base: PyObject,
-    pub long_value: _PyLongValue,
-}
-
-#[cfg(Py_3_12)]
-const SIGN_MASK: usize = 3;
-
-#[cfg(Py_3_12)]
-pub fn pylong_is_positive(op: *mut PyObject) -> bool {
-    unsafe { (*(op as *mut PyLongObject)).long_value.lv_tag & SIGN_MASK == 0 }
-}
-
-#[cfg(not(Py_3_12))]
-pub fn pylong_is_positive(op: *mut PyObject) -> bool {
-    unsafe { (*(op as *mut PyVarObject)).ob_size > 0 }
 }
 
 pub struct PyDictIter {
@@ -103,7 +96,7 @@ impl Iterator for PyDictIter {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = ffi!(Py_SIZE(self.op)) as usize;
+        let len = unsafe { pydict_size(self.op) } as usize;
         (len, Some(len))
     }
 }

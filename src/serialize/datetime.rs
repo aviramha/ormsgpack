@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::datetimelike::{DateLike, DateTimeLike, TimeLike};
 use crate::typeref::*;
@@ -126,11 +127,11 @@ unsafe fn utcoffset(ptr: *mut pyo3::ffi::PyObject) -> Result<Option<i32>, DateTi
     let py_offset: *mut pyo3::ffi::PyObject;
     if pyo3::ffi::PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR) == 1 {
         // pytz
-        let normalized = pyo3::ffi::PyObject_CallMethodOneArg(tzinfo, NORMALIZE_METHOD_STR, ptr);
-        py_offset = pyo3::ffi::PyObject_CallMethodNoArgs(normalized, UTCOFFSET_METHOD_STR);
+        let normalized = pyobject_call_method_one_arg(tzinfo, NORMALIZE_METHOD_STR, ptr);
+        py_offset = pyobject_call_method_no_args(normalized, UTCOFFSET_METHOD_STR);
         pyo3::ffi::Py_DECREF(normalized);
     } else {
-        py_offset = pyo3::ffi::PyObject_CallMethodOneArg(tzinfo, UTCOFFSET_METHOD_STR, ptr);
+        py_offset = pyobject_call_method_one_arg(tzinfo, UTCOFFSET_METHOD_STR, ptr);
     }
     if unlikely!(py_offset.is_null()) {
         pyo3::ffi::PyErr_Clear();

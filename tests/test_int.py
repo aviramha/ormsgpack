@@ -61,7 +61,7 @@ def test_int_64_passthrough(value: int) -> None:
 @pytest.mark.parametrize(
     "value",
     (
-        -9223372036854775808,
+        -9223372036854775809,
         18446744073709551616,
     ),
 )

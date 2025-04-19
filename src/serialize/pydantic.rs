@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
-use crate::ffi::PyDictIter;
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 use crate::typeref::*;
-use crate::unicode::*;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
@@ -66,7 +65,7 @@ impl Serialize for PydanticModel {
     where
         S: Serializer,
     {
-        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let len = unsafe { pydict_size(self.ptr) } as usize;
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
