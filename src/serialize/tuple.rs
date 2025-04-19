@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 
@@ -38,10 +39,10 @@ impl Serialize for Tuple {
     where
         S: Serializer,
     {
-        let len = ffi!(PyTuple_GET_SIZE(self.ptr)) as usize;
+        let len = ffi!(Py_SIZE(self.ptr)) as usize;
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
-            let item = ffi!(PyTuple_GET_ITEM(self.ptr, i as isize));
+            let item = unsafe { pytuple_get_item(self.ptr, i as isize) };
             let value = PyObject::new(
                 item,
                 self.opts,

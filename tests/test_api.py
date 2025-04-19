@@ -3,6 +3,7 @@
 import ctypes
 import datetime
 import inspect
+import platform
 import re
 
 import msgpack
@@ -241,6 +242,10 @@ def test_opts_multiple() -> None:
     ) == msgpack.packb([1, "2000-01-01T02:03:04+00:00"])
 
 
+@pytest.mark.skipif(
+    platform.python_implementation() == "GraalVM",
+    reason="function signatures are missing on GraalPy",
+)
 def test_packb_signature() -> None:
     """
     packb() valid __text_signature__
@@ -252,6 +257,10 @@ def test_packb_signature() -> None:
     inspect.signature(ormsgpack.packb).bind("str", default=None, option=1)
 
 
+@pytest.mark.skipif(
+    platform.python_implementation() == "GraalVM",
+    reason="function signatures are missing on GraalPy",
+)
 def test_unpackb_signature() -> None:
     """
     unpackb() valid __text_signature__
@@ -287,6 +296,10 @@ def test_bytes_buffer() -> None:
     assert ormsgpack.packb([a, b, c]) == msgpack.packb([a, b, c])
 
 
+@pytest.mark.skipif(
+    not hasattr(ctypes, "pythonapi"),
+    reason="ctypes.pythonapi not available",
+)
 def test_function_flags() -> None:
     """
     Make sure we use fastcall

@@ -19,8 +19,8 @@ mod msgpack;
 mod opt;
 mod serialize;
 mod typeref;
-mod unicode;
 
+use crate::ffi::*;
 use pyo3::ffi::*;
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -143,7 +143,7 @@ fn raise_unpackb_exception(msg: &str) -> *mut PyObject {
         let err_msg =
             PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
         let args = PyTuple_New(1);
-        PyTuple_SET_ITEM(args, 0, err_msg);
+        pytuple_set_item(args, 0, err_msg);
         PyErr_SetObject(typeref::MsgpackDecodeError, args);
         Py_DECREF(args);
     };
@@ -197,9 +197,9 @@ pub unsafe extern "C" fn unpackb(
         return raise_unpackb_exception(msg);
     }
     if !kwnames.is_null() {
-        let tuple_size = PyTuple_GET_SIZE(kwnames);
+        let tuple_size = Py_SIZE(kwnames);
         for i in 0..tuple_size {
-            let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
+            let arg = pytuple_get_item(kwnames, i as Py_ssize_t);
             if PyUnicode_Compare(arg, typeref::EXT_HOOK) == 0 {
                 ext_hook = Some(NonNull::new_unchecked(*args.offset(num_args + i)));
             } else if PyUnicode_Compare(arg, typeref::OPTION) == 0 {
@@ -245,9 +245,9 @@ pub unsafe extern "C" fn packb(
         optsptr = Some(NonNull::new_unchecked(*args.offset(2)));
     }
     if !kwnames.is_null() {
-        let tuple_size = PyTuple_GET_SIZE(kwnames);
+        let tuple_size = Py_SIZE(kwnames);
         for i in 0..tuple_size {
-            let arg = PyTuple_GET_ITEM(kwnames, i as Py_ssize_t);
+            let arg = pytuple_get_item(kwnames, i as Py_ssize_t);
             if PyUnicode_Compare(arg, typeref::DEFAULT) == 0 {
                 if unlikely!(default.is_some()) {
                     return raise_packb_exception(

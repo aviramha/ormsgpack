@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
-use crate::ffi::PyDictIter;
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 use crate::typeref::*;
-use crate::unicode::*;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
 use std::ptr::NonNull;
@@ -42,7 +41,7 @@ impl Serialize for Dict {
     where
         S: Serializer,
     {
-        if unlikely!(ffi!(Py_SIZE(self.ptr)) == 0) {
+        if unlikely!(unsafe { pydict_size(self.ptr) } == 0) {
             serializer.serialize_map(Some(0)).unwrap().end()
         } else if self.opts & (NON_STR_KEYS | SORT_KEYS) == 0 {
             DictWithStrKeys::new(
@@ -110,7 +109,7 @@ impl Serialize for DictWithStrKeys {
     where
         S: Serializer,
     {
-        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let len = unsafe { pydict_size(self.ptr) } as usize;
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
@@ -166,7 +165,7 @@ impl Serialize for DictWithSortedStrKeys {
     where
         S: Serializer,
     {
-        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let len = unsafe { pydict_size(self.ptr) } as usize;
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
@@ -231,7 +230,7 @@ impl Serialize for DictWithNonStrKeys {
         S: Serializer,
     {
         let opts = self.opts & NOT_PASSTHROUGH;
-        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let len = unsafe { pydict_size(self.ptr) } as usize;
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if py_is!(ob_type!(key.as_ptr()), STR_TYPE) {

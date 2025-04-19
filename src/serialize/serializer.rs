@@ -11,7 +11,6 @@ use crate::serialize::datetime::*;
 use crate::serialize::default::*;
 use crate::serialize::dict::*;
 use crate::serialize::ext::*;
-use crate::serialize::int::*;
 use crate::serialize::list::*;
 use crate::serialize::memoryview::*;
 use crate::serialize::numpy::*;
@@ -537,16 +536,6 @@ macro_rules! is_subclass {
     };
 }
 
-fn is_big_int(ptr: *mut pyo3::ffi::PyObject) -> bool {
-    ffi!(_PyLong_NumBits(ptr)) > {
-        if pylong_is_positive(ptr) {
-            64
-        } else {
-            63
-        }
-    }
-}
-
 pub struct PyObject {
     ptr: *mut pyo3::ffi::PyObject,
     opts: Opt,
@@ -643,10 +632,24 @@ impl PyObject {
             if is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS) {
                 return StrSubclass::new(self.ptr).serialize(serializer);
             }
-            if is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS)
-                && (self.opts & PASSTHROUGH_BIG_INT == 0 || !is_big_int(self.ptr))
-            {
-                return Int::new(self.ptr).serialize(serializer);
+            if is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS) {
+                match Int::new(self.ptr) {
+                    Ok(val) => return val.serialize(serializer),
+                    Err(err) => {
+                        if self.opts & PASSTHROUGH_BIG_INT != 0 {
+                            return Default::new(
+                                self.ptr,
+                                self.opts,
+                                self.default_calls,
+                                self.recursion,
+                                self.default,
+                            )
+                            .serialize(serializer);
+                        } else {
+                            err!(err)
+                        }
+                    }
+                }
             }
             if is_subclass!(ob_type, Py_TPFLAGS_LIST_SUBCLASS) {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
@@ -799,10 +802,24 @@ impl Serialize for PyObject {
             Str::new(self.ptr).serialize(serializer)
         } else if py_is!(ob_type, BYTES_TYPE) {
             Bytes::new(self.ptr).serialize(serializer)
-        } else if py_is!(ob_type, INT_TYPE)
-            && (self.opts & PASSTHROUGH_BIG_INT == 0 || !is_big_int(self.ptr))
-        {
-            Int::new(self.ptr).serialize(serializer)
+        } else if py_is!(ob_type, INT_TYPE) {
+            match Int::new(self.ptr) {
+                Ok(val) => val.serialize(serializer),
+                Err(err) => {
+                    if self.opts & PASSTHROUGH_BIG_INT != 0 {
+                        Default::new(
+                            self.ptr,
+                            self.opts,
+                            self.default_calls,
+                            self.recursion,
+                            self.default,
+                        )
+                        .serialize(serializer)
+                    } else {
+                        err!(err)
+                    }
+                }
+            }
         } else if py_is!(ob_type, BOOL_TYPE) {
             serializer.serialize_bool(unsafe { self.ptr == TRUE })
         } else if py_is!(self.ptr, NONE) {
@@ -861,10 +878,10 @@ impl Serialize for DictTupleKey {
     where
         S: Serializer,
     {
-        let len = ffi!(PyTuple_GET_SIZE(self.ptr)) as usize;
+        let len = ffi!(Py_SIZE(self.ptr)) as usize;
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
-            let item = ffi!(PyTuple_GET_ITEM(self.ptr, i as isize));
+            let item = unsafe { pytuple_get_item(self.ptr, i as isize) };
             let value = DictKey::new(item, self.opts, self.recursion + 1);
             seq.serialize_element(&value)?;
         }
@@ -931,7 +948,10 @@ impl DictKey {
             return StrSubclass::new(self.ptr).serialize(serializer);
         }
         if is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS) {
-            return Int::new(self.ptr).serialize(serializer);
+            match Int::new(self.ptr) {
+                Ok(val) => return val.serialize(serializer),
+                Err(err) => err!(err),
+            }
         }
 
         if py_is!(ob_type, EXT_TYPE) {
@@ -957,7 +977,10 @@ impl Serialize for DictKey {
         } else if py_is!(ob_type, BYTES_TYPE) {
             Bytes::new(self.ptr).serialize(serializer)
         } else if py_is!(ob_type, INT_TYPE) {
-            Int::new(self.ptr).serialize(serializer)
+            match Int::new(self.ptr) {
+                Ok(val) => val.serialize(serializer),
+                Err(err) => err!(err),
+            }
         } else if py_is!(ob_type, BOOL_TYPE) {
             serializer.serialize_bool(unsafe { self.ptr == TRUE })
         } else if py_is!(self.ptr, NONE) {
