@@ -287,6 +287,10 @@ def test_bytes_buffer() -> None:
     assert ormsgpack.packb([a, b, c]) == msgpack.packb([a, b, c])
 
 
+@pytest.mark.skipif(
+    not hasattr(ctypes, "pythonapi"),
+    reason="ctypes.pythonapi not available",
+)
 def test_function_flags() -> None:
     """
     Make sure we use fastcall
