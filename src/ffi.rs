@@ -4,16 +4,18 @@ use pyo3::ffi::*;
 use std::os::raw::{c_char, c_int};
 use std::ptr::NonNull;
 
-#[allow(non_snake_case)]
 #[inline(always)]
-pub unsafe fn PyBytes_AS_STRING(op: *mut PyObject) -> *const c_char {
-    &(*op.cast::<PyBytesObject>()).ob_sval as *const c_char
+pub unsafe fn pybytes_as_bytes(op: *mut PyObject) -> &'static [u8] {
+    let buffer = (*op.cast::<PyBytesObject>()).ob_sval.as_mut_ptr() as *const u8;
+    let length = Py_SIZE(op) as usize;
+    std::slice::from_raw_parts(buffer, length)
 }
 
-#[allow(non_snake_case)]
 #[inline(always)]
-pub unsafe fn PyBytes_GET_SIZE(op: *mut PyObject) -> Py_ssize_t {
-    (*op.cast::<PyVarObject>()).ob_size
+pub unsafe fn pybytearray_as_bytes(op: *mut PyObject) -> &'static [u8] {
+    let buffer = PyByteArray_AsString(op) as *const u8;
+    let length = PyByteArray_Size(op) as usize;
+    std::slice::from_raw_parts(buffer, length)
 }
 
 #[repr(C)]
@@ -36,10 +38,16 @@ pub struct PyMemoryViewObject {
     pub ob_array: [Py_ssize_t; 1],
 }
 
-#[allow(non_snake_case)]
 #[inline(always)]
-pub unsafe fn PyMemoryView_GET_BUFFER(op: *mut PyObject) -> *const Py_buffer {
-    &(*op.cast::<PyMemoryViewObject>()).view
+pub unsafe fn pymemoryview_as_bytes(op: *mut PyObject) -> Option<&'static [u8]> {
+    let view = &(*op.cast::<PyMemoryViewObject>()).view;
+    if PyBuffer_IsContiguous(view, b'C' as c_char) == 0 {
+        None
+    } else {
+        let buffer = view.buf as *const u8;
+        let length = view.len as usize;
+        Some(std::slice::from_raw_parts(buffer, length))
+    }
 }
 
 #[repr(C)]
