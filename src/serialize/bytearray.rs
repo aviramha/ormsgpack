@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::pybytearray_as_bytes;
 use serde::ser::{Serialize, Serializer};
 
 #[repr(transparent)]
@@ -18,9 +19,7 @@ impl Serialize for ByteArray {
     where
         S: Serializer,
     {
-        let buffer = unsafe { pyo3::ffi::PyByteArray_AsString(self.ptr) } as *const u8;
-        let length = unsafe { pyo3::ffi::PyByteArray_Size(self.ptr) };
-        let contents = unsafe { std::slice::from_raw_parts(buffer, length as usize) };
+        let contents = unsafe { pybytearray_as_bytes(self.ptr) };
         serializer.serialize_bytes(contents)
     }
 }

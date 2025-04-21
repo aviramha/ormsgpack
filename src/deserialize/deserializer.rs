@@ -22,30 +22,25 @@ pub fn deserialize(
     opts: Opt,
 ) -> Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
     let obj_type_ptr = ob_type!(ptr);
-    let buffer: *const u8;
-    let length: usize;
+    let contents: &[u8];
 
     if py_is!(obj_type_ptr, BYTES_TYPE) {
-        buffer = unsafe { PyBytes_AS_STRING(ptr) as *const u8 };
-        length = unsafe { PyBytes_GET_SIZE(ptr) as usize };
+        contents = unsafe { pybytes_as_bytes(ptr) };
     } else if py_is!(obj_type_ptr, MEMORYVIEW_TYPE) {
-        let membuf = unsafe { PyMemoryView_GET_BUFFER(ptr) };
-        if unsafe { pyo3::ffi::PyBuffer_IsContiguous(membuf, b'C' as c_char) == 0 } {
+        if let Some(buffer) = unsafe { pymemoryview_as_bytes(ptr) } {
+            contents = buffer;
+        } else {
             return Err(DeserializeError::new(Cow::Borrowed(
                 "Input type memoryview must be a C contiguous buffer",
             )));
         }
-        buffer = unsafe { (*membuf).buf as *const u8 };
-        length = unsafe { (*membuf).len as usize };
     } else if py_is!(obj_type_ptr, BYTEARRAY_TYPE) {
-        buffer = ffi!(PyByteArray_AsString(ptr)) as *const u8;
-        length = ffi!(PyByteArray_Size(ptr)) as usize;
+        contents = unsafe { pybytearray_as_bytes(ptr) };
     } else {
         return Err(DeserializeError::new(Cow::Borrowed(
             "Input must be bytes, bytearray, memoryview",
         )));
     }
-    let contents: &[u8] = unsafe { std::slice::from_raw_parts(buffer, length) };
 
     let mut deserializer = Deserializer::new(contents, ext_hook, opts);
     deserializer
