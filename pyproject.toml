@@ -28,8 +28,7 @@ dev = [
     "msgpack",
     "mypy",
     "numpy; platform_machine != 'armv7l'",
-    # importing pendulum makes python crash on alpine
-    # "pendulum; platform_machine != 'armv7l' and python_version < '3.13'",
+    "pendulum; platform_machine != 'armv7l'",
     "pydantic",
     "pytest",
     "pytest-benchmark",
