@@ -17,7 +17,7 @@ concurrency:
 
 env:
   RUST_TOOLCHAIN: nightly-2025-02-06
-  UV_VERSION: 0.6.10
+  UV_VERSION: 0.6.16
 
 jobs:
   build-linux-x86_64:
