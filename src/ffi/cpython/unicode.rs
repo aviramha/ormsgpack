@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::unicode::*;
 use crate::typeref::EMPTY_UNICODE;
 use core::ffi::c_void;
 use pyo3::ffi::*;
@@ -8,8 +9,10 @@ use pyo3::ffi::*;
 
 pub fn unicode_from_str(buf: &str) -> *mut PyObject {
     if buf.is_empty() {
-        ffi!(Py_INCREF(EMPTY_UNICODE));
-        unsafe { EMPTY_UNICODE }
+        unsafe {
+            Py_INCREF(EMPTY_UNICODE);
+            EMPTY_UNICODE
+        }
     } else {
         let num_chars = bytecount::num_chars(buf.as_bytes());
         if buf.len() == num_chars {
@@ -29,7 +32,7 @@ pub fn unicode_from_str(buf: &str) -> *mut PyObject {
 
 fn pyunicode_ascii(buf: &str) -> *mut PyObject {
     unsafe {
-        let ptr = ffi!(PyUnicode_New(buf.len() as isize, 127));
+        let ptr = PyUnicode_New(buf.len() as isize, 127);
         let data_ptr = ptr.cast::<PyASCIIObject>().offset(1) as *mut u8;
         std::ptr::copy_nonoverlapping(buf.as_ptr(), data_ptr, buf.len());
         std::ptr::write(data_ptr.add(buf.len()), 0);
@@ -41,7 +44,7 @@ fn pyunicode_ascii(buf: &str) -> *mut PyObject {
 #[inline(never)]
 fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
-        let ptr = ffi!(PyUnicode_New(num_chars as isize, 255));
+        let ptr = PyUnicode_New(num_chars as isize, 255);
         let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u8;
         for each in buf.chars() {
             std::ptr::write(data_ptr, each as u8);
@@ -54,7 +57,7 @@ fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut PyObject {
 
 fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
-        let ptr = ffi!(PyUnicode_New(num_chars as isize, 65535));
+        let ptr = PyUnicode_New(num_chars as isize, 65535);
         let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u16;
         for each in buf.chars() {
             std::ptr::write(data_ptr, each as u16);
@@ -67,7 +70,7 @@ fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut PyObject {
 
 fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
-        let ptr = ffi!(PyUnicode_New(num_chars as isize, 1114111));
+        let ptr = PyUnicode_New(num_chars as isize, 1114111);
         let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u32;
         for each in buf.chars() {
             std::ptr::write(data_ptr, each as u32);
@@ -93,17 +96,6 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
         let hash = _Py_HashBytes(data_ptr, num_bytes);
         (*op.cast::<PyASCIIObject>()).hash = hash;
         hash
-    }
-}
-
-#[inline(never)]
-pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
-    let mut str_size: Py_ssize_t = 0;
-    let ptr = ffi!(PyUnicode_AsUTF8AndSize(op, &mut str_size)) as *const u8;
-    if unlikely!(ptr.is_null()) {
-        None
-    } else {
-        Some(str_from_slice!(ptr, str_size as usize))
     }
 }
 

@@ -7,7 +7,6 @@ use crate::ffi::*;
 use crate::msgpack::Marker;
 use crate::opt::*;
 use crate::typeref::*;
-use crate::unicode::*;
 use byteorder::{BigEndian, ReadBytesExt};
 use simdutf8::basic::{from_utf8, Utf8Error};
 use std::borrow::Cow;
@@ -267,7 +266,7 @@ impl<'de> Deserializer<'de> {
         &mut self,
         len: u32,
     ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        let dict_ptr = ffi!(_PyDict_NewPresized(len as pyo3::ffi::Py_ssize_t));
+        let dict_ptr = unsafe { pydict_new_presized(len as pyo3::ffi::Py_ssize_t) };
         for _ in 0..len {
             let marker = self.read_marker()?;
             let key = match marker {
@@ -288,12 +287,9 @@ impl<'de> Deserializer<'de> {
             }?;
             let value = self.deserialize()?;
             let pyhash = unsafe { (*key.as_ptr().cast::<pyo3::ffi::PyASCIIObject>()).hash };
-            let _ = ffi!(_PyDict_SetItem_KnownHash(
-                dict_ptr,
-                key.as_ptr(),
-                value.as_ptr(),
-                pyhash
-            ));
+            let _ = unsafe {
+                pydict_set_item_known_hash(dict_ptr, key.as_ptr(), value.as_ptr(), pyhash)
+            };
             // counter Py_INCREF in insertdict
             ffi!(Py_DECREF(key.as_ptr()));
             ffi!(Py_DECREF(value.as_ptr()));
@@ -305,7 +301,7 @@ impl<'de> Deserializer<'de> {
         &mut self,
         len: u32,
     ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        let dict_ptr = ffi!(_PyDict_NewPresized(len as pyo3::ffi::Py_ssize_t));
+        let dict_ptr = unsafe { pydict_new_presized(len as pyo3::ffi::Py_ssize_t) };
         for _ in 0..len {
             let key = self.deserialize_map_key()?;
             let value = self.deserialize()?;
@@ -466,11 +462,9 @@ impl<'de> Deserializer<'de> {
         let ptr = ffi!(PyTuple_New(len as pyo3::ffi::Py_ssize_t));
         for i in 0..len {
             let elem = self.deserialize_map_key()?;
-            ffi!(PyTuple_SET_ITEM(
-                ptr,
-                i as pyo3::ffi::Py_ssize_t,
-                elem.as_ptr()
-            ));
+            unsafe {
+                pytuple_set_item(ptr, i as pyo3::ffi::Py_ssize_t, elem.as_ptr());
+            }
         }
         Ok(nonnull!(ptr))
     }
