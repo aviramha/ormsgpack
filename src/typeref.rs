@@ -56,8 +56,6 @@ pub static mut NUMPY_TYPES: OnceBox<Option<NonNull<NumpyTypes>>> = OnceBox::new(
 
 pub static mut UTCOFFSET_METHOD_STR: *mut PyObject = null_mut();
 pub static mut NORMALIZE_METHOD_STR: *mut PyObject = null_mut();
-pub static mut CONVERT_METHOD_STR: *mut PyObject = null_mut();
-pub static mut DST_STR: *mut PyObject = null_mut();
 
 pub static mut DICT_STR: *mut PyObject = null_mut();
 pub static mut DATACLASS_FIELDS_STR: *mut PyObject = null_mut();
@@ -126,8 +124,6 @@ pub fn init_typerefs() {
         INT_ATTR_STR = PyUnicode_InternFromString(c"int".as_ptr());
         UTCOFFSET_METHOD_STR = PyUnicode_InternFromString(c"utcoffset".as_ptr());
         NORMALIZE_METHOD_STR = PyUnicode_InternFromString(c"normalize".as_ptr());
-        CONVERT_METHOD_STR = PyUnicode_InternFromString(c"convert".as_ptr());
-        DST_STR = PyUnicode_InternFromString(c"dst".as_ptr());
         DICT_STR = PyUnicode_InternFromString(c"__dict__".as_ptr());
         DATACLASS_FIELDS_STR = PyUnicode_InternFromString(c"__dataclass_fields__".as_ptr());
         SLOTS_STR = PyUnicode_InternFromString(c"__slots__".as_ptr());
