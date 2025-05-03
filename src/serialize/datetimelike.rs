@@ -63,15 +63,8 @@ pub trait TimeLike {
     }
 }
 
-#[derive(Clone, Copy, Default)]
-pub struct Offset {
-    pub day: i32,
-    pub second: i32,
-}
-
 pub trait DateTimeLike: DateLike + TimeLike {
-    fn has_tz(&self) -> bool;
-    fn offset(&self) -> Offset;
+    fn offset(&self) -> Option<i32>;
 
     fn write_buf<W>(&self, writer: &mut W, opts: Opt) -> Result<(), std::io::Error>
     where
@@ -80,9 +73,9 @@ pub trait DateTimeLike: DateLike + TimeLike {
         DateLike::write_buf(self, writer)?;
         writer.write_u8(b'T')?;
         TimeLike::write_buf(self, writer, opts)?;
-        if self.has_tz() || opts & NAIVE_UTC != 0 {
-            let offset = self.offset();
-            if offset.second == 0 {
+        if self.offset().is_some() || opts & NAIVE_UTC != 0 {
+            let offset = self.offset().unwrap_or_default();
+            if offset == 0 {
                 if opts & UTC_Z != 0 {
                     writer.write_u8(b'Z')?;
                 } else {
@@ -94,14 +87,12 @@ pub trait DateTimeLike: DateLike + TimeLike {
                 let offset_hour: i32;
                 let mut offset_minute: i32;
                 let mut offset_second: i32;
-                if offset.day == -1 {
-                    // datetime.timedelta(days=-1, seconds=68400) -> -05:00
+                if offset < 0 {
                     writer.write_u8(b'-')?;
-                    offset_second = 86400 - offset.second;
+                    offset_second = -offset;
                 } else {
-                    // datetime.timedelta(seconds=37800) -> +10:30
                     writer.write_u8(b'+')?;
-                    offset_second = offset.second;
+                    offset_second = offset;
                 }
                 (offset_minute, offset_second) = (offset_second / 60, offset_second % 60);
                 (offset_hour, offset_minute) = (offset_minute / 60, offset_minute % 60);
@@ -159,12 +150,8 @@ impl TimeLike for NaiveDateTime {
 }
 
 impl DateTimeLike for NaiveDateTime {
-    fn has_tz(&self) -> bool {
-        false
-    }
-
-    fn offset(&self) -> Offset {
-        Offset::default()
+    fn offset(&self) -> Option<i32> {
+        None
     }
 }
 
