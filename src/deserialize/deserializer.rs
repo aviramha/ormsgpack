@@ -8,6 +8,7 @@ use crate::msgpack::Marker;
 use crate::opt::*;
 use crate::typeref::*;
 use byteorder::{BigEndian, ReadBytesExt};
+use chrono::{Datelike, Timelike};
 use simdutf8::basic::{from_utf8, Utf8Error};
 use std::borrow::Cow;
 use std::os::raw::c_char;
@@ -54,6 +55,7 @@ enum Error {
     Internal,
     InvalidStr,
     InvalidType(Marker),
+    InvalidValue,
     RecursionLimitReached,
     UnexpectedEof,
 }
@@ -69,6 +71,7 @@ impl std::fmt::Display for Error {
             Error::InvalidType(ref marker) => {
                 write!(f, "invalid type {marker:?}")
             }
+            Error::InvalidValue => f.write_str("invalid value"),
             Error::RecursionLimitReached => f.write_str(RECURSION_LIMIT_REACHED),
             Error::UnexpectedEof => write!(f, "unexpected end of file"),
         }
@@ -180,8 +183,53 @@ impl<'de> Deserializer<'de> {
         Ok(Marker::from_u8(n))
     }
 
+    fn deserialize_timestamp_ext(
+        &mut self,
+        len: u32,
+    ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let (seconds, nanoseconds): (i64, u32) = match len {
+            4 => {
+                let seconds = self.read_u32()?;
+                (seconds.into(), 0)
+            }
+            8 => {
+                let value = self.read_u64()?;
+                ((value & 0x3ffffffff) as i64, (value >> 34) as u32)
+            }
+            12 => {
+                let nanoseconds = self.read_u32()?;
+                let seconds = self.read_i64()?;
+                (seconds, nanoseconds)
+            }
+            _ => return Err(Error::InvalidValue),
+        };
+        let datetime = match chrono::DateTime::<chrono::Utc>::from_timestamp(seconds, nanoseconds) {
+            Some(value) => value,
+            None => return Err(Error::InvalidValue),
+        };
+        let obj = unsafe {
+            let datetime_api = *pyo3::ffi::PyDateTimeAPI();
+            (datetime_api.DateTime_FromDateAndTime)(
+                datetime.year(),
+                datetime.month() as i32,
+                datetime.day() as i32,
+                datetime.hour() as i32,
+                datetime.minute() as i32,
+                datetime.second() as i32,
+                (datetime.nanosecond() / 1000) as i32,
+                datetime_api.TimeZone_UTC,
+                datetime_api.DateTimeType,
+            )
+        };
+        Ok(nonnull!(obj))
+    }
+
     fn deserialize_ext(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let tag = self.read_i8()?;
+        if tag == -1 && self.opts & DATETIME_AS_TIMESTAMP_EXT != 0 {
+            return self.deserialize_timestamp_ext(len);
+        }
+
         let data = self.read_slice(len as usize)?;
 
         match self.ext_hook {
@@ -469,6 +517,15 @@ impl<'de> Deserializer<'de> {
         Ok(nonnull!(ptr))
     }
 
+    fn deserialize_map_ext_key(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
+        let tag = self.read_i8()?;
+        if tag == -1 && self.opts & DATETIME_AS_TIMESTAMP_EXT != 0 {
+            self.deserialize_timestamp_ext(len)
+        } else {
+            Err(Error::InvalidValue)
+        }
+    }
+
     fn deserialize_map_key(&mut self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         self.recursion += 1;
         if unlikely!(self.recursion == RECURSION_LIMIT) {
@@ -555,6 +612,12 @@ impl<'de> Deserializer<'de> {
             Marker::Array32 => {
                 let len = self.read_u32()?;
                 self.deserialize_map_array_key(len)
+            }
+            Marker::FixExt4 => self.deserialize_map_ext_key(4),
+            Marker::FixExt8 => self.deserialize_map_ext_key(8),
+            Marker::Ext8 => {
+                let len = self.read_u8()?;
+                self.deserialize_map_ext_key(len.into())
             }
             marker => Err(Error::InvalidType(marker)),
         };

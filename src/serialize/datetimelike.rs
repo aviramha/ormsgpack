@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::opt::*;
-use byteorder::WriteBytesExt;
+use byteorder::{BigEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike};
 use serde::ser::{Serialize, Serializer};
 
@@ -24,7 +24,7 @@ pub trait DateLike {
     fn month(&self) -> i32;
     fn day(&self) -> i32;
 
-    fn write_buf<W>(&self, writer: &mut W) -> Result<(), std::io::Error>
+    fn write_rfc3339<W>(&self, writer: &mut W) -> Result<(), std::io::Error>
     where
         W: std::io::Write,
     {
@@ -43,7 +43,7 @@ pub trait TimeLike {
     fn second(&self) -> i32;
     fn microsecond(&self) -> i32;
 
-    fn write_buf<W>(&self, writer: &mut W, opts: Opt) -> Result<(), std::io::Error>
+    fn write_rfc3339<W>(&self, writer: &mut W, opts: Opt) -> Result<(), std::io::Error>
     where
         W: std::io::Write,
     {
@@ -65,14 +65,15 @@ pub trait TimeLike {
 
 pub trait DateTimeLike: DateLike + TimeLike {
     fn offset(&self) -> Option<i32>;
+    fn timestamp(&self) -> (i64, u32);
 
-    fn write_buf<W>(&self, writer: &mut W, opts: Opt) -> Result<(), std::io::Error>
+    fn write_rfc3339<W>(&self, writer: &mut W, opts: Opt) -> Result<(), std::io::Error>
     where
         W: std::io::Write,
     {
-        DateLike::write_buf(self, writer)?;
+        DateLike::write_rfc3339(self, writer)?;
         writer.write_u8(b'T')?;
-        TimeLike::write_buf(self, writer, opts)?;
+        TimeLike::write_rfc3339(self, writer, opts)?;
         if self.offset().is_some() || opts & NAIVE_UTC != 0 {
             let offset = self.offset().unwrap_or_default();
             if offset == 0 {
@@ -107,6 +108,25 @@ pub trait DateTimeLike: DateLike + TimeLike {
                 writer.write_u8(b':')?;
                 write_integer(writer, offset_minute, 2)?;
             }
+        }
+        Ok(())
+    }
+
+    fn write_timestamp<W>(&self, writer: &mut W) -> Result<(), std::io::Error>
+    where
+        W: std::io::Write,
+    {
+        let (seconds, nanoseconds) = self.timestamp();
+        if seconds >> 34 == 0 {
+            let value = (i64::from(nanoseconds) << 34) | seconds;
+            if value <= 4294967295 {
+                writer.write_u32::<BigEndian>(value as u32)?;
+            } else {
+                writer.write_u64::<BigEndian>(value as u64)?;
+            }
+        } else {
+            writer.write_u32::<BigEndian>(nanoseconds)?;
+            writer.write_i64::<BigEndian>(seconds)?;
         }
         Ok(())
     }
@@ -153,6 +173,13 @@ impl DateTimeLike for NaiveDateTime {
     fn offset(&self) -> Option<i32> {
         None
     }
+
+    fn timestamp(&self) -> (i64, u32) {
+        (
+            self.dt.and_utc().timestamp(),
+            self.dt.and_utc().timestamp_subsec_nanos(),
+        )
+    }
 }
 
 impl Serialize for NaiveDateTime {
@@ -161,7 +188,7 @@ impl Serialize for NaiveDateTime {
         S: Serializer,
     {
         let mut cursor = std::io::Cursor::new([0u8; 32]);
-        DateTimeLike::write_buf(self, &mut cursor, self.opts).unwrap();
+        DateTimeLike::write_rfc3339(self, &mut cursor, self.opts).unwrap();
         let len = cursor.position() as usize;
         let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
         serializer.serialize_str(value)

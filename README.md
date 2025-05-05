@@ -181,6 +181,10 @@ To modify how data is serialized, specify `option`. Each `option` is an integer
 constant in `ormsgpack`. To specify multiple options, mask them together, e.g.,
 `option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_NAIVE_UTC`.
 
+##### `OPT_DATETIME_AS_TIMESTAMP_EXT`
+
+Serialize aware `datetime.datetime` instances as timestamp extension objects.
+
 ##### `OPT_NAIVE_UTC`
 
 Serialize naive `datetime.datetime` objects and `numpy.datetime64`
@@ -492,6 +496,10 @@ Decimal('0.0842389659712649442845'
 
 #### option
 
+##### `OPT_DATETIME_AS_TIMESTAMP_EXT`
+
+Deserialize timestamp extension objects to UTC `datetime.datetime` instances.
+
 ##### `OPT_NON_STR_KEYS`
 
 Deserialize map keys of type other than string.
@@ -588,8 +596,10 @@ b'\xaf12:00:15.000290'
 
 ### datetime
 
-Naive `datetime.datetime` instances and aware `datetime.datetime`
-instances are serialized as [RFC 3339](https://tools.ietf.org/html/rfc3339) strings.
+Naive `datetime.datetime` instances are serialized as [RFC 3339](https://tools.ietf.org/html/rfc3339) strings.
+Aware `datetime.datetime` instances are serialized as [RFC 3339](https://tools.ietf.org/html/rfc3339) strings
+or alternatively as MessagePack timestamp extension objects, by using the
+[OPT_DATETIME_AS_TIMESTAMP_EXT](#OPT_DATETIME_AS_TIMESTAMP_EXT) option.
 
 ```python
 >>> import ormsgpack, datetime, zoneinfo

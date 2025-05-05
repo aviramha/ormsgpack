@@ -109,6 +109,11 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
         PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
     );
 
+    module_add_int!(
+        mptr,
+        c"OPT_DATETIME_AS_TIMESTAMP_EXT",
+        opt::DATETIME_AS_TIMESTAMP_EXT
+    );
     module_add_int!(mptr, c"OPT_NAIVE_UTC", opt::NAIVE_UTC);
     module_add_int!(mptr, c"OPT_NON_STR_KEYS", opt::NON_STR_KEYS);
     module_add_int!(mptr, c"OPT_OMIT_MICROSECONDS", opt::OMIT_MICROSECONDS);

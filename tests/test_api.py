@@ -197,7 +197,7 @@ def test_unpackb_non_interned_kwarg() -> None:
 @pytest.mark.parametrize(
     "option",
     (
-        1 << 14,
+        1 << 15,
         True,
         -1,
         9223372036854775809,

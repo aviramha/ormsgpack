@@ -446,7 +446,10 @@ where
     where
         T: ?Sized + Serialize,
     {
-        let tag: i8 = variant_index.try_into().unwrap_or_else(|_| unreachable!());
+        let tag: i8 = match variant_index {
+            128 => -1,
+            _ => variant_index.try_into().unwrap_or_else(|_| unreachable!()),
+        };
         let mut ext_se = ExtSerializer::new(tag, &mut self.writer);
         value.serialize(&mut ext_se)
     }
