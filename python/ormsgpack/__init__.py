@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from .ormsgpack import (
+    OPT_DATETIME_AS_TIMESTAMP_EXT,
     OPT_NAIVE_UTC,
     OPT_NON_STR_KEYS,
     OPT_OMIT_MICROSECONDS,
@@ -30,6 +31,7 @@ __all__ = (
     "Ext",
     "MsgpackDecodeError",
     "MsgpackEncodeError",
+    "OPT_DATETIME_AS_TIMESTAMP_EXT",
     "OPT_NAIVE_UTC",
     "OPT_NON_STR_KEYS",
     "OPT_OMIT_MICROSECONDS",
