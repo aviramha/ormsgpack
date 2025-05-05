@@ -470,3 +470,86 @@ def test_passthrough_datetime_default() -> None:
         option=ormsgpack.OPT_PASSTHROUGH_DATETIME,
         default=lambda x: x.strftime("%a, %d %b %Y %H:%M:%S GMT"),
     ) == msgpack.packb("Thu, 01 Jan 1970 00:00:00 GMT")
+
+
+@pytest.mark.parametrize(
+    ("value", "serialized_value"),
+    (
+        (
+            datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc),
+            b"\xd6\xff\x00\x00\x00\x00",
+        ),
+        (
+            datetime.datetime(2106, 2, 7, 6, 28, 15, tzinfo=datetime.timezone.utc),
+            b"\xd6\xff\xff\xff\xff\xff",
+        ),
+        (
+            datetime.datetime(2106, 2, 7, 6, 28, 16, tzinfo=datetime.timezone.utc),
+            b"\xd7\xff\x00\x00\x00\x01\x00\x00\x00\x00",
+        ),
+        (
+            datetime.datetime(2514, 5, 30, 1, 53, 3, tzinfo=datetime.timezone.utc),
+            b"\xd7\xff\x00\x00\x00\x03\xff\xff\xff\xff",
+        ),
+        (
+            datetime.datetime(2514, 5, 30, 1, 53, 4, tzinfo=datetime.timezone.utc),
+            b"\xc7\x0c\xff\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00",
+        ),
+        (
+            datetime.datetime(9999, 12, 4, 15, 30, 7, tzinfo=datetime.timezone.utc),
+            b"\xc7\x0c\xff\x00\x00\x00\x00\x00\x00\x00:\xff\xd01\x7f",
+        ),
+    ),
+)
+def test_datetime_as_timestamp_ext(
+    value: datetime.datetime,
+    serialized_value: bytes,
+) -> None:
+    assert (
+        ormsgpack.packb(value, option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT)
+        == serialized_value
+    )
+    assert (
+        ormsgpack.packb(
+            value.astimezone(tz=zoneinfo.ZoneInfo("Asia/Shanghai")),
+            option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT,
+        )
+        == serialized_value
+    )
+    assert (
+        ormsgpack.unpackb(
+            serialized_value, option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT
+        )
+        == value
+    )
+
+    obj = {value: True}
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb(obj)
+    packed = ormsgpack.packb(
+        obj, option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT
+    )
+    assert packed == b"\x81" + serialized_value + b"\xc3"
+    with pytest.raises(ormsgpack.MsgpackDecodeError):
+        ormsgpack.unpackb(packed)
+    assert (
+        ormsgpack.unpackb(
+            packed,
+            option=ormsgpack.OPT_NON_STR_KEYS | ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT,
+        )
+        == obj
+    )
+
+
+def test_datetime_naive_as_timestamp_ext() -> None:
+    assert ormsgpack.packb(
+        datetime.datetime(1970, 1, 1),
+        option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT,
+    ) == msgpack.packb("1970-01-01T00:00:00")
+    assert (
+        ormsgpack.packb(
+            datetime.datetime(1970, 1, 1),
+            option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT | ormsgpack.OPT_NAIVE_UTC,
+        )
+        == b"\xd6\xff\x00\x00\x00\x00"
+    )

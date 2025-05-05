@@ -5,6 +5,7 @@ use crate::opt::*;
 use crate::serialize::datetimelike::{DateLike, DateTimeLike, TimeLike};
 use crate::typeref::*;
 use serde::ser::{Serialize, Serializer};
+use serde_bytes::Bytes;
 
 #[repr(transparent)]
 pub struct Date {
@@ -38,7 +39,7 @@ impl Serialize for Date {
         S: Serializer,
     {
         let mut cursor = std::io::Cursor::new([0u8; 32]);
-        DateLike::write_buf(self, &mut cursor).unwrap();
+        DateLike::write_rfc3339(self, &mut cursor).unwrap();
         let len = cursor.position() as usize;
         let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
         serializer.serialize_str(value)
@@ -100,7 +101,7 @@ impl Serialize for Time {
         S: Serializer,
     {
         let mut cursor = std::io::Cursor::new([0u8; 32]);
-        TimeLike::write_buf(self, &mut cursor, self.opts).unwrap();
+        TimeLike::write_rfc3339(self, &mut cursor, self.opts).unwrap();
         let len = cursor.position() as usize;
         let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
         serializer.serialize_str(value)
@@ -203,6 +204,24 @@ impl DateTimeLike for DateTime {
     fn offset(&self) -> Option<i32> {
         self.offset
     }
+
+    fn timestamp(&self) -> (i64, u32) {
+        let offset = chrono::FixedOffset::east_opt(self.offset.unwrap_or_default()).unwrap();
+        let datetime = chrono::NaiveDateTime::new(
+            chrono::NaiveDate::from_ymd_opt(self.year(), self.month() as u32, self.day() as u32)
+                .unwrap(),
+            chrono::NaiveTime::from_hms_micro_opt(
+                self.hour() as u32,
+                self.minute() as u32,
+                self.second() as u32,
+                self.microsecond() as u32,
+            )
+            .unwrap(),
+        )
+        .and_local_timezone(offset)
+        .unwrap();
+        (datetime.timestamp(), datetime.timestamp_subsec_nanos())
+    }
 }
 
 impl Serialize for DateTime {
@@ -212,9 +231,18 @@ impl Serialize for DateTime {
         S: Serializer,
     {
         let mut cursor = std::io::Cursor::new([0u8; 32]);
-        DateTimeLike::write_buf(self, &mut cursor, self.opts).unwrap();
-        let len = cursor.position() as usize;
-        let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
-        serializer.serialize_str(value)
+        if self.opts & DATETIME_AS_TIMESTAMP_EXT != 0
+            && (self.offset().is_some() || self.opts & NAIVE_UTC != 0)
+        {
+            DateTimeLike::write_timestamp(self, &mut cursor).unwrap();
+            let len = cursor.position() as usize;
+            let timestamp = &cursor.get_ref()[0..len];
+            serializer.serialize_newtype_variant("", 128, "", Bytes::new(timestamp))
+        } else {
+            DateTimeLike::write_rfc3339(self, &mut cursor, self.opts).unwrap();
+            let len = cursor.position() as usize;
+            let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
+            serializer.serialize_str(value)
+        }
     }
 }
