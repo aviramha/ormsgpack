@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::opt::*;
-use crate::serialize::datetimelike::{DateLike, DateTimeBuffer, DateTimeLike, Offset, TimeLike};
+use crate::serialize::datetimelike::{DateLike, DateTimeLike, Offset, TimeLike};
 use crate::typeref::*;
 use serde::ser::{Serialize, Serializer};
 
@@ -36,9 +36,11 @@ impl Serialize for Date {
     where
         S: Serializer,
     {
-        let mut buf = DateTimeBuffer::new();
-        self.write_buf(&mut buf);
-        serializer.serialize_str(str_from_slice!(buf.as_ptr(), buf.len()))
+        let mut cursor = std::io::Cursor::new([0u8; 32]);
+        DateLike::write_buf(self, &mut cursor).unwrap();
+        let len = cursor.position() as usize;
+        let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
+        serializer.serialize_str(value)
     }
 }
 
@@ -95,9 +97,11 @@ impl Serialize for Time {
     where
         S: Serializer,
     {
-        let mut buf = DateTimeBuffer::new();
-        self.write_buf(&mut buf, self.opts);
-        serializer.serialize_str(str_from_slice!(buf.as_ptr(), buf.len()))
+        let mut cursor = std::io::Cursor::new([0u8; 32]);
+        TimeLike::write_buf(self, &mut cursor, self.opts).unwrap();
+        let len = cursor.position() as usize;
+        let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
+        serializer.serialize_str(value)
     }
 }
 
@@ -207,8 +211,10 @@ impl Serialize for DateTime {
     where
         S: Serializer,
     {
-        let mut buf = DateTimeBuffer::new();
-        DateTimeLike::write_buf(self, &mut buf, self.opts);
-        serializer.serialize_str(str_from_slice!(buf.as_ptr(), buf.len()))
+        let mut cursor = std::io::Cursor::new([0u8; 32]);
+        DateTimeLike::write_buf(self, &mut cursor, self.opts).unwrap();
+        let len = cursor.position() as usize;
+        let value = unsafe { std::str::from_utf8_unchecked(&cursor.get_ref()[0..len]) };
+        serializer.serialize_str(value)
     }
 }
