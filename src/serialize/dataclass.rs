@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::exc::*;
-use crate::ffi::PyDictIter;
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 use crate::typeref::*;
-use crate::unicode::*;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
@@ -51,7 +50,7 @@ impl Serialize for Dataclass {
     {
         let fields = ffi!(PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR));
         ffi!(Py_DECREF(fields));
-        let len = ffi!(Py_SIZE(fields)) as usize;
+        let len = unsafe { pydict_size(fields) } as usize;
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
         }
