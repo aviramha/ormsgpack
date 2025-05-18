@@ -289,8 +289,8 @@ source = { editable = "." }
 dev = [
     { name = "msgpack" },
     { name = "mypy" },
-    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10' and platform_machine != 'armv7l'" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10' and platform_machine != 'armv7l'" },
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10' and platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10' and platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'" },
     { name = "pendulum", marker = "platform_machine != 'armv7l'" },
     { name = "pydantic" },
     { name = "pytest" },
@@ -309,7 +309,7 @@ dev = [
 dev = [
     { name = "msgpack" },
     { name = "mypy" },
-    { name = "numpy", marker = "platform_machine != 'armv7l'" },
+    { name = "numpy", marker = "platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'" },
     { name = "pendulum", marker = "platform_machine != 'armv7l'" },
     { name = "pydantic" },
     { name = "pytest" },

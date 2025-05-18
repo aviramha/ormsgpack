@@ -13,7 +13,6 @@ concurrency:
 
 env:
   RUST_TOOLCHAIN: nightly-2025-02-06
-  UV_PYTHON: 3.11
   UV_VERSION: 0.7.5
 
 jobs:
@@ -26,8 +25,8 @@ jobs:
       - run: rustup component add clippy rustfmt
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.UV_PYTHON }}
+          python-version: 3.12
       - uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.UV_VERSION }}
-      - run: scripts/lint.sh
+      - run: uvx nox -s lint
