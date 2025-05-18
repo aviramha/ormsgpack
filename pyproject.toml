@@ -29,7 +29,7 @@ dynamic = ["version"]
 dev = [
     "msgpack",
     "mypy",
-    "numpy; platform_machine != 'armv7l'",
+    "numpy; platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'",
     "pendulum; platform_machine != 'armv7l'",
     "pydantic",
     "pytest",
