@@ -4,6 +4,7 @@ on:
     branches: [ master ]
     paths-ignore:
       - '**.md'
+      - '.gitignore'
   push:
     branches: [ master ]
 # Cancel previous runs on the same PR.
