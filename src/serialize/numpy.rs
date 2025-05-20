@@ -360,7 +360,7 @@ impl std::fmt::Display for NumpyDatetimeUnit {
             Self::Attoseconds => "attoseconds",
             Self::Generic => "generic",
         };
-        write!(f, "{}", unit)
+        write!(f, "{unit}")
     }
 }
 
@@ -372,9 +372,9 @@ enum NumpyDateTimeError {
 impl std::fmt::Display for NumpyDateTimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UnsupportedUnit(unit) => write!(f, "unsupported numpy.datetime64 unit: {}", unit),
+            Self::UnsupportedUnit(unit) => write!(f, "unsupported numpy.datetime64 unit: {unit}"),
             Self::Unrepresentable { unit, val } => {
-                write!(f, "unrepresentable numpy.datetime64: {} {}", val, unit)
+                write!(f, "unrepresentable numpy.datetime64: {val} {unit}")
             }
         }
     }
