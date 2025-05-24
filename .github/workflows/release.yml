@@ -37,7 +37,7 @@ jobs:
           target: x86_64-unknown-linux-gnu
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           manylinux: auto
-          args: --release -i python${{ matrix.python-version }}
+          args: --release -i python${{ matrix.python-version }} --features unstable-simd
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -86,9 +86,9 @@ jobs:
           - platform: 'linux/arm/v7'
             libc: 'musl'
             target: 'armv7-unknown-linux-musleabihf'
-          - maturin_args: ''
+          - maturin_args: '--features unstable-simd'
           - platform: 'linux/arm/v7'
-            maturin_args: '--no-default-features'
+            maturin_args: ''
         exclude:
           - platform: 'linux/amd64'
             libc: 'gnu'
@@ -142,7 +142,7 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-          args: --release -i ${{ env.pythonLocation }}\python.exe
+          args: --release -i ${{ env.pythonLocation }}\python.exe --features unstable-simd
       - uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.UV_VERSION }}
@@ -173,7 +173,7 @@ jobs:
         with:
           target: universal2-apple-darwin
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-          args: --release -i python${{ matrix.python-version }}
+          args: --release -i python${{ matrix.python-version }} --features unstable-simd
       - uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.UV_VERSION }}
