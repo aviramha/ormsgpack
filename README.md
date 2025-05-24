@@ -1,4 +1,5 @@
 # ormsgpack
+
 ![PyPI](https://img.shields.io/pypi/v/ormsgpack)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/ormsgpack)
 
@@ -6,9 +7,14 @@ ormsgpack is a fast msgpack serialization library for Python derived
 from [orjson](https://github.com/ijl/orjson), with native support for
 various Python types.
 
-ormsgpack supports CPython 3.9, 3.10, 3.11, 3.12 and 3.13. Releases
-follow semantic versioning and serializing a new object type without
-an opt-in flag is considered a breaking change.
+ormsgpack supports the following Python implementations:
+
+- CPython 3.9, 3.10, 3.11, 3.12 and 3.13
+- PyPy 3.11
+- GraalPy 3.11
+
+Releases follow semantic versioning and serializing a new object type
+without an opt-in flag is considered a breaking change.
 
 ormsgpack is licensed under both the Apache 2.0 and MIT licenses. The
 repository and issue tracker is
@@ -20,28 +26,28 @@ available in the repository.
 1. [Usage](#usage)
     1. [Install](#install)
     2. [Quickstart](#quickstart)
-    4. [Serialize](#serialize)
+    3. [Serialize](#serialize)
         1. [default](#default)
         2. [option](#option)
-    5. [Deserialize](#deserialize)
+    4. [Deserialize](#deserialize)
 2. [Types](#types)
-    - [none](#none)
-    - [bool](#bool)
-    - [int](#int)
-    - [float](#float)
-    - [str](#str)
-    - [bytes](#bytes)
-    - [list](#list)
-    - [tuple](#tuple)
-    - [dict](#dict)
-    - [dataclass](#dataclass)
-    - [date](#date)
-    - [time](#time)
-    - [datetime](#datetime)
-    - [enum](#enum)
-    - [uuid](#uuid)
-    - [numpy](#numpy)
-    - [pydantic](#pydantic)
+   - [none](#none)
+   - [bool](#bool)
+   - [int](#int)
+   - [float](#float)
+   - [str](#str)
+   - [bytes](#bytes)
+   - [list](#list)
+   - [tuple](#tuple)
+   - [dict](#dict)
+   - [dataclass](#dataclass)
+   - [date](#date)
+   - [time](#time)
+   - [datetime](#datetime)
+   - [enum](#enum)
+   - [uuid](#uuid)
+   - [numpy](#numpy)
+   - [pydantic](#pydantic)
 3. [Latency](#latency)
 4. [Questions](#questions)
 5. [Packaging](#packaging)
@@ -102,7 +108,7 @@ msgpack serializable: ...`.
 It raises `MsgpackEncodeError` if a `str` contains invalid UTF-8.
 
 It raises `MsgpackEncodeError` if a `dict` has a key of a type other than `str` or `bytes`,
-unless `OPT_NON_STR_KEYS` is specified.
+unless [`OPT_NON_STR_KEYS`](#OPT_NON_STR_KEYS) is specified.
 
 It raises `MsgpackEncodeError` if the output of `default` recurses to handling by
 `default` more than 254 levels deep.
@@ -213,6 +219,7 @@ b'\xb91970-01-01T00:00:00+00:00'
 Serialize `dict` keys of type other than `str`. This allows `dict` keys
 to be one of `str`, `int`, `float`, `bool`, `None`, `datetime.datetime`,
 `datetime.date`, `datetime.time`, `enum.Enum`, and `uuid.UUID`.
+All options other than the passthrough ones are supported.
 `dict` keys of unsupported types are not handled using `default` and
 result in `MsgpackEncodeError` being raised.
 
@@ -234,15 +241,21 @@ b'\x81\xb91970-01-01T00:00:00+00:00\x93\x01\x02\x03'
 {'1970-01-01T00:00:00+00:00': [1, 2, 3]}
 ```
 
-These types are generally serialized how they would be as
-values, e.g., `datetime.datetime` is still an RFC 3339 string and respects
-options affecting it.
+Be aware that, when using this option, a serialized map may contain
+elements with the same key, as different `dict` keys may be serialized
+to the same object. In such a case, a msgpack deserializer will
+presumably keep only one element for any given key. For example,
 
-This option has the risk of creating duplicate keys. This is because non-`str`
-objects may serialize to the same `str` as an existing key, e.g.,
-`{"1970-01-01T00:00:00+00:00": true, datetime.datetime(1970, 1, 1, 0, 0, 0): false}`.
-The last key to be inserted to the `dict` will be serialized last and a msgpack deserializer will presumably take the last
-occurrence of a key (in the above, `false`). The first value will be lost.
+```python
+>>> import ormsgpack, datetime
+>>> ormsgpack.packb(
+...     {"1970-01-01T00:00:00": True, datetime.datetime(1970, 1, 1, 0, 0, 0): False},
+...     option=ormsgpack.OPT_NON_STR_KEYS,
+... )
+b'\x82\xb31970-01-01T00:00:00\xc3\xb31970-01-01T00:00:00\xc2'
+>>> ormsgpack.unpackb(_)
+{'1970-01-01T00:00:00': False}
+```
 
 This option is not compatible with `ormsgpack.OPT_SORT_KEYS`.
 
@@ -292,7 +305,6 @@ b'\x82\xa4type\xa6bigint\xa5value\xb436893488147419103232'
 ##### `OPT_PASSTHROUGH_DATACLASS`
 
 Enable passthrough of dataclasses to `default`.
-
 
 ```python
 >>> import ormsgpack, dataclasses
@@ -401,6 +413,7 @@ Enable passthrough of `uuid.UUID` instances to `default`.
 Serialize instances of numpy types.
 
 ##### `OPT_SERIALIZE_PYDANTIC`
+
 Serialize `pydantic.BaseModel` instances.
 
 ##### `OPT_SORT_KEYS`
@@ -448,6 +461,7 @@ b'\xb41970-01-01T00:00:00Z'
 ```
 
 ### Deserialize
+
 ```python
 def unpackb(
     __obj: Union[bytes, bytearray, memoryview],
@@ -599,7 +613,7 @@ b'\xaf12:00:15.000290'
 Naive `datetime.datetime` instances are serialized as [RFC 3339](https://tools.ietf.org/html/rfc3339) strings.
 Aware `datetime.datetime` instances are serialized as [RFC 3339](https://tools.ietf.org/html/rfc3339) strings
 or alternatively as MessagePack timestamp extension objects, by using the
-[OPT_DATETIME_AS_TIMESTAMP_EXT](#OPT_DATETIME_AS_TIMESTAMP_EXT) option.
+[`OPT_DATETIME_AS_TIMESTAMP_EXT`](#OPT_DATETIME_AS_TIMESTAMP_EXT) option.
 
 ```python
 >>> import ormsgpack, datetime, zoneinfo
@@ -626,9 +640,9 @@ b'\xb32100-09-02T00:55:02'
 Errors with `tzinfo` result in `MsgpackEncodeError` being raised.
 
 The serialization can be customized using the
-[OPT_NAIVE_UTC](#OPT_NAIVE_UTC),
-[OPT_OMIT_MICROSECONDS](#OPT_OMIT_MICROSECONDS), and
-[OPT_UTC_Z](#OPT_UTC_Z) options.
+[`OPT_NAIVE_UTC`](#OPT_NAIVE_UTC),
+[`OPT_OMIT_MICROSECONDS`](#OPT_OMIT_MICROSECONDS), and
+[`OPT_UTC_Z`](#OPT_UTC_Z) options.
 
 ### enum
 
@@ -698,9 +712,9 @@ instances are serialized as the corresponding builtin types.
 
 `numpy.datetime64` instances are serialized as [RFC 3339](https://tools.ietf.org/html/rfc3339) strings.
 The serialization can be customized using the
-[OPT_NAIVE_UTC](#OPT_NAIVE_UTC),
-[OPT_OMIT_MICROSECONDS](#OPT_OMIT_MICROSECONDS), and
-[OPT_UTC_Z](#OPT_UTC_Z) options.
+[`OPT_NAIVE_UTC`](#OPT_NAIVE_UTC),
+[`OPT_OMIT_MICROSECONDS`](#OPT_OMIT_MICROSECONDS), and
+[`OPT_UTC_Z`](#OPT_UTC_Z) options.
 
 `numpy.ndarray` instances are serialized as arrays. The array must be
 a C-contiguous array (`C_CONTIGUOUS`) and of a supported data type.
@@ -708,7 +722,7 @@ Unsupported arrays can be serialized using [default](#default), by
 converting the array to a list with the `numpy.ndarray.tolist` method.
 
 The serialization of numpy types is disabled by default and can be
-enabled by using the [OPT_SERIALIZE_NUMPY](#OPT_SERIALIZE_NUMPY) option.
+enabled by using the [`OPT_SERIALIZE_NUMPY`](#OPT_SERIALIZE_NUMPY) option.
 
 ```python
 >>> import ormsgpack, numpy
@@ -722,6 +736,7 @@ b'\x92\x93\x01\x02\x03\x93\x04\x05\x06'
 ```
 
 ### Pydantic
+
 `pydantic.BaseModel` instances are serialized as maps, with
 [duck-typing](https://docs.pydantic.dev/2.10/concepts/serialization/#serializing-with-duck-typing).
 This is equivalent to serializing
@@ -729,10 +744,12 @@ This is equivalent to serializing
 `model.dict()`with Pydantic V1.
 
 The serialization of pydantic models is disabled by default and can be
-enabled by using the [OPT_SERIALIZE_PYDANTIC](#OPT_SERIALIZE_PYDANTIC) option.
+enabled by using the [`OPT_SERIALIZE_PYDANTIC`](#OPT_SERIALIZE_PYDANTIC) option.
 
 ## Latency
+
 ### Graphs
+
 ![alt text](doc/twitter_packb.svg "twitter.json serialization")
 ![alt text](doc/twitter_unpackb.svg "twitter.json deserialization")
 ![alt text](doc/github_packb.svg "github.json serialization")
@@ -748,7 +765,9 @@ enabled by using the [OPT_SERIALIZE_PYDANTIC](#OPT_SERIALIZE_PYDANTIC) option.
 ![alt text](doc/numpy_npbool.svg "numpy npbool")
 ![alt text](doc/numpy_uint8.svg "numpy uint8")
 ![alt text](doc/pydantic.svg "pydantic")
+
 ### Data
+
 ```
 ----------------------------------------------------------------------------- benchmark 'canada packb': 2 tests ------------------------------------------------------------------------------
 Name (time in ms)                   Min                Max              Mean            StdDev            Median               IQR            Outliers       OPS            Rounds  Iterations
@@ -868,12 +887,13 @@ test_pydantic_ormsgpack       4.3918 (1.0)       12.6521 (1.0)        4.8550 (1.
 test_pydantic_msgpack       124.5500 (28.36)    125.5427 (9.92)     125.0582 (25.76)    0.2877 (1.0)      125.0855 (27.13)    0.2543 (3.84)          2;0    7.9963 (0.04)          8           1
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ```
+
 ### Reproducing
 
 The above was measured using Python 3.7.9 on Azure Linux VM (x86_64) with ormsgpack 0.2.1 and msgpack 1.0.2.
 
-The latency results can be reproduced using `./scripts/benchmark.sh` and graphs using
-`pytest --benchmark-histogram benchmarks/bench_*`.
+The latency results can be reproduced using `uv run pytest benchmarks/bench_*`.
+
 ## Questions
 
 ### Why can't I install it from PyPI?
@@ -891,15 +911,13 @@ level above this.
 
 To package ormsgpack requires [Rust](https://www.rust-lang.org/) 1.81
 or newer and the [maturin](https://github.com/PyO3/maturin) build
-tool. The default feature `unstable-simd` enables the usage of SIMD
-operations and requires nightly Rust. The recommended build command
-is:
+tool. The recommended build command is:
 
 ```sh
-maturin build --release --strip
+maturin build --release
 ```
 
-ormsgpack is tested on Linux/amd64, Linux/aarch64, Linux/armv7, macOS/amd64 and Windows/amd64.
+ormsgpack is tested on Linux/amd64, Linux/aarch64, Linux/armv7, macOS/aarch64 and Windows/amd64.
 
 There are no runtime dependencies other than libc.
 
