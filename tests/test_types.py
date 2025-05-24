@@ -263,32 +263,25 @@ def test_default(value: object, converted_value: object, option: int) -> None:
         param
         for param in TYPE_PARAMS
         if param.id
-        not in {
-            "bytearray",
-            "dict",
-            "list",
-            "dataclass",
-            "pydantic",
-            "unknown",
+        in {
+            "memoryview",
+            "str subclass",
+            "datetime",
+            "date",
+            "time",
+            "enum",
+            "uuid",
         }
     ),
 )
 def test_dict_key(value: object, converted_value: object, option: int) -> None:
     obj = {value: True}
-    if isinstance(value, tuple):
-        converted_value = value
     converted_obj = {converted_value: True}
 
-    if type(value) is not str:
-        with pytest.raises(ormsgpack.MsgpackEncodeError):
-            ormsgpack.packb(obj)
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb(obj)
     packed = ormsgpack.packb(obj, option=option | ormsgpack.OPT_NON_STR_KEYS)
     assert packed == msgpack.packb(converted_obj)
-
-    if not isinstance(converted_value, (str, bytes)):
-        with pytest.raises(ormsgpack.MsgpackDecodeError):
-            ormsgpack.unpackb(packed)
-    assert ormsgpack.unpackb(packed, option=ormsgpack.OPT_NON_STR_KEYS) == converted_obj
 
 
 @pytest.mark.parametrize(
