@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.10.0
+
+### Changed
+
+- Port to PyPy 3.11 and GraalPy 3.11
+- Add support for `bytearray` and `memoryview` types by [littledivy](https://github.com/littledivy) in [#374](/../../pull/374)
+- Add `packb` and `unpackb` option `OPT_DATETIME_AS_TIMESTAMP_EXT` to serialize
+  aware datetime objects to timestamp extension objects and deserialize
+  timestamp extension objects to UTC datetime objects, respectively
+  [#378](/../../issues/378)
+
 ## 1.9.1 28/03/2025
 
 ### Changed
