@@ -29,7 +29,7 @@ name = "ormsgpack"
 crate-type = ["cdylib"]
 
 [features]
-default = ["unstable-simd"]
+default = []
 
 # Use SIMD intrinsics. This requires Rust on the nightly channel.
 unstable-simd = [
