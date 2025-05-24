@@ -19,7 +19,8 @@ import ormsgpack
 )
 def test_ext_type(data: bytes) -> None:
     tag = 1
-    packed = ormsgpack.packb(ormsgpack.Ext(tag, data))
+    value = ormsgpack.Ext(tag, data)
+    packed = ormsgpack.packb(value)
     assert packed == msgpack.packb(msgpack.ExtType(tag, data))
 
     unpacked = ormsgpack.unpackb(
@@ -28,12 +29,8 @@ def test_ext_type(data: bytes) -> None:
     )
     assert unpacked == (tag, data)
 
-    unpacked = ormsgpack.unpackb(
-        packed,
-        ext_hook=lambda x, y: (x, y),
-        option=ormsgpack.OPT_NON_STR_KEYS,
-    )
-    assert unpacked == (tag, data)
-
     with pytest.raises(ormsgpack.MsgpackDecodeError):
         ormsgpack.unpackb(packed)
+
+    with pytest.raises(ormsgpack.MsgpackEncodeError):
+        ormsgpack.packb({value: True}, option=ormsgpack.OPT_NON_STR_KEYS)

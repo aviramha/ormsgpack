@@ -954,10 +954,6 @@ impl DictKey {
             }
         }
 
-        if py_is!(ob_type, EXT_TYPE) {
-            return Ext::new(self.ptr).serialize(serializer);
-        }
-
         if py_is!(ob_type, MEMORYVIEW_TYPE) {
             return MemoryView::new(self.ptr).serialize(serializer);
         }
