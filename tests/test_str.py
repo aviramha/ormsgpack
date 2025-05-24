@@ -20,6 +20,11 @@ def test_str(value: str) -> None:
     assert packed == msgpack.packb(value)
     assert ormsgpack.unpackb(packed) == value
 
+    obj = {value: True}
+    packed = ormsgpack.packb(obj)
+    assert packed == msgpack.packb(obj)
+    assert ormsgpack.unpackb(packed) == obj
+
 
 @pytest.mark.parametrize(
     "value",
