@@ -77,5 +77,13 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["ormsgpack"]
 
+[tool.uv]
+cache-keys = [
+  { file = "**/*.rs" },
+  { file = "Cargo.lock" },
+  { file = "Cargo.toml" },
+  { file = "pyproject.toml" },
+]
+
 [project.entry-points.pyinstaller40]
 hook-dirs = "ormsgpack._pyinstaller:get_hook_dirs"
