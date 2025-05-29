@@ -222,8 +222,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: ormsgpack-*
-          path: wheels
+          path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: astral-sh/setup-uv@v5
         with:
-          packages-dir: wheels/
+          version: ${{ env.UV_VERSION }}
+      - run: uv publish
