@@ -6,6 +6,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::ptr_eq)]
 #![allow(clippy::redundant_field_names)]
+#![allow(clippy::unusual_byte_groupings)]
 #![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::zero_prefixed_literal)]
 

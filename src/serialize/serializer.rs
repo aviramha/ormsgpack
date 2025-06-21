@@ -21,6 +21,7 @@ use crate::serialize::uuid::*;
 use crate::serialize::writer::*;
 use crate::typeref::*;
 use serde::ser::{Impossible, Serialize, SerializeMap, SerializeSeq, Serializer};
+use std::os::raw::c_ulong;
 use std::ptr::NonNull;
 
 pub const RECURSION_LIMIT: u8 = 255;
@@ -533,10 +534,9 @@ pub fn serialize(
     }
 }
 
-macro_rules! is_subclass {
-    ($ob_type:expr, $flag:ident) => {
-        unsafe { (((*$ob_type).tp_flags & pyo3::ffi::$flag) != 0) }
-    };
+#[inline(always)]
+fn is_subclass(op: *mut pyo3::ffi::PyTypeObject, feature: c_ulong) -> bool {
+    unsafe { pyo3::ffi::PyType_HasFeature(op, feature) != 0 }
 }
 
 pub struct PyObject {
@@ -632,10 +632,10 @@ impl PyObject {
         }
 
         if self.opts & PASSTHROUGH_SUBCLASS == 0 {
-            if is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS) {
+            if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_UNICODE_SUBCLASS) {
                 return StrSubclass::new(self.ptr).serialize(serializer);
             }
-            if is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS) {
+            if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LONG_SUBCLASS) {
                 match Int::new(self.ptr) {
                     Ok(val) => return val.serialize(serializer),
                     Err(err) => {
@@ -654,7 +654,7 @@ impl PyObject {
                     }
                 }
             }
-            if is_subclass!(ob_type, Py_TPFLAGS_LIST_SUBCLASS) {
+            if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LIST_SUBCLASS) {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
@@ -667,7 +667,7 @@ impl PyObject {
                 )
                 .serialize(serializer);
             }
-            if is_subclass!(ob_type, Py_TPFLAGS_DICT_SUBCLASS) {
+            if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_DICT_SUBCLASS) {
                 if unlikely!(self.recursion == RECURSION_LIMIT) {
                     err!(RECURSION_LIMIT_REACHED)
                 }
@@ -947,10 +947,10 @@ impl DictKey {
             return DictKey::new(value, self.opts, self.recursion).serialize(serializer);
         }
 
-        if is_subclass!(ob_type, Py_TPFLAGS_UNICODE_SUBCLASS) {
+        if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_UNICODE_SUBCLASS) {
             return StrSubclass::new(self.ptr).serialize(serializer);
         }
-        if is_subclass!(ob_type, Py_TPFLAGS_LONG_SUBCLASS) {
+        if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LONG_SUBCLASS) {
             match Int::new(self.ptr) {
                 Ok(val) => return val.serialize(serializer),
                 Err(err) => err!(err),
