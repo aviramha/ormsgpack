@@ -41,17 +41,17 @@ unsafe extern "C" fn ext_new(
     }
     let obj = (*subtype).tp_alloc.unwrap()(subtype, 0);
     Py_INCREF(tag);
-    (*(obj as *mut PyExt)).tag = tag;
+    (*obj.cast::<PyExt>()).tag = tag;
     Py_INCREF(data);
-    (*(obj as *mut PyExt)).data = data;
+    (*obj.cast::<PyExt>()).data = data;
     obj
 }
 
 #[no_mangle]
 unsafe extern "C" fn ext_dealloc(op: *mut PyObject) {
-    Py_DECREF((*(op as *mut PyExt)).tag);
-    Py_DECREF((*(op as *mut PyExt)).data);
-    (*ob_type!(op)).tp_free.unwrap()(op as *mut c_void);
+    Py_DECREF((*op.cast::<PyExt>()).tag);
+    Py_DECREF((*op.cast::<PyExt>()).data);
+    (*ob_type!(op)).tp_free.unwrap()(op.cast::<c_void>());
 }
 
 pub unsafe fn create_ext_type() -> *mut PyTypeObject {
@@ -76,5 +76,5 @@ pub unsafe fn create_ext_type() -> *mut PyTypeObject {
         flags: Py_TPFLAGS_DEFAULT as c_uint,
         slots: slots.as_mut_ptr(),
     };
-    PyType_FromSpec(&mut spec) as *mut PyTypeObject
+    PyType_FromSpec(&mut spec).cast::<PyTypeObject>()
 }

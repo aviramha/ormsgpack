@@ -75,7 +75,7 @@ pub fn unicode_from_str(buf: &str) -> *mut PyObject {
 fn pyunicode_ascii(buf: &str) -> *mut PyObject {
     unsafe {
         let ptr = PyUnicode_New(buf.len() as isize, 127);
-        let data_ptr = ptr.cast::<PyASCIIObject>().offset(1) as *mut u8;
+        let data_ptr = ptr.cast::<PyASCIIObject>().offset(1).cast::<u8>();
         std::ptr::copy_nonoverlapping(buf.as_ptr(), data_ptr, buf.len());
         std::ptr::write(data_ptr.add(buf.len()), 0);
         ptr
@@ -87,7 +87,7 @@ fn pyunicode_ascii(buf: &str) -> *mut PyObject {
 fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
         let ptr = PyUnicode_New(num_chars as isize, 255);
-        let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u8;
+        let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1).cast::<u8>();
         for each in buf.chars() {
             std::ptr::write(data_ptr, each as u8);
             data_ptr = data_ptr.offset(1);
@@ -100,7 +100,7 @@ fn pyunicode_onebyte(buf: &str, num_chars: usize) -> *mut PyObject {
 fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
         let ptr = PyUnicode_New(num_chars as isize, 65535);
-        let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u16;
+        let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1).cast::<u16>();
         for each in buf.chars() {
             std::ptr::write(data_ptr, each as u16);
             data_ptr = data_ptr.offset(1);
@@ -113,7 +113,7 @@ fn pyunicode_twobyte(buf: &str, num_chars: usize) -> *mut PyObject {
 fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut PyObject {
     unsafe {
         let ptr = PyUnicode_New(num_chars as isize, 1114111);
-        let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1) as *mut u32;
+        let mut data_ptr = ptr.cast::<PyCompactUnicodeObject>().offset(1).cast::<u32>();
         for each in buf.chars() {
             std::ptr::write(data_ptr, each as u32);
             data_ptr = data_ptr.offset(1);
@@ -128,9 +128,11 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
     unsafe {
         debug_assert!(pyunicode_is_compact(op));
         let ptr: *mut c_void = if pyunicode_is_ascii(op) {
-            (op as *mut PyASCIIObject).offset(1) as *mut c_void
+            op.cast::<PyASCIIObject>().offset(1).cast::<c_void>()
         } else {
-            (op as *mut PyCompactUnicodeObject).offset(1) as *mut c_void
+            op.cast::<PyCompactUnicodeObject>()
+                .offset(1)
+                .cast::<c_void>()
         };
         let len = (*op.cast::<PyASCIIObject>()).length * pyunicode_kind(op) as Py_ssize_t;
         let hash = compat::Py_HashBuffer(ptr, len);
@@ -145,11 +147,11 @@ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
         if unlikely!(!pyunicode_is_compact(op)) {
             unicode_to_str_via_ffi(op)
         } else if pyunicode_is_ascii(op) {
-            let ptr = op.cast::<PyASCIIObject>().offset(1) as *const u8;
+            let ptr = op.cast::<PyASCIIObject>().offset(1).cast::<u8>();
             let len = (*op.cast::<PyASCIIObject>()).length as usize;
             Some(str_from_slice!(ptr, len))
         } else if (*op.cast::<PyCompactUnicodeObject>()).utf8_length != 0 {
-            let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8 as *const u8;
+            let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8.cast::<u8>();
             let len = (*op.cast::<PyCompactUnicodeObject>()).utf8_length as usize;
             Some(str_from_slice!(ptr, len))
         } else {

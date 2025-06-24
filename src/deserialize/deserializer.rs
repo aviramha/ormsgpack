@@ -235,15 +235,14 @@ impl<'de> Deserializer<'de> {
         match self.ext_hook {
             Some(callable) => {
                 let tag_obj = ffi!(PyLong_FromLongLong(tag as i64));
-                let data_ptr = data.as_ptr() as *const c_char;
+                let data_ptr = data.as_ptr().cast::<c_char>();
                 let data_len = data.len() as pyo3::ffi::Py_ssize_t;
                 let data_obj = ffi!(PyBytes_FromStringAndSize(data_ptr, data_len));
-                #[allow(clippy::unnecessary_cast)]
                 let obj = ffi!(PyObject_CallFunctionObjArgs(
                     callable.as_ptr(),
                     tag_obj,
                     data_obj,
-                    std::ptr::null_mut() as *mut pyo3::ffi::PyObject
+                    std::ptr::null_mut::<pyo3::ffi::PyObject>()
                 ));
                 ffi!(Py_DECREF(tag_obj));
                 ffi!(Py_DECREF(data_obj));
@@ -292,7 +291,7 @@ impl<'de> Deserializer<'de> {
 
     fn deserialize_bin(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let v = self.read_slice(len as usize)?;
-        let ptr = v.as_ptr() as *const c_char;
+        let ptr = v.as_ptr().cast::<c_char>();
         let len = v.len() as pyo3::ffi::Py_ssize_t;
         Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
     }

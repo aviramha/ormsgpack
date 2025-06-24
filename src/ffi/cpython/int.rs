@@ -21,12 +21,12 @@ const SIGN_MASK: usize = 3;
 
 #[cfg(Py_3_12)]
 pub unsafe fn pylong_is_positive(op: *mut PyObject) -> bool {
-    (*(op as *mut PyLongObject)).long_value.lv_tag & SIGN_MASK == 0
+    (*op.cast::<PyLongObject>()).long_value.lv_tag & SIGN_MASK == 0
 }
 
 #[cfg(not(Py_3_12))]
 pub unsafe fn pylong_is_positive(op: *mut PyObject) -> bool {
-    (*(op as *mut PyVarObject)).ob_size > 0
+    (*op.cast::<PyVarObject>()).ob_size > 0
 }
 
 impl Int {

@@ -32,12 +32,12 @@ impl UUID {
     where
         W: std::io::Write,
     {
-        let buffer: [c_uchar; 16] = [0; 16];
+        let mut buffer: [c_uchar; 16] = [0; 16];
         unsafe {
             let value = pyo3::ffi::PyObject_GetAttr(self.ptr, INT_ATTR_STR);
             pyo3::ffi::_PyLong_AsByteArray(
-                value as *mut pyo3::ffi::PyLongObject,
-                buffer.as_ptr() as *mut c_uchar,
+                value.cast::<pyo3::ffi::PyLongObject>(),
+                buffer.as_mut_ptr(),
                 16,
                 0, // little_endian
                 0, // is_signed

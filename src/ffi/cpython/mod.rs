@@ -10,7 +10,10 @@ pub use unicode::*;
 
 #[inline(always)]
 pub unsafe fn pybytes_as_mut_u8(op: *mut PyObject) -> *mut u8 {
-    (*op.cast::<PyBytesObject>()).ob_sval.as_mut_ptr() as *mut u8
+    (*op.cast::<PyBytesObject>())
+        .ob_sval
+        .as_mut_ptr()
+        .cast::<u8>()
 }
 
 #[inline(always)]

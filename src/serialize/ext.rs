@@ -21,7 +21,7 @@ impl Serialize for Ext {
     where
         S: Serializer,
     {
-        let ext = self.ptr as *mut PyExt;
+        let ext = self.ptr.cast::<PyExt>();
         let tag = ffi!(PyLong_AsLongLong((*ext).tag));
         if unlikely!(!(0..=127).contains(&tag)) {
             err!("Extension type out of range")

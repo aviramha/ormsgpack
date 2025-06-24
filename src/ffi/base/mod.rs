@@ -10,7 +10,7 @@ pub use unicode::*;
 
 #[inline(always)]
 pub unsafe fn pybytes_as_mut_u8(op: *mut PyObject) -> *mut u8 {
-    PyBytes_AsString(op) as *mut u8
+    PyBytes_AsString(op).cast::<u8>()
 }
 
 #[inline(always)]
@@ -38,7 +38,7 @@ pub unsafe fn pyobject_call_method_no_args(
     self_: *mut PyObject,
     name: *mut PyObject,
 ) -> *mut PyObject {
-    PyObject_CallMethodObjArgs(self_, name, std::ptr::null_mut::<*mut PyObject>())
+    PyObject_CallMethodObjArgs(self_, name, std::ptr::null_mut::<PyObject>())
 }
 
 #[inline(always)]
@@ -47,7 +47,7 @@ pub unsafe fn pyobject_call_method_one_arg(
     name: *mut PyObject,
     arg: *mut PyObject,
 ) -> *mut PyObject {
-    PyObject_CallMethodObjArgs(self_, name, arg, std::ptr::null_mut::<*mut PyObject>())
+    PyObject_CallMethodObjArgs(self_, name, arg, std::ptr::null_mut::<PyObject>())
 }
 
 #[inline(always)]

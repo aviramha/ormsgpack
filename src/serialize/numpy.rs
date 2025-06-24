@@ -100,14 +100,14 @@ impl Serialize for NumpyArrayData {
         let mut seq = serializer.serialize_seq(Some(self.len)).unwrap();
         match self.kind {
             ItemType::BOOL => {
-                let slice: &[u8] = slice!(self.data as *const u8, self.len);
+                let slice: &[u8] = slice!(self.data.cast::<u8>(), self.len);
                 for &each in slice.iter() {
                     let value = each == 1;
                     seq.serialize_element(&value).unwrap();
                 }
             }
             ItemType::DATETIME64(unit) => {
-                let slice: &[i64] = slice!(self.data as *const i64, self.len);
+                let slice: &[i64] = slice!(self.data.cast::<i64>(), self.len);
                 for &each in slice.iter() {
                     let value = unit
                         .datetime(each, self.opts)
@@ -116,68 +116,68 @@ impl Serialize for NumpyArrayData {
                 }
             }
             ItemType::F16 => {
-                let slice: &[u16] = slice!(self.data as *const u16, self.len);
+                let slice: &[u16] = slice!(self.data.cast::<u16>(), self.len);
                 for &each in slice.iter() {
                     let value = half::f16::from_bits(each).to_f32();
                     seq.serialize_element(&value).unwrap();
                 }
             }
             ItemType::F32 => {
-                let slice: &[f32] = slice!(self.data as *const f32, self.len);
+                let slice: &[f32] = slice!(self.data.cast::<f32>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::F64 => {
-                let slice: &[f64] = slice!(self.data as *const f64, self.len);
+                let slice: &[f64] = slice!(self.data.cast::<f64>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::I8 => {
-                let slice: &[i8] = slice!(self.data as *const i8, self.len);
+                let slice: &[i8] = slice!(self.data.cast::<i8>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::I16 => {
-                let slice: &[i16] = slice!(self.data as *const i16, self.len);
+                let slice: &[i16] = slice!(self.data.cast::<i16>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::I32 => {
-                let slice: &[i32] = slice!(self.data as *const i32, self.len);
+                let slice: &[i32] = slice!(self.data.cast::<i32>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::I64 => {
-                let slice: &[i64] = slice!(self.data as *const i64, self.len);
+                let slice: &[i64] = slice!(self.data.cast::<i64>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::U8 => {
-                let slice: &[u8] = slice!(self.data as *const u8, self.len);
+                let slice: &[u8] = slice!(self.data.cast::<u8>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::U16 => {
-                let slice: &[u16] = slice!(self.data as *const u16, self.len);
+                let slice: &[u16] = slice!(self.data.cast::<u16>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::U32 => {
-                let slice: &[u32] = slice!(self.data as *const u32, self.len);
+                let slice: &[u32] = slice!(self.data.cast::<u32>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
             }
             ItemType::U64 => {
-                let slice: &[u64] = slice!(self.data as *const u64, self.len);
+                let slice: &[u64] = slice!(self.data.cast::<u64>(), self.len);
                 for &each in slice.iter() {
                     seq.serialize_element(&each).unwrap();
                 }
@@ -226,7 +226,11 @@ impl NumpyArray {
     #[inline(never)]
     pub fn new(ptr: *mut PyObject, opts: Opt) -> Result<Self, PyArrayError> {
         let capsule = ffi!(PyObject_GetAttr(ptr, ARRAY_STRUCT_STR));
-        let array = unsafe { (*(capsule as *mut PyCapsule)).pointer as *mut PyArrayInterface };
+        let array = unsafe {
+            (*capsule.cast::<PyCapsule>())
+                .pointer
+                .cast::<PyArrayInterface>()
+        };
         if unsafe { (*array).two != 2 } {
             ffi!(Py_DECREF(capsule));
             Err(PyArrayError::Malformed)
@@ -247,9 +251,9 @@ impl NumpyArray {
                 Some(kind) => {
                     let root = if num_dimensions > 1 {
                         let mut position = Vec::with_capacity(num_dimensions);
-                        NumpyArray::build(capsule as *mut PyCapsule, kind, opts, 0, &mut position)
+                        NumpyArray::build(array, kind, opts, 0, &mut position)
                     } else {
-                        let shape = slice!((*array).shape as *const isize, num_dimensions);
+                        let shape = slice!((*array).shape.cast::<isize>(), num_dimensions);
                         NumpyArrayNode::Leaf(NumpyArrayData {
                             data: unsafe { (*array).data },
                             len: shape[0] as usize,
@@ -267,22 +271,21 @@ impl NumpyArray {
     }
 
     fn build(
-        capsule: *mut PyCapsule,
+        array: *mut PyArrayInterface,
         kind: ItemType,
         opts: Opt,
         depth: usize,
         position: &mut Vec<isize>,
     ) -> NumpyArrayNode {
-        let array = unsafe { (*capsule).pointer as *mut PyArrayInterface };
         let num_dimensions = unsafe { (*array).nd as usize };
-        let shape = slice!((*array).shape as *const isize, num_dimensions);
-        let strides = slice!((*array).strides as *const isize, num_dimensions);
+        let shape = slice!((*array).shape.cast::<isize>(), num_dimensions);
+        let strides = slice!((*array).strides.cast::<isize>(), num_dimensions);
         let num_children = shape[depth];
         let mut children = Vec::with_capacity(num_children as usize);
         for i in 0..num_children {
             position.push(i);
             let child = if depth < num_dimensions - 2 {
-                NumpyArray::build(capsule, kind, opts, depth + 1, position)
+                NumpyArray::build(array, kind, opts, depth + 1, position)
             } else {
                 let offset = strides
                     .iter()
@@ -515,7 +518,7 @@ macro_rules! define_numpy_type {
             where
                 S: Serializer,
             {
-                let value = unsafe { (*(self.ptr as *mut $object_name)).value };
+                let value = unsafe { (*self.ptr.cast::<$object_name>()).value };
                 value.serialize(serializer)
             }
         }
@@ -557,7 +560,7 @@ impl Serialize for NumpyDatetime64 {
         S: Serializer,
     {
         let unit = NumpyDatetimeUnit::from_pyobject(self.ptr);
-        let value = unsafe { (*(self.ptr as *mut NumpyDatetime64Object)).value };
+        let value = unsafe { (*self.ptr.cast::<NumpyDatetime64Object>()).value };
         unit.datetime(value, self.opts)
             .map_err(serde::ser::Error::custom)?
             .serialize(serializer)
@@ -586,7 +589,7 @@ impl Serialize for NumpyFloat16 {
     where
         S: Serializer,
     {
-        let value = unsafe { (*(self.ptr as *mut NumpyFloat16Object)).value };
+        let value = unsafe { (*self.ptr.cast::<NumpyFloat16Object>()).value };
         half::f16::from_bits(value).to_f32().serialize(serializer)
     }
 }
