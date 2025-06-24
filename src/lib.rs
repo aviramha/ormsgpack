@@ -9,6 +9,7 @@
 #![allow(clippy::unusual_byte_groupings)]
 #![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::zero_prefixed_literal)]
+#![deny(clippy::ptr_as_ptr)]
 
 #[macro_use]
 mod util;
@@ -88,8 +89,8 @@ pub unsafe extern "C" fn PyInit_ormsgpack() -> *mut PyModuleDef {
         m_name: c"ormsgpack".as_ptr(),
         m_doc: std::ptr::null(),
         m_size: 0,
-        m_methods: Box::into_raw(methods) as *mut PyMethodDef,
-        m_slots: Box::into_raw(slots) as *mut PyModuleDef_Slot,
+        m_methods: Box::into_raw(methods).cast::<PyMethodDef>(),
+        m_slots: Box::into_raw(slots).cast::<PyModuleDef_Slot>(),
         m_traverse: None,
         m_clear: None,
         m_free: None,
@@ -107,7 +108,7 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
     module_add_object!(
         mptr,
         c"__version__",
-        PyUnicode_FromStringAndSize(version.as_ptr() as *const c_char, version.len() as isize)
+        PyUnicode_FromStringAndSize(version.as_ptr().cast::<c_char>(), version.len() as isize)
     );
 
     module_add_int!(
@@ -138,7 +139,7 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
 
     module_add_object!(mptr, c"MsgpackDecodeError", typeref::MsgpackDecodeError);
     module_add_object!(mptr, c"MsgpackEncodeError", typeref::MsgpackEncodeError);
-    module_add_object!(mptr, c"Ext", typeref::EXT_TYPE as *mut PyObject);
+    module_add_object!(mptr, c"Ext", typeref::EXT_TYPE.cast::<PyObject>());
 
     0
 }
@@ -148,7 +149,7 @@ pub unsafe extern "C" fn ormsgpack_exec(mptr: *mut PyObject) -> c_int {
 fn raise_unpackb_exception(msg: &str) -> *mut PyObject {
     unsafe {
         let err_msg =
-            PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+            PyUnicode_FromStringAndSize(msg.as_ptr().cast::<c_char>(), msg.len() as isize);
         let args = PyTuple_New(1);
         pytuple_set_item(args, 0, err_msg);
         PyErr_SetObject(typeref::MsgpackDecodeError, args);
@@ -162,7 +163,7 @@ fn raise_unpackb_exception(msg: &str) -> *mut PyObject {
 fn raise_packb_exception(msg: &str) -> *mut PyObject {
     unsafe {
         let err_msg =
-            PyUnicode_FromStringAndSize(msg.as_ptr() as *const c_char, msg.len() as isize);
+            PyUnicode_FromStringAndSize(msg.as_ptr().cast::<c_char>(), msg.len() as isize);
         PyErr_SetObject(typeref::MsgpackEncodeError, err_msg);
         Py_DECREF(err_msg);
     };

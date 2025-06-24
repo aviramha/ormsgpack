@@ -151,8 +151,7 @@ unsafe fn look_up_numpy_type(
     numpy_module_dict: *mut PyObject,
     np_type: &CStr,
 ) -> *mut PyTypeObject {
-    let ptr = PyMapping_GetItemString(numpy_module_dict, np_type.as_ptr());
-    ptr as *mut PyTypeObject
+    PyMapping_GetItemString(numpy_module_dict, np_type.as_ptr()).cast::<PyTypeObject>()
 }
 
 #[cold]
@@ -191,7 +190,7 @@ pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
 unsafe fn look_up_type(module_name: &CStr, type_name: &CStr) -> *mut PyTypeObject {
     let module = PyImport_ImportModule(module_name.as_ptr());
     let module_dict = PyObject_GenericGetDict(module, null_mut());
-    let ptr = PyMapping_GetItemString(module_dict, type_name.as_ptr()) as *mut PyTypeObject;
+    let ptr = PyMapping_GetItemString(module_dict, type_name.as_ptr()).cast::<PyTypeObject>();
     Py_DECREF(module_dict);
     Py_DECREF(module);
     ptr

@@ -40,7 +40,7 @@ impl Dataclass {
 fn is_pseudo_field(field: *mut pyo3::ffi::PyObject) -> bool {
     let field_type = ffi!(PyObject_GetAttr(field, FIELD_TYPE_STR));
     ffi!(Py_DECREF(field_type));
-    !py_is!(field_type as *mut pyo3::ffi::PyTypeObject, FIELD_TYPE)
+    !py_is!(field_type.cast::<pyo3::ffi::PyTypeObject>(), FIELD_TYPE)
 }
 
 impl Serialize for Dataclass {

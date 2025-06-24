@@ -16,14 +16,14 @@ use std::ptr::NonNull;
 
 #[inline(always)]
 pub unsafe fn pybytes_as_bytes(op: *mut PyObject) -> &'static [u8] {
-    let buffer = pybytes_as_mut_u8(op) as *const u8;
+    let buffer = pybytes_as_mut_u8(op);
     let length = Py_SIZE(op) as usize;
     std::slice::from_raw_parts(buffer, length)
 }
 
 #[inline(always)]
 pub unsafe fn pybytearray_as_bytes(op: *mut PyObject) -> &'static [u8] {
-    let buffer = PyByteArray_AsString(op) as *const u8;
+    let buffer = PyByteArray_AsString(op).cast::<u8>();
     let length = PyByteArray_Size(op) as usize;
     std::slice::from_raw_parts(buffer, length)
 }
@@ -63,7 +63,7 @@ pub unsafe fn pymemoryview_as_bytes(op: *mut PyObject) -> Option<&'static [u8]> 
     if PyBuffer_IsContiguous(view, b'C' as c_char) == 0 {
         None
     } else {
-        let buffer = view.buf as *const u8;
+        let buffer = view.buf.cast::<u8>();
         let length = view.len as usize;
         Some(std::slice::from_raw_parts(buffer, length))
     }

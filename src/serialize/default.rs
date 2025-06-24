@@ -52,11 +52,10 @@ impl Serialize for Default {
                 if unlikely!(self.default_calls == RECURSION_LIMIT) {
                     err!("default serializer exceeds recursion limit")
                 }
-                #[allow(clippy::unnecessary_cast)]
                 let default_obj = ffi!(PyObject_CallFunctionObjArgs(
                     callable.as_ptr(),
                     self.ptr,
-                    std::ptr::null_mut() as *mut pyo3::ffi::PyObject
+                    std::ptr::null_mut::<pyo3::ffi::PyObject>()
                 ));
                 if unlikely!(default_obj.is_null()) {
                     err!(format_err(self.ptr))

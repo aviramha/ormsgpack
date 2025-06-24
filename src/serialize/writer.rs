@@ -9,7 +9,7 @@ const BUFFER_LENGTH: usize = 1024;
 pub struct BytesWriter {
     cap: usize,
     len: usize,
-    bytes: *mut PyBytesObject,
+    bytes: *mut PyObject,
 }
 
 impl BytesWriter {
@@ -19,7 +19,6 @@ impl BytesWriter {
             len: 0,
             bytes: unsafe {
                 PyBytes_FromStringAndSize(std::ptr::null_mut(), BUFFER_LENGTH as isize)
-                    as *mut PyBytesObject
             },
         }
     }
@@ -28,22 +27,19 @@ impl BytesWriter {
         unsafe {
             std::ptr::write(self.buffer_ptr(), 0);
             self.resize(self.len);
-            NonNull::new_unchecked(self.bytes as *mut PyObject)
+            NonNull::new_unchecked(self.bytes)
         }
     }
 
     fn buffer_ptr(&self) -> *mut u8 {
-        unsafe { pybytes_as_mut_u8(self.bytes as *mut PyObject).add(self.len) }
+        unsafe { pybytes_as_mut_u8(self.bytes).add(self.len) }
     }
 
     #[inline]
     pub fn resize(&mut self, len: usize) {
         self.cap = len;
         unsafe {
-            _PyBytes_Resize(
-                std::ptr::addr_of_mut!(self.bytes) as *mut *mut PyObject,
-                len as isize,
-            );
+            _PyBytes_Resize(&raw mut self.bytes, len as isize);
         }
     }
 
