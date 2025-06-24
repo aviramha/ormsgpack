@@ -54,7 +54,9 @@ impl Serialize for Dict {
             .serialize(serializer)
         } else if self.opts & NON_STR_KEYS != 0 {
             if self.opts & SORT_KEYS != 0 {
-                err!("OPT_NON_STR_KEYS is not compatible with OPT_SORT_KEYS")
+                return Err(serde::ser::Error::custom(
+                    "OPT_NON_STR_KEYS is not compatible with OPT_SORT_KEYS",
+                ));
             }
             DictWithNonStrKeys::new(
                 self.ptr,
@@ -113,11 +115,11 @@ impl Serialize for DictWithStrKeys {
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
-                err!(KEY_MUST_BE_STR)
+                return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let data = unicode_to_str(key.as_ptr());
             if unlikely!(data.is_none()) {
-                err!(INVALID_STR)
+                return Err(serde::ser::Error::custom(INVALID_STR));
             }
             let pyvalue = PyObject::new(
                 value.as_ptr(),
@@ -170,11 +172,11 @@ impl Serialize for DictWithSortedStrKeys {
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
-                err!(KEY_MUST_BE_STR)
+                return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let data = unicode_to_str(key.as_ptr());
             if unlikely!(data.is_none()) {
-                err!(INVALID_STR)
+                return Err(serde::ser::Error::custom(INVALID_STR));
             }
             items.push((data.unwrap(), value.as_ptr()));
         }
@@ -236,7 +238,7 @@ impl Serialize for DictWithNonStrKeys {
             if py_is!(ob_type!(key.as_ptr()), STR_TYPE) {
                 let data = unicode_to_str(key.as_ptr());
                 if unlikely!(data.is_none()) {
-                    err!(INVALID_STR)
+                    return Err(serde::ser::Error::custom(INVALID_STR));
                 }
                 map.serialize_entry(
                     data.unwrap(),

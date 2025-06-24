@@ -38,8 +38,8 @@ impl Dataclass {
 }
 
 fn is_pseudo_field(field: *mut pyo3::ffi::PyObject) -> bool {
-    let field_type = ffi!(PyObject_GetAttr(field, FIELD_TYPE_STR));
-    ffi!(Py_DECREF(field_type));
+    let field_type = unsafe { pyo3::ffi::PyObject_GetAttr(field, FIELD_TYPE_STR) };
+    unsafe { pyo3::ffi::Py_DECREF(field_type) };
     !py_is!(field_type.cast::<pyo3::ffi::PyTypeObject>(), FIELD_TYPE)
 }
 
@@ -48,8 +48,8 @@ impl Serialize for Dataclass {
     where
         S: Serializer,
     {
-        let fields = ffi!(PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR));
-        ffi!(Py_DECREF(fields));
+        let fields = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR) };
+        unsafe { pyo3::ffi::Py_DECREF(fields) };
         let len = unsafe { pydict_size(fields) } as usize;
         if unlikely!(len == 0) {
             return serializer.serialize_map(Some(0)).unwrap().end();
@@ -60,8 +60,8 @@ impl Serialize for Dataclass {
             if pydict_contains!(ob_type, SLOTS_STR) {
                 std::ptr::null_mut()
             } else {
-                let dict = ffi!(PyObject_GetAttr(self.ptr, DICT_STR));
-                ffi!(Py_DECREF(dict));
+                let dict = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, DICT_STR) };
+                unsafe { pyo3::ffi::Py_DECREF(dict) };
                 dict
             }
         };
@@ -71,7 +71,7 @@ impl Serialize for Dataclass {
         for (attr, field) in PyDictIter::from_pyobject(fields) {
             let data = unicode_to_str(attr.as_ptr());
             if unlikely!(data.is_none()) {
-                err!(INVALID_STR);
+                return Err(serde::ser::Error::custom(INVALID_STR));
             }
             let key_as_str = data.unwrap();
             if key_as_str.as_bytes()[0] == b'_' {
@@ -80,17 +80,17 @@ impl Serialize for Dataclass {
 
             if unlikely!(dict.is_null()) {
                 if !is_pseudo_field(field.as_ptr()) {
-                    let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
-                    ffi!(Py_DECREF(value));
+                    let value = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, attr.as_ptr()) };
+                    unsafe { pyo3::ffi::Py_DECREF(value) };
                     items.push((key_as_str, value));
                 }
             } else {
-                let value = ffi!(PyDict_GetItem(dict, attr.as_ptr()));
+                let value = unsafe { pyo3::ffi::PyDict_GetItem(dict, attr.as_ptr()) };
                 if !value.is_null() {
                     items.push((key_as_str, value));
                 } else if !is_pseudo_field(field.as_ptr()) {
-                    let value = ffi!(PyObject_GetAttr(self.ptr, attr.as_ptr()));
-                    ffi!(Py_DECREF(value));
+                    let value = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, attr.as_ptr()) };
+                    unsafe { pyo3::ffi::Py_DECREF(value) };
                     items.push((key_as_str, value));
                 }
             }

@@ -23,7 +23,7 @@ impl Serialize for Str {
     {
         let uni = unicode_to_str(self.ptr);
         if unlikely!(uni.is_none()) {
-            err!(INVALID_STR)
+            return Err(serde::ser::Error::custom(INVALID_STR));
         }
         serializer.serialize_str(uni.unwrap())
     }
@@ -48,7 +48,7 @@ impl Serialize for StrSubclass {
     {
         let uni = unicode_to_str_via_ffi(self.ptr);
         if unlikely!(uni.is_none()) {
-            err!(INVALID_STR)
+            return Err(serde::ser::Error::custom(INVALID_STR));
         }
         serializer.serialize_str(uni.unwrap())
     }

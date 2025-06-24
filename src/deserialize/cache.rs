@@ -22,14 +22,14 @@ impl CachedKey {
     }
 
     fn get(&mut self) -> *mut pyo3::ffi::PyObject {
-        ffi!(Py_INCREF(self.ptr));
+        unsafe { pyo3::ffi::Py_INCREF(self.ptr) };
         self.ptr
     }
 }
 
 impl Drop for CachedKey {
     fn drop(&mut self) {
-        ffi!(Py_DECREF(self.ptr));
+        unsafe { pyo3::ffi::Py_DECREF(self.ptr) };
     }
 }
 
@@ -65,7 +65,7 @@ impl<const C: usize> KeyMap<C> {
                 }
             }
         };
-        Ok(nonnull!(entry.get()))
+        unsafe { Ok(NonNull::new_unchecked(entry.get())) }
     }
 }
 

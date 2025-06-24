@@ -39,7 +39,7 @@ impl Serialize for Tuple {
     where
         S: Serializer,
     {
-        let len = ffi!(Py_SIZE(self.ptr)) as usize;
+        let len = unsafe { pyo3::ffi::Py_SIZE(self.ptr) } as usize;
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
             let item = unsafe { pytuple_get_item(self.ptr, i as isize) };

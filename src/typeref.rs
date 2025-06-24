@@ -182,7 +182,8 @@ pub fn load_numpy_types() -> Box<Option<NonNull<NumpyTypes>>> {
         });
         Py_DECREF(numpy_module_dict);
         Py_DECREF(numpy);
-        Box::new(Some(nonnull!(Box::<NumpyTypes>::into_raw(types))))
+        let ptr = Box::into_raw(types);
+        Box::new(Some(NonNull::new_unchecked(ptr)))
     }
 }
 

@@ -37,10 +37,10 @@ impl Serialize for List {
     where
         S: Serializer,
     {
-        let len = ffi!(PyList_GET_SIZE(self.ptr)) as usize;
+        let len = unsafe { pyo3::ffi::PyList_GET_SIZE(self.ptr) } as usize;
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
-            let item = ffi!(PyList_GET_ITEM(self.ptr, i as isize));
+            let item = unsafe { pyo3::ffi::PyList_GET_ITEM(self.ptr, i as isize) };
             let value = PyObject::new(
                 item,
                 self.opts,

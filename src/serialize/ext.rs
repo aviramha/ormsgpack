@@ -22,9 +22,9 @@ impl Serialize for Ext {
         S: Serializer,
     {
         let ext = self.ptr.cast::<PyExt>();
-        let tag = ffi!(PyLong_AsLongLong((*ext).tag));
+        let tag = unsafe { pyo3::ffi::PyLong_AsLongLong((*ext).tag) };
         if unlikely!(!(0..=127).contains(&tag)) {
-            err!("Extension type out of range")
+            return Err(serde::ser::Error::custom("Extension type out of range"));
         }
         let data = unsafe { pybytes_as_bytes((*ext).data) };
 

@@ -9,6 +9,9 @@ pub fn unicode_to_str_via_ffi(op: *mut PyObject) -> Option<&'static str> {
     if unlikely!(ptr.is_null()) {
         None
     } else {
-        Some(str_from_slice!(ptr, size as usize))
+        unsafe {
+            let slice = std::slice::from_raw_parts(ptr, size as usize);
+            Some(std::str::from_utf8_unchecked(slice))
+        }
     }
 }

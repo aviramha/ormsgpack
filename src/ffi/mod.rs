@@ -88,10 +88,12 @@ impl Iterator for PyDictIter {
     fn next(&mut self) -> Option<Self::Item> {
         let mut key: *mut PyObject = std::ptr::null_mut();
         let mut value: *mut PyObject = std::ptr::null_mut();
-        if unsafe { PyDict_Next(self.op, &mut self.pos, &mut key, &mut value) } == 1 {
-            Some((nonnull!(key), nonnull!(value)))
-        } else {
-            None
+        unsafe {
+            if PyDict_Next(self.op, &mut self.pos, &mut key, &mut value) == 1 {
+                Some((NonNull::new_unchecked(key), NonNull::new_unchecked(value)))
+            } else {
+                None
+            }
         }
     }
 
