@@ -20,15 +20,15 @@ impl Date {
 
 impl DateLike for Date {
     fn year(&self) -> i32 {
-        ffi!(PyDateTime_GET_YEAR(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_GET_YEAR(self.ptr) as i32 }
     }
 
     fn month(&self) -> i32 {
-        ffi!(PyDateTime_GET_MONTH(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_GET_MONTH(self.ptr) as i32 }
     }
 
     fn day(&self) -> i32 {
-        ffi!(PyDateTime_GET_DAY(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_GET_DAY(self.ptr) as i32 }
     }
 }
 
@@ -78,19 +78,19 @@ impl Time {
 
 impl TimeLike for Time {
     fn hour(&self) -> i32 {
-        ffi!(PyDateTime_TIME_GET_HOUR(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_TIME_GET_HOUR(self.ptr) as i32 }
     }
 
     fn minute(&self) -> i32 {
-        ffi!(PyDateTime_TIME_GET_MINUTE(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_TIME_GET_MINUTE(self.ptr) as i32 }
     }
 
     fn second(&self) -> i32 {
-        ffi!(PyDateTime_TIME_GET_SECOND(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_TIME_GET_SECOND(self.ptr) as i32 }
     }
 
     fn microsecond(&self) -> i32 {
-        ffi!(PyDateTime_TIME_GET_MICROSECOND(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_TIME_GET_MICROSECOND(self.ptr) as i32 }
     }
 }
 
@@ -170,33 +170,33 @@ impl DateTime {
 
 impl DateLike for DateTime {
     fn year(&self) -> i32 {
-        ffi!(PyDateTime_GET_YEAR(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_GET_YEAR(self.ptr) as i32 }
     }
 
     fn month(&self) -> i32 {
-        ffi!(PyDateTime_GET_MONTH(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_GET_MONTH(self.ptr) as i32 }
     }
 
     fn day(&self) -> i32 {
-        ffi!(PyDateTime_GET_DAY(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_GET_DAY(self.ptr) as i32 }
     }
 }
 
 impl TimeLike for DateTime {
     fn hour(&self) -> i32 {
-        ffi!(PyDateTime_DATE_GET_HOUR(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_DATE_GET_HOUR(self.ptr) as i32 }
     }
 
     fn minute(&self) -> i32 {
-        ffi!(PyDateTime_DATE_GET_MINUTE(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_DATE_GET_MINUTE(self.ptr) as i32 }
     }
 
     fn second(&self) -> i32 {
-        ffi!(PyDateTime_DATE_GET_SECOND(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_DATE_GET_SECOND(self.ptr) as i32 }
     }
 
     fn microsecond(&self) -> i32 {
-        ffi!(PyDateTime_DATE_GET_MICROSECOND(self.ptr)) as i32
+        unsafe { pyo3::ffi::PyDateTime_DATE_GET_MICROSECOND(self.ptr) as i32 }
     }
 }
 

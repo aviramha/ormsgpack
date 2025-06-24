@@ -207,21 +207,23 @@ impl<'de> Deserializer<'de> {
             Some(value) => value,
             None => return Err(Error::InvalidValue),
         };
-        let obj = unsafe {
-            let datetime_api = *pyo3::ffi::PyDateTimeAPI();
-            (datetime_api.DateTime_FromDateAndTime)(
-                datetime.year(),
-                datetime.month() as i32,
-                datetime.day() as i32,
-                datetime.hour() as i32,
-                datetime.minute() as i32,
-                datetime.second() as i32,
-                (datetime.nanosecond() / 1000) as i32,
-                datetime_api.TimeZone_UTC,
-                datetime_api.DateTimeType,
-            )
-        };
-        Ok(nonnull!(obj))
+        unsafe {
+            let obj = {
+                let datetime_api = *pyo3::ffi::PyDateTimeAPI();
+                (datetime_api.DateTime_FromDateAndTime)(
+                    datetime.year(),
+                    datetime.month() as i32,
+                    datetime.day() as i32,
+                    datetime.hour() as i32,
+                    datetime.minute() as i32,
+                    datetime.second() as i32,
+                    (datetime.nanosecond() / 1000) as i32,
+                    datetime_api.TimeZone_UTC,
+                    datetime_api.DateTimeType,
+                )
+            };
+            Ok(NonNull::new_unchecked(obj))
+        }
     }
 
     fn deserialize_ext(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
@@ -233,80 +235,95 @@ impl<'de> Deserializer<'de> {
         let data = self.read_slice(len as usize)?;
 
         match self.ext_hook {
-            Some(callable) => {
-                let tag_obj = ffi!(PyLong_FromLongLong(tag as i64));
+            Some(callable) => unsafe {
+                let tag_obj = pyo3::ffi::PyLong_FromLongLong(tag as i64);
                 let data_ptr = data.as_ptr().cast::<c_char>();
                 let data_len = data.len() as pyo3::ffi::Py_ssize_t;
-                let data_obj = ffi!(PyBytes_FromStringAndSize(data_ptr, data_len));
-                let obj = ffi!(PyObject_CallFunctionObjArgs(
+                let data_obj = pyo3::ffi::PyBytes_FromStringAndSize(data_ptr, data_len);
+                let obj = pyo3::ffi::PyObject_CallFunctionObjArgs(
                     callable.as_ptr(),
                     tag_obj,
                     data_obj,
-                    std::ptr::null_mut::<pyo3::ffi::PyObject>()
-                ));
-                ffi!(Py_DECREF(tag_obj));
-                ffi!(Py_DECREF(data_obj));
+                    std::ptr::null_mut::<pyo3::ffi::PyObject>(),
+                );
+                pyo3::ffi::Py_DECREF(tag_obj);
+                pyo3::ffi::Py_DECREF(data_obj);
                 if unlikely!(obj.is_null()) {
                     Err(Error::ExtHookFailed)
                 } else {
-                    Ok(nonnull!(obj))
+                    Ok(NonNull::new_unchecked(obj))
                 }
-            }
+            },
             None => Err(Error::ExtHookMissing),
         }
     }
 
     fn deserialize_null(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        ffi!(Py_INCREF(NONE));
-        Ok(nonnull!(NONE))
+        unsafe {
+            pyo3::ffi::Py_INCREF(NONE);
+            Ok(NonNull::new_unchecked(NONE))
+        }
     }
 
     fn deserialize_true(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        ffi!(Py_INCREF(TRUE));
-        Ok(nonnull!(TRUE))
+        unsafe {
+            pyo3::ffi::Py_INCREF(TRUE);
+            Ok(NonNull::new_unchecked(TRUE))
+        }
     }
 
     fn deserialize_false(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        ffi!(Py_INCREF(FALSE));
-        Ok(nonnull!(FALSE))
+        unsafe {
+            pyo3::ffi::Py_INCREF(FALSE);
+            Ok(NonNull::new_unchecked(FALSE))
+        }
     }
 
     fn deserialize_i64(&self, value: i64) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        Ok(nonnull!(ffi!(PyLong_FromLongLong(value))))
+        unsafe {
+            let ptr = pyo3::ffi::PyLong_FromLongLong(value);
+            Ok(NonNull::new_unchecked(ptr))
+        }
     }
 
     fn deserialize_u64(&self, value: u64) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        Ok(nonnull!(ffi!(PyLong_FromUnsignedLongLong(value))))
+        unsafe {
+            let ptr = pyo3::ffi::PyLong_FromUnsignedLongLong(value);
+            Ok(NonNull::new_unchecked(ptr))
+        }
     }
 
     fn deserialize_f64(&self, value: f64) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        Ok(nonnull!(ffi!(PyFloat_FromDouble(value))))
+        unsafe {
+            let ptr = pyo3::ffi::PyFloat_FromDouble(value);
+            Ok(NonNull::new_unchecked(ptr))
+        }
     }
 
     fn deserialize_str(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let data = self.read_slice(len as usize)?;
         let value = from_utf8(data)?;
-        Ok(nonnull!(unicode_from_str(value)))
+        let ptr = unicode_from_str(value);
+        unsafe { Ok(NonNull::new_unchecked(ptr)) }
     }
 
     fn deserialize_bin(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         let v = self.read_slice(len as usize)?;
         let ptr = v.as_ptr().cast::<c_char>();
         let len = v.len() as pyo3::ffi::Py_ssize_t;
-        Ok(nonnull!(ffi!(PyBytes_FromStringAndSize(ptr, len))))
+        unsafe {
+            let ptr = pyo3::ffi::PyBytes_FromStringAndSize(ptr, len);
+            Ok(NonNull::new_unchecked(ptr))
+        }
     }
 
     fn deserialize_array(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        let ptr = ffi!(PyList_New(len as pyo3::ffi::Py_ssize_t));
+        let ptr = unsafe { pyo3::ffi::PyList_New(len as pyo3::ffi::Py_ssize_t) };
         for i in 0..len {
             let elem = self.deserialize()?;
-            ffi!(PyList_SET_ITEM(
-                ptr,
-                i as pyo3::ffi::Py_ssize_t,
-                elem.as_ptr()
-            ));
+            unsafe { pyo3::ffi::PyList_SET_ITEM(ptr, i as pyo3::ffi::Py_ssize_t, elem.as_ptr()) };
         }
-        Ok(nonnull!(ptr))
+        unsafe { Ok(NonNull::new_unchecked(ptr)) }
     }
 
     fn deserialize_map_with_str_keys(
@@ -333,15 +350,15 @@ impl<'de> Deserializer<'de> {
                 marker => Err(Error::InvalidType(marker)),
             }?;
             let value = self.deserialize()?;
-            let pyhash = unsafe { (*key.as_ptr().cast::<pyo3::ffi::PyASCIIObject>()).hash };
-            let _ = unsafe {
-                pydict_set_item_known_hash(dict_ptr, key.as_ptr(), value.as_ptr(), pyhash)
-            };
-            // counter Py_INCREF in insertdict
-            ffi!(Py_DECREF(key.as_ptr()));
-            ffi!(Py_DECREF(value.as_ptr()));
+            unsafe {
+                let pyhash = (*key.as_ptr().cast::<pyo3::ffi::PyASCIIObject>()).hash;
+                let _ = pydict_set_item_known_hash(dict_ptr, key.as_ptr(), value.as_ptr(), pyhash);
+                // counter Py_INCREF in insertdict
+                pyo3::ffi::Py_DECREF(key.as_ptr());
+                pyo3::ffi::Py_DECREF(value.as_ptr());
+            }
         }
-        Ok(nonnull!(dict_ptr))
+        unsafe { Ok(NonNull::new_unchecked(dict_ptr)) }
     }
 
     fn deserialize_map_with_non_str_keys(
@@ -352,14 +369,16 @@ impl<'de> Deserializer<'de> {
         for _ in 0..len {
             let key = self.deserialize_map_key()?;
             let value = self.deserialize()?;
-            let ret = ffi!(PyDict_SetItem(dict_ptr, key.as_ptr(), value.as_ptr()));
-            if unlikely!(ret == -1) {
-                return Err(Error::Internal);
+            unsafe {
+                let ret = pyo3::ffi::PyDict_SetItem(dict_ptr, key.as_ptr(), value.as_ptr());
+                pyo3::ffi::Py_DECREF(key.as_ptr());
+                pyo3::ffi::Py_DECREF(value.as_ptr());
+                if unlikely!(ret == -1) {
+                    return Err(Error::Internal);
+                }
             }
-            ffi!(Py_DECREF(key.as_ptr()));
-            ffi!(Py_DECREF(value.as_ptr()));
         }
-        Ok(nonnull!(dict_ptr))
+        unsafe { Ok(NonNull::new_unchecked(dict_ptr)) }
     }
 
     fn deserialize_map(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
@@ -506,14 +525,14 @@ impl<'de> Deserializer<'de> {
         &mut self,
         len: u32,
     ) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
-        let ptr = ffi!(PyTuple_New(len as pyo3::ffi::Py_ssize_t));
+        let ptr = unsafe { pyo3::ffi::PyTuple_New(len as pyo3::ffi::Py_ssize_t) };
         for i in 0..len {
             let elem = self.deserialize_map_key()?;
             unsafe {
                 pytuple_set_item(ptr, i as pyo3::ffi::Py_ssize_t, elem.as_ptr());
             }
         }
-        Ok(nonnull!(ptr))
+        unsafe { Ok(NonNull::new_unchecked(ptr)) }
     }
 
     fn deserialize_map_ext_key(&mut self, len: u32) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {

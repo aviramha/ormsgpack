@@ -149,11 +149,13 @@ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
         } else if pyunicode_is_ascii(op) {
             let ptr = op.cast::<PyASCIIObject>().offset(1).cast::<u8>();
             let len = (*op.cast::<PyASCIIObject>()).length as usize;
-            Some(str_from_slice!(ptr, len))
+            let slice = std::slice::from_raw_parts(ptr, len);
+            Some(std::str::from_utf8_unchecked(slice))
         } else if (*op.cast::<PyCompactUnicodeObject>()).utf8_length != 0 {
             let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8.cast::<u8>();
             let len = (*op.cast::<PyCompactUnicodeObject>()).utf8_length as usize;
-            Some(str_from_slice!(ptr, len))
+            let slice = std::slice::from_raw_parts(ptr, len);
+            Some(std::str::from_utf8_unchecked(slice))
         } else {
             unicode_to_str_via_ffi(op)
         }

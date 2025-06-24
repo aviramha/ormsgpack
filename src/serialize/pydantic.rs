@@ -39,9 +39,9 @@ impl PydanticModel {
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Result<Self, PydanticModelError> {
-        let dict = ffi!(PyObject_GetAttr(ptr, DICT_STR));
+        let dict = unsafe { pyo3::ffi::PyObject_GetAttr(ptr, DICT_STR) };
         if unlikely!(dict.is_null()) {
-            ffi!(PyErr_Clear());
+            unsafe { pyo3::ffi::PyErr_Clear() };
             return Err(PydanticModelError::DictMissing);
         }
         Ok(PydanticModel {
@@ -56,7 +56,7 @@ impl PydanticModel {
 
 impl Drop for PydanticModel {
     fn drop(&mut self) {
-        ffi!(Py_DECREF(self.ptr));
+        unsafe { pyo3::ffi::Py_DECREF(self.ptr) };
     }
 }
 
@@ -73,11 +73,11 @@ impl Serialize for PydanticModel {
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
-                err!(KEY_MUST_BE_STR)
+                return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let data = unicode_to_str(key.as_ptr());
             if unlikely!(data.is_none()) {
-                err!(INVALID_STR)
+                return Err(serde::ser::Error::custom(INVALID_STR));
             }
             let key_as_str = data.unwrap();
             if unlikely!(key_as_str.as_bytes()[0] == b'_') {
