@@ -109,7 +109,6 @@ dependencies = [
  "chrono",
  "half",
  "itoa",
- "once_cell",
  "pyo3",
  "pyo3-build-config",
  "serde",

@@ -2,12 +2,14 @@
 
 use crate::opt::*;
 use crate::serialize::serializer::*;
+use crate::state::State;
 
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 use std::ptr::NonNull;
 
 pub struct List {
     ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
     opts: Opt,
     default_calls: u8,
     recursion: u8,
@@ -17,6 +19,7 @@ pub struct List {
 impl List {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
+        state: *mut State,
         opts: Opt,
         default_calls: u8,
         recursion: u8,
@@ -24,6 +27,7 @@ impl List {
     ) -> Self {
         List {
             ptr: ptr,
+            state: state,
             opts: opts,
             default_calls: default_calls,
             recursion: recursion,
@@ -43,6 +47,7 @@ impl Serialize for List {
             let item = unsafe { pyo3::ffi::PyList_GET_ITEM(self.ptr, i as isize) };
             let value = PyObject::new(
                 item,
+                self.state,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,

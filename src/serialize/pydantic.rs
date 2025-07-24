@@ -4,7 +4,7 @@ use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
-use crate::typeref::*;
+use crate::state::State;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
@@ -25,6 +25,7 @@ impl std::fmt::Display for PydanticModelError {
 
 pub struct PydanticModel {
     ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
     opts: Opt,
     default_calls: u8,
     recursion: u8,
@@ -34,18 +35,20 @@ pub struct PydanticModel {
 impl PydanticModel {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
+        state: *mut State,
         opts: Opt,
         default_calls: u8,
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Result<Self, PydanticModelError> {
-        let dict = unsafe { pyo3::ffi::PyObject_GetAttr(ptr, DICT_STR) };
+        let dict = unsafe { pyo3::ffi::PyObject_GetAttr(ptr, (*state).dict_str) };
         if unlikely!(dict.is_null()) {
             unsafe { pyo3::ffi::PyErr_Clear() };
             return Err(PydanticModelError::DictMissing);
         }
         Ok(PydanticModel {
             ptr: dict,
+            state: state,
             opts: opts,
             default_calls: default_calls,
             recursion: recursion,
@@ -72,7 +75,10 @@ impl Serialize for PydanticModel {
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
+            if unlikely!(!py_is!(
+                ob_type!(key.as_ptr()),
+                &mut pyo3::ffi::PyUnicode_Type
+            )) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let data = unicode_to_str(key.as_ptr());
@@ -94,6 +100,7 @@ impl Serialize for PydanticModel {
         for (key, value) in items.iter() {
             let pyvalue = PyObject::new(
                 *value,
+                self.state,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,

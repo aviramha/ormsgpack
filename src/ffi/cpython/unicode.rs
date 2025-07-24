@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::ffi::unicode::*;
-use crate::typeref::EMPTY_UNICODE;
 use core::ffi::c_void;
 use pyo3::ffi::*;
 
@@ -51,10 +50,7 @@ unsafe fn pyunicode_is_ascii(op: *mut PyObject) -> bool {
 
 pub fn unicode_from_str(buf: &str) -> *mut PyObject {
     if buf.is_empty() {
-        unsafe {
-            Py_INCREF(EMPTY_UNICODE);
-            EMPTY_UNICODE
-        }
+        unsafe { PyUnicode_New(0, 0) }
     } else {
         let num_chars = bytecount::num_chars(buf.as_bytes());
         if buf.len() == num_chars {

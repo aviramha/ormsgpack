@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::deserialize::cache::*;
 use crate::deserialize::DeserializeError;
 use crate::exc::*;
 use crate::ffi::*;
 use crate::msgpack::Marker;
 use crate::opt::*;
-use crate::typeref::*;
+use crate::state::State;
 use byteorder::{BigEndian, ReadBytesExt};
 use chrono::{Datelike, Timelike};
 use simdutf8::basic::{from_utf8, Utf8Error};
@@ -18,15 +17,16 @@ const RECURSION_LIMIT: u16 = 1024;
 
 pub fn deserialize(
     ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
     ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
     opts: Opt,
 ) -> Result<NonNull<pyo3::ffi::PyObject>, DeserializeError<'static>> {
     let obj_type_ptr = ob_type!(ptr);
     let contents: &[u8];
 
-    if py_is!(obj_type_ptr, BYTES_TYPE) {
+    if py_is!(obj_type_ptr, &mut pyo3::ffi::PyBytes_Type) {
         contents = unsafe { pybytes_as_bytes(ptr) };
-    } else if py_is!(obj_type_ptr, MEMORYVIEW_TYPE) {
+    } else if py_is!(obj_type_ptr, &mut pyo3::ffi::PyMemoryView_Type) {
         if let Some(buffer) = unsafe { pymemoryview_as_bytes(ptr) } {
             contents = buffer;
         } else {
@@ -34,7 +34,7 @@ pub fn deserialize(
                 "Input type memoryview must be a C contiguous buffer",
             )));
         }
-    } else if py_is!(obj_type_ptr, BYTEARRAY_TYPE) {
+    } else if py_is!(obj_type_ptr, &mut pyo3::ffi::PyByteArray_Type) {
         contents = unsafe { pybytearray_as_bytes(ptr) };
     } else {
         return Err(DeserializeError::new(Cow::Borrowed(
@@ -42,7 +42,7 @@ pub fn deserialize(
         )));
     }
 
-    let mut deserializer = Deserializer::new(contents, ext_hook, opts);
+    let mut deserializer = Deserializer::new(contents, state, ext_hook, opts);
     deserializer
         .deserialize()
         .map_err(|e| DeserializeError::new(Cow::Owned(e.to_string())))
@@ -87,15 +87,22 @@ impl From<Utf8Error> for Error {
 
 struct Deserializer<'de> {
     data: &'de [u8],
+    state: *mut State,
     ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
     opts: Opt,
     recursion: u16,
 }
 
 impl<'de> Deserializer<'de> {
-    fn new(data: &'de [u8], ext_hook: Option<NonNull<pyo3::ffi::PyObject>>, opts: Opt) -> Self {
+    fn new(
+        data: &'de [u8],
+        state: *mut State,
+        ext_hook: Option<NonNull<pyo3::ffi::PyObject>>,
+        opts: Opt,
+    ) -> Self {
         Deserializer {
             data: data,
+            state: state,
             ext_hook: ext_hook,
             opts: opts,
             recursion: 0,
@@ -260,22 +267,25 @@ impl<'de> Deserializer<'de> {
 
     fn deserialize_null(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         unsafe {
-            pyo3::ffi::Py_INCREF(NONE);
-            Ok(NonNull::new_unchecked(NONE))
+            let py_none = pyo3::ffi::Py_None();
+            pyo3::ffi::Py_INCREF(py_none);
+            Ok(NonNull::new_unchecked(py_none))
         }
     }
 
     fn deserialize_true(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         unsafe {
-            pyo3::ffi::Py_INCREF(TRUE);
-            Ok(NonNull::new_unchecked(TRUE))
+            let py_true = pyo3::ffi::Py_True();
+            pyo3::ffi::Py_INCREF(py_true);
+            Ok(NonNull::new_unchecked(py_true))
         }
     }
 
     fn deserialize_false(&self) -> Result<NonNull<pyo3::ffi::PyObject>, Error> {
         unsafe {
-            pyo3::ffi::Py_INCREF(FALSE);
-            Ok(NonNull::new_unchecked(FALSE))
+            let py_false = pyo3::ffi::Py_False();
+            pyo3::ffi::Py_INCREF(py_false);
+            Ok(NonNull::new_unchecked(py_false))
         }
     }
 
@@ -516,8 +526,7 @@ impl<'de> Deserializer<'de> {
             Ok(value)
         } else {
             let data = self.read_slice(len as usize)?;
-            let map = unsafe { KEY_MAP.get_mut().unwrap_or_else(|| unreachable!()) };
-            Ok(map.get(data)?)
+            Ok(unsafe { (*self.state).key_map.get(data)? })
         }
     }
 

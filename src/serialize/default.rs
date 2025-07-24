@@ -2,6 +2,7 @@
 
 use crate::opt::*;
 use crate::serialize::serializer::*;
+use crate::state::State;
 
 use serde::ser::{Serialize, Serializer};
 use std::ffi::CStr;
@@ -17,6 +18,7 @@ fn format_err(ptr: *mut pyo3::ffi::PyObject) -> String {
 
 pub struct Default {
     ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
     opts: Opt,
     default_calls: u8,
     recursion: u8,
@@ -26,6 +28,7 @@ pub struct Default {
 impl Default {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
+        state: *mut State,
         opts: Opt,
         default_calls: u8,
         recursion: u8,
@@ -33,6 +36,7 @@ impl Default {
     ) -> Self {
         Default {
             ptr: ptr,
+            state: state,
             opts: opts,
             default_calls: default_calls,
             recursion: recursion,
@@ -66,6 +70,7 @@ impl Serialize for Default {
                 } else {
                     let res = PyObject::new(
                         default_obj,
+                        self.state,
                         self.opts,
                         self.default_calls + 1,
                         self.recursion,

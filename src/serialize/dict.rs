@@ -4,13 +4,14 @@ use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
-use crate::typeref::*;
+use crate::state::State;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
 use std::ptr::NonNull;
 
 pub struct Dict {
     ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
     opts: Opt,
     default_calls: u8,
     recursion: u8,
@@ -20,12 +21,14 @@ pub struct Dict {
 impl Dict {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
+        state: *mut State,
         opts: Opt,
         default_calls: u8,
         recursion: u8,
         default: Option<NonNull<pyo3::ffi::PyObject>>,
     ) -> Self {
         Dict {
+            state: state,
             ptr: ptr,
             opts: opts,
             default_calls: default_calls,
@@ -44,77 +47,33 @@ impl Serialize for Dict {
         if unlikely!(unsafe { pydict_size(self.ptr) } == 0) {
             serializer.serialize_map(Some(0)).unwrap().end()
         } else if self.opts & (NON_STR_KEYS | SORT_KEYS) == 0 {
-            DictWithStrKeys::new(
-                self.ptr,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer)
+            self.serialize_with_str_keys(serializer)
         } else if self.opts & NON_STR_KEYS != 0 {
             if self.opts & SORT_KEYS != 0 {
                 return Err(serde::ser::Error::custom(
                     "OPT_NON_STR_KEYS is not compatible with OPT_SORT_KEYS",
                 ));
             }
-            DictWithNonStrKeys::new(
-                self.ptr,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer)
+            self.serialize_with_non_str_keys(serializer)
         } else {
-            DictWithSortedStrKeys::new(
-                self.ptr,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer)
+            self.serialize_with_sorted_str_keys(serializer)
         }
     }
 }
 
-pub struct DictWithStrKeys {
-    ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl DictWithStrKeys {
-    pub fn new(
-        ptr: *mut pyo3::ffi::PyObject,
-        opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
-    ) -> Self {
-        DictWithStrKeys {
-            ptr: ptr,
-            opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
-            default: default,
-        }
-    }
-}
-
-impl Serialize for DictWithStrKeys {
+impl Dict {
     #[inline(always)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_with_str_keys<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let len = unsafe { pydict_size(self.ptr) } as usize;
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
+            if unlikely!(!py_is!(
+                ob_type!(key.as_ptr()),
+                &mut pyo3::ffi::PyUnicode_Type
+            )) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let data = unicode_to_str(key.as_ptr());
@@ -123,6 +82,7 @@ impl Serialize for DictWithStrKeys {
             }
             let pyvalue = PyObject::new(
                 value.as_ptr(),
+                self.state,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
@@ -133,37 +93,9 @@ impl Serialize for DictWithStrKeys {
         }
         map.end()
     }
-}
 
-pub struct DictWithSortedStrKeys {
-    ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl DictWithSortedStrKeys {
-    pub fn new(
-        ptr: *mut pyo3::ffi::PyObject,
-        opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
-    ) -> Self {
-        DictWithSortedStrKeys {
-            ptr: ptr,
-            opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
-            default: default,
-        }
-    }
-}
-
-impl Serialize for DictWithSortedStrKeys {
     #[inline(never)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_with_sorted_str_keys<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -171,7 +103,10 @@ impl Serialize for DictWithSortedStrKeys {
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!py_is!(ob_type!(key.as_ptr()), STR_TYPE)) {
+            if unlikely!(!py_is!(
+                ob_type!(key.as_ptr()),
+                &mut pyo3::ffi::PyUnicode_Type
+            )) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let data = unicode_to_str(key.as_ptr());
@@ -187,6 +122,7 @@ impl Serialize for DictWithSortedStrKeys {
         for (key, val) in items.iter() {
             let pyvalue = PyObject::new(
                 *val,
+                self.state,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
@@ -197,37 +133,9 @@ impl Serialize for DictWithSortedStrKeys {
         }
         map.end()
     }
-}
 
-pub struct DictWithNonStrKeys {
-    ptr: *mut pyo3::ffi::PyObject,
-    opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
-}
-
-impl DictWithNonStrKeys {
-    pub fn new(
-        ptr: *mut pyo3::ffi::PyObject,
-        opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
-    ) -> Self {
-        DictWithNonStrKeys {
-            ptr: ptr,
-            opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
-            default: default,
-        }
-    }
-}
-
-impl Serialize for DictWithNonStrKeys {
     #[inline(never)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_with_non_str_keys<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -235,7 +143,7 @@ impl Serialize for DictWithNonStrKeys {
         let len = unsafe { pydict_size(self.ptr) } as usize;
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if py_is!(ob_type!(key.as_ptr()), STR_TYPE) {
+            if py_is!(ob_type!(key.as_ptr()), &mut pyo3::ffi::PyUnicode_Type) {
                 let data = unicode_to_str(key.as_ptr());
                 if unlikely!(data.is_none()) {
                     return Err(serde::ser::Error::custom(INVALID_STR));
@@ -244,6 +152,7 @@ impl Serialize for DictWithNonStrKeys {
                     data.unwrap(),
                     &PyObject::new(
                         value.as_ptr(),
+                        self.state,
                         self.opts,
                         self.default_calls,
                         self.recursion + 1,
@@ -252,9 +161,10 @@ impl Serialize for DictWithNonStrKeys {
                 )?;
             } else {
                 map.serialize_entry(
-                    &DictKey::new(key.as_ptr(), opts, self.recursion + 1),
+                    &DictKey::new(key.as_ptr(), self.state, opts, self.recursion + 1),
                     &PyObject::new(
                         value.as_ptr(),
+                        self.state,
                         self.opts,
                         self.default_calls,
                         self.recursion + 1,

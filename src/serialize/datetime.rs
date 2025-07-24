@@ -3,7 +3,7 @@
 use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::datetimelike::{DateLike, DateTimeLike, TimeLike};
-use crate::typeref::*;
+use crate::state::State;
 use serde::ser::{Serialize, Serializer};
 use serde_bytes::Bytes;
 
@@ -66,7 +66,7 @@ pub struct Time {
 impl Time {
     pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, TimeError> {
         let tzinfo = unsafe { pyo3::ffi::PyDateTime_TIME_GET_TZINFO(ptr) };
-        if !py_is!(tzinfo, NONE) {
+        if !py_is!(tzinfo, pyo3::ffi::Py_None()) {
             return Err(TimeError::HasTimezone);
         }
         Ok(Time {
@@ -120,19 +120,22 @@ impl std::fmt::Display for DateTimeError {
     }
 }
 
-unsafe fn utcoffset(ptr: *mut pyo3::ffi::PyObject) -> Result<Option<i32>, DateTimeError> {
+unsafe fn utcoffset(
+    ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
+) -> Result<Option<i32>, DateTimeError> {
     let tzinfo = pyo3::ffi::PyDateTime_DATE_GET_TZINFO(ptr);
-    if py_is!(tzinfo, NONE) {
+    if py_is!(tzinfo, pyo3::ffi::Py_None()) {
         return Ok(None);
     }
     let py_offset: *mut pyo3::ffi::PyObject;
-    if pyo3::ffi::PyObject_HasAttr(tzinfo, NORMALIZE_METHOD_STR) == 1 {
+    if pyo3::ffi::PyObject_HasAttr(tzinfo, (*state).normalize_str) == 1 {
         // pytz
-        let normalized = pyobject_call_method_one_arg(tzinfo, NORMALIZE_METHOD_STR, ptr);
-        py_offset = pyobject_call_method_no_args(normalized, UTCOFFSET_METHOD_STR);
+        let normalized = pyobject_call_method_one_arg(tzinfo, (*state).normalize_str, ptr);
+        py_offset = pyobject_call_method_no_args(normalized, (*state).utcoffset_str);
         pyo3::ffi::Py_DECREF(normalized);
     } else {
-        py_offset = pyobject_call_method_one_arg(tzinfo, UTCOFFSET_METHOD_STR, ptr);
+        py_offset = pyobject_call_method_one_arg(tzinfo, (*state).utcoffset_str, ptr);
     }
     if unlikely!(py_offset.is_null()) {
         pyo3::ffi::PyErr_Clear();
@@ -158,8 +161,12 @@ pub struct DateTime {
 }
 
 impl DateTime {
-    pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, DateTimeError> {
-        let offset = unsafe { utcoffset(ptr)? };
+    pub fn new(
+        ptr: *mut pyo3::ffi::PyObject,
+        state: *mut State,
+        opts: Opt,
+    ) -> Result<Self, DateTimeError> {
+        let offset = unsafe { utcoffset(ptr, state)? };
         Ok(DateTime {
             ptr: ptr,
             opts: opts,
