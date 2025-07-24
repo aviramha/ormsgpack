@@ -4,7 +4,7 @@ use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
-use crate::typeref::*;
+use crate::state::State;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
@@ -13,6 +13,7 @@ use std::ptr::NonNull;
 
 pub struct Dataclass {
     ptr: *mut pyo3::ffi::PyObject,
+    state: *mut State,
     opts: Opt,
     default_calls: u8,
     recursion: u8,
@@ -22,6 +23,7 @@ pub struct Dataclass {
 impl Dataclass {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
+        state: *mut State,
         opts: Opt,
         default_calls: u8,
         recursion: u8,
@@ -29,6 +31,7 @@ impl Dataclass {
     ) -> Self {
         Dataclass {
             ptr: ptr,
+            state: state,
             opts: opts,
             default_calls: default_calls,
             recursion: recursion,
@@ -37,10 +40,13 @@ impl Dataclass {
     }
 }
 
-fn is_pseudo_field(field: *mut pyo3::ffi::PyObject) -> bool {
-    let field_type = unsafe { pyo3::ffi::PyObject_GetAttr(field, FIELD_TYPE_STR) };
+fn is_pseudo_field(field: *mut pyo3::ffi::PyObject, state: *mut State) -> bool {
+    let field_type = unsafe { pyo3::ffi::PyObject_GetAttr(field, (*state).field_type_str) };
     unsafe { pyo3::ffi::Py_DECREF(field_type) };
-    !py_is!(field_type.cast::<pyo3::ffi::PyTypeObject>(), FIELD_TYPE)
+    !py_is!(
+        field_type.cast::<pyo3::ffi::PyTypeObject>(),
+        (*state).dataclass_field_type
+    )
 }
 
 impl Serialize for Dataclass {
@@ -48,7 +54,8 @@ impl Serialize for Dataclass {
     where
         S: Serializer,
     {
-        let fields = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, DATACLASS_FIELDS_STR) };
+        let fields =
+            unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, (*self.state).dataclass_fields_str) };
         unsafe { pyo3::ffi::Py_DECREF(fields) };
         let len = unsafe { pydict_size(fields) } as usize;
         if unlikely!(len == 0) {
@@ -57,10 +64,10 @@ impl Serialize for Dataclass {
 
         let dict = {
             let ob_type = ob_type!(self.ptr);
-            if pydict_contains!(ob_type, SLOTS_STR) {
+            if pydict_contains!(ob_type, (*self.state).slots_str) {
                 std::ptr::null_mut()
             } else {
-                let dict = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, DICT_STR) };
+                let dict = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, (*self.state).dict_str) };
                 unsafe { pyo3::ffi::Py_DECREF(dict) };
                 dict
             }
@@ -79,7 +86,7 @@ impl Serialize for Dataclass {
             }
 
             if unlikely!(dict.is_null()) {
-                if !is_pseudo_field(field.as_ptr()) {
+                if !is_pseudo_field(field.as_ptr(), self.state) {
                     let value = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, attr.as_ptr()) };
                     unsafe { pyo3::ffi::Py_DECREF(value) };
                     items.push((key_as_str, value));
@@ -88,7 +95,7 @@ impl Serialize for Dataclass {
                 let value = unsafe { pyo3::ffi::PyDict_GetItem(dict, attr.as_ptr()) };
                 if !value.is_null() {
                     items.push((key_as_str, value));
-                } else if !is_pseudo_field(field.as_ptr()) {
+                } else if !is_pseudo_field(field.as_ptr(), self.state) {
                     let value = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, attr.as_ptr()) };
                     unsafe { pyo3::ffi::Py_DECREF(value) };
                     items.push((key_as_str, value));
@@ -100,6 +107,7 @@ impl Serialize for Dataclass {
         for (key, value) in items.iter() {
             let pyvalue = PyObject::new(
                 *value,
+                self.state,
                 self.opts,
                 self.default_calls,
                 self.recursion + 1,
