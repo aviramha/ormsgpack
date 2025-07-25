@@ -126,21 +126,35 @@ jobs:
 
   build-windows:
     name: Build Windows wheel
-    runs-on: windows-latest
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        target: ['x86_64-pc-windows-msvc', 'aarch64-pc-windows-msvc']
+        include:
+          - target: 'x86_64-pc-windows-msvc'
+            runs-on: 'windows-latest'
+          - target: 'aarch64-pc-windows-msvc'
+            runs-on: 'windows-11-arm'
+        exclude:
+          - python-version: '3.9'
+            target: 'aarch64-pc-windows-msvc'
+          - python-version: '3.10'
+            target: 'aarch64-pc-windows-msvc'
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
+      - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
+      - shell: bash
+        run: echo "$USERPROFILE/.cargo/bin" >> "$GITHUB_PATH"
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - uses: PyO3/maturin-action@v1
         with:
-          target: x86_64-pc-windows-msvc
+          target: ${{ matrix.target }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           args: --release -i ${{ env.pythonLocation }}\python.exe --features unstable-simd
       - uses: astral-sh/setup-uv@v5
@@ -151,7 +165,7 @@ jobs:
       - run: uv run --no-sync pytest
       - uses: actions/upload-artifact@v4
         with:
-          name: ormsgpack-x86_64-pc-windows-msvc-${{ matrix.python-version }}
+          name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
           retention-days: 1
 
