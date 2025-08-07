@@ -34,6 +34,11 @@ pub unsafe fn pydict_set_item_known_hash(
 }
 
 #[inline(always)]
+pub unsafe fn pyobject_call_one_arg(func: *mut PyObject, arg: *mut PyObject) -> *mut PyObject {
+    PyObject_CallFunctionObjArgs(func, arg, std::ptr::null_mut::<PyObject>())
+}
+
+#[inline(always)]
 pub unsafe fn pyobject_call_method_no_args(
     self_: *mut PyObject,
     name: *mut PyObject,
