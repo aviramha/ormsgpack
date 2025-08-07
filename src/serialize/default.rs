@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 use crate::state::State;
@@ -58,13 +59,7 @@ impl Serialize for Default {
                         "default serializer exceeds recursion limit",
                     ));
                 }
-                let default_obj = unsafe {
-                    pyo3::ffi::PyObject_CallFunctionObjArgs(
-                        callable.as_ptr(),
-                        self.ptr,
-                        std::ptr::null_mut::<pyo3::ffi::PyObject>(),
-                    )
-                };
+                let default_obj = unsafe { pyobject_call_one_arg(callable.as_ptr(), self.ptr) };
                 if unlikely!(default_obj.is_null()) {
                     Err(serde::ser::Error::custom(format_err(self.ptr)))
                 } else {
