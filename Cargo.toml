@@ -36,7 +36,7 @@ unstable-simd = [
 ahash = { version = "0.8", default-features = false }
 bytecount = { version = "^0.6.9", default-features = false, features = ["runtime-dispatch-simd"] }
 byteorder = { version = "1.5.0", default-features = false, features = ["std"] }
-chrono = { version = "0.4.41", default-features = false }
+chrono = { version = "0.4.42", default-features = false }
 half = { version = "2.6.0", default-features = false }
 itoa = { version = "1", default-features = false }
 pyo3 = { version = "^0.26.0", default-features = false, features = ["extension-module"] }
