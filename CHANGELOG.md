@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0
+
+### Changed
+
+- Add support for Python 3.14
+- Add support for free-threading and subinterpreters
+- Add Windows arm64 wheels by [JexinSam](https://github.com/JexinSam) in [#412](/../../pull/412)
+
 ## 1.10.0 24/05/2025
 
 ### Changed
