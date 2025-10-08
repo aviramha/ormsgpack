@@ -9,7 +9,7 @@ various Python types.
 
 ormsgpack supports the following Python implementations:
 
-- CPython 3.9, 3.10, 3.11, 3.12 and 3.13
+- CPython 3.9, 3.10, 3.11, 3.12, 3.13 and 3.14
 - PyPy 3.11
 - GraalPy 3.11
 

@@ -1,5 +1,8 @@
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+import sys
+
 import pydantic
-import pydantic.v1
+import pytest
 
 import ormsgpack
 
@@ -29,7 +32,13 @@ def test_pydantic_model() -> None:
     }
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="pydantic v1 does not support Python 3.14 and greater",
+)
 def test_pydantic_v1_model() -> None:
+    import pydantic.v1
+
     class Point1D(pydantic.v1.BaseModel):
         x: int
 
