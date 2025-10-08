@@ -1,6 +1,6 @@
 [package]
 name = "ormsgpack"
-version = "1.10.0"
+version = "1.11.0"
 description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
 edition = "2021"
 rust-version = "1.81"
