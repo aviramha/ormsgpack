@@ -32,7 +32,8 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
-          - '3.13t'
+          - '3.14'
+          - '3.14t'
         target:
           - 'x86_64-unknown-linux-gnu'
           - 'aarch64-unknown-linux-gnu'
@@ -77,6 +78,7 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
         platform:
           - 'linux/amd64'
           - 'linux/arm64'
@@ -154,6 +156,7 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
         target:
           - 'x86_64-pc-windows-msvc'
           - 'aarch64-pc-windows-msvc'
@@ -204,7 +207,8 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
-          - '3.13t'
+          - '3.14'
+          - '3.14t'
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     runs-on: macos-latest
