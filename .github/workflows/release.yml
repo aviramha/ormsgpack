@@ -18,7 +18,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
-  RUST_TOOLCHAIN: nightly-2025-05-01
+  RUST_TOOLCHAIN: nightly-2025-09-18
   UV_VERSION: 0.8.24
 jobs:
   build-linux:
