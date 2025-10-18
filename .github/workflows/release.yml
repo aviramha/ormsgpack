@@ -53,7 +53,7 @@ jobs:
           manylinux: auto
           args: --release -i python${{ matrix.python-version }} --features unstable-simd
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v5
@@ -178,7 +178,7 @@ jobs:
       - shell: bash
         run: echo "$USERPROFILE/.cargo/bin" >> "$GITHUB_PATH"
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - uses: PyO3/maturin-action@v1
@@ -215,7 +215,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - uses: PyO3/maturin-action@v1
@@ -240,7 +240,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - uses: PyO3/maturin-action@v1
