@@ -45,7 +45,7 @@ jobs:
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
@@ -116,7 +116,7 @@ jobs:
           - platform: 'linux/arm64'
             libc: 'gnu'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
@@ -173,7 +173,7 @@ jobs:
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
       - shell: bash
         run: echo "$USERPROFILE/.cargo/bin" >> "$GITHUB_PATH"
@@ -213,7 +213,7 @@ jobs:
       UV_PYTHON: ${{ matrix.python-version }}
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -238,7 +238,7 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
