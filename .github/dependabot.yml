@@ -1,9 +1,5 @@
-# Basic set up for three package managers
-
 version: 2
 updates:
-
-  # Maintain dependencies for GitHub Actions
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
@@ -13,3 +9,8 @@ updates:
         applies-to: version-updates
         patterns:
           - "pyo3*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
