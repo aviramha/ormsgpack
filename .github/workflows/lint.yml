@@ -20,7 +20,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
       - run: rustup default "$RUST_TOOLCHAIN"
       - run: rustup component add clippy rustfmt
