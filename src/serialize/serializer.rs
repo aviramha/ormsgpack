@@ -568,6 +568,36 @@ impl PyObject {
         }
     }
 
+    #[inline(always)]
+    fn serialize_unicode<S>(
+        &self,
+        serializer: S,
+        data: Option<&'static str>,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match data {
+            Some(text) => serializer.serialize_str(text),
+            None => {
+                if self.opts & PASSTHROUGH_INVALID_STR != 0 {
+                    unsafe { pyo3::ffi::PyErr_Clear() };
+                    Default::new(
+                        self.ptr,
+                        self.state,
+                        self.opts,
+                        self.default_calls,
+                        self.recursion,
+                        self.default,
+                    )
+                    .serialize(serializer)
+                } else {
+                    Err(serde::ser::Error::custom(INVALID_STR))
+                }
+            }
+        }
+    }
+
     #[inline(never)]
     fn serialize_unlikely<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -642,7 +672,7 @@ impl PyObject {
 
         if self.opts & PASSTHROUGH_SUBCLASS == 0 {
             if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_UNICODE_SUBCLASS) {
-                return StrSubclass::new(self.ptr).serialize(serializer);
+                return self.serialize_unicode(serializer, unicode_to_str_via_ffi(self.ptr));
             }
             if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LONG_SUBCLASS) {
                 match Int::new(self.ptr) {
@@ -820,7 +850,7 @@ impl Serialize for PyObject {
     {
         let ob_type = ob_type!(self.ptr);
         if py_is!(ob_type, &mut pyo3::ffi::PyUnicode_Type) {
-            Str::new(self.ptr).serialize(serializer)
+            return self.serialize_unicode(serializer, unicode_to_str(self.ptr));
         } else if py_is!(ob_type, &mut pyo3::ffi::PyBytes_Type) {
             Bytes::new(self.ptr).serialize(serializer)
         } else if py_is!(ob_type, &mut pyo3::ffi::PyLong_Type) {
