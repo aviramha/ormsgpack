@@ -20,14 +20,14 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - run: rustup install --profile minimal "$RUST_TOOLCHAIN"
       - run: rustup default "$RUST_TOOLCHAIN"
       - run: rustup component add clippy rustfmt
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
         with:
           python-version: 3.12
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24 # v7.1.1
         with:
           version: ${{ env.UV_VERSION }}
       - run: uvx nox -s lint
