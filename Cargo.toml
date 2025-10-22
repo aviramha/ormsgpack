@@ -39,7 +39,7 @@ byteorder = { version = "1.5.0", default-features = false, features = ["std"] }
 chrono = { version = "0.4.42", default-features = false }
 half = { version = "2.6.0", default-features = false }
 itoa = { version = "1", default-features = false }
-pyo3 = { version = "^0.27.0", default-features = false, features = ["extension-module"] }
+pyo3 = { version = "^0.27.1", default-features = false, features = ["extension-module"] }
 serde = { version = "1", default-features = false }
 serde_bytes = { version = "0.11.19", default-features = false, features = ["std"] }
 simdutf8 = { version = "0.1.5", default-features = false, features = ["std"] }
