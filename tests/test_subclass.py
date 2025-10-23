@@ -40,6 +40,9 @@ def test_subclass_str_invalid() -> None:
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb(SubStr("\ud800"))
 
+    packed = ormsgpack.packb(SubStr("\ud800"), option=ormsgpack.OPT_REPLACE_SURROGATES)
+    assert ormsgpack.unpackb(packed) == "?"
+
 
 def test_subclass_int() -> None:
     assert ormsgpack.unpackb(ormsgpack.packb(SubInt(1))) == 1

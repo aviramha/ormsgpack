@@ -2,17 +2,55 @@
 
 use crate::exc::*;
 use crate::ffi::*;
+use crate::opt::*;
 
 use serde::ser::{Serialize, Serializer};
 
 #[repr(transparent)]
-pub struct Str {
+struct StrWithSurrogates {
     ptr: *mut pyo3::ffi::PyObject,
 }
 
-impl Str {
+impl StrWithSurrogates {
     pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        Str { ptr: ptr }
+        StrWithSurrogates { ptr: ptr }
+    }
+}
+
+impl Serialize for StrWithSurrogates {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        unsafe {
+            let ptr = pyo3::ffi::PyUnicode_AsEncodedString(
+                self.ptr,
+                c"UTF-8".as_ptr(),
+                c"replace".as_ptr(),
+            );
+            if unlikely!(ptr.is_null()) {
+                return Err(serde::ser::Error::custom(INVALID_STR));
+            }
+            let slice = pybytes_as_bytes(ptr);
+            let uni = std::str::from_utf8_unchecked(slice);
+            let res = serializer.serialize_str(uni);
+            pyo3::ffi::Py_DECREF(ptr);
+            res
+        }
+    }
+}
+
+pub struct Str {
+    ptr: *mut pyo3::ffi::PyObject,
+    opts: Opt,
+}
+
+impl Str {
+    pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Self {
+        Str {
+            ptr: ptr,
+            opts: opts,
+        }
     }
 }
 
@@ -23,20 +61,26 @@ impl Serialize for Str {
     {
         let uni = unicode_to_str(self.ptr);
         if unlikely!(uni.is_none()) {
+            if self.opts & REPLACE_SURROGATES != 0 {
+                return StrWithSurrogates::new(self.ptr).serialize(serializer);
+            }
             return Err(serde::ser::Error::custom(INVALID_STR));
         }
         serializer.serialize_str(uni.unwrap())
     }
 }
 
-#[repr(transparent)]
 pub struct StrSubclass {
     ptr: *mut pyo3::ffi::PyObject,
+    opts: Opt,
 }
 
 impl StrSubclass {
-    pub fn new(ptr: *mut pyo3::ffi::PyObject) -> Self {
-        StrSubclass { ptr: ptr }
+    pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Self {
+        StrSubclass {
+            ptr: ptr,
+            opts: opts,
+        }
     }
 }
 
@@ -48,6 +92,9 @@ impl Serialize for StrSubclass {
     {
         let uni = unicode_to_str_via_ffi(self.ptr);
         if unlikely!(uni.is_none()) {
+            if self.opts & REPLACE_SURROGATES != 0 {
+                return StrWithSurrogates::new(self.ptr).serialize(serializer);
+            }
             return Err(serde::ser::Error::custom(INVALID_STR));
         }
         serializer.serialize_str(uni.unwrap())
