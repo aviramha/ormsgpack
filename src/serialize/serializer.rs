@@ -642,7 +642,7 @@ impl PyObject {
 
         if self.opts & PASSTHROUGH_SUBCLASS == 0 {
             if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_UNICODE_SUBCLASS) {
-                return StrSubclass::new(self.ptr).serialize(serializer);
+                return StrSubclass::new(self.ptr, self.opts).serialize(serializer);
             }
             if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LONG_SUBCLASS) {
                 match Int::new(self.ptr) {
@@ -820,7 +820,7 @@ impl Serialize for PyObject {
     {
         let ob_type = ob_type!(self.ptr);
         if py_is!(ob_type, &mut pyo3::ffi::PyUnicode_Type) {
-            Str::new(self.ptr).serialize(serializer)
+            Str::new(self.ptr, self.opts).serialize(serializer)
         } else if py_is!(ob_type, &mut pyo3::ffi::PyBytes_Type) {
             Bytes::new(self.ptr).serialize(serializer)
         } else if py_is!(ob_type, &mut pyo3::ffi::PyLong_Type) {
@@ -976,7 +976,7 @@ impl DictKey {
         }
 
         if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_UNICODE_SUBCLASS) {
-            return StrSubclass::new(self.ptr).serialize(serializer);
+            return StrSubclass::new(self.ptr, self.opts).serialize(serializer);
         }
         if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LONG_SUBCLASS) {
             match Int::new(self.ptr) {
@@ -1002,7 +1002,7 @@ impl Serialize for DictKey {
     {
         let ob_type = ob_type!(self.ptr);
         if py_is!(ob_type, &mut pyo3::ffi::PyUnicode_Type) {
-            Str::new(self.ptr).serialize(serializer)
+            Str::new(self.ptr, self.opts).serialize(serializer)
         } else if py_is!(ob_type, &mut pyo3::ffi::PyBytes_Type) {
             Bytes::new(self.ptr).serialize(serializer)
         } else if py_is!(ob_type, &mut pyo3::ffi::PyLong_Type) {

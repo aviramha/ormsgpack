@@ -47,3 +47,6 @@ def test_str_surrogates() -> None:
         ormsgpack.packb("\udc00")
     with pytest.raises(ormsgpack.MsgpackEncodeError):
         ormsgpack.packb("\ud83d\ude80")
+
+    packed = ormsgpack.packb("\ud800", option=ormsgpack.OPT_REPLACE_SURROGATES)
+    assert ormsgpack.unpackb(packed) == "?"
