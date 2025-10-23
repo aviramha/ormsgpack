@@ -382,6 +382,30 @@ TypeError: Type is not msgpack serializable: Secret
 b'\xa6******'
 ```
 
+##### `OPT_PASSTHROUGH_INVALID_STR`
+
+Enable passthrough of `str` instances that cannot be encoded as UTF-8,
+such as strings that contain surrogate code points, to `default`.
+
+```python
+>>> import ormsgpack
+>>> def default(obj):
+...     if isinstance(obj, str):
+...         return obj.encode("utf-8", "surrogatepass")
+...     raise TypeError
+...
+>>> ormsgpack.packb("\ud800")
+ormsgpack.MsgpackEncodeError: str is not valid UTF-8: surrogates not allowed
+>>> ormsgpack.packb(
+...     "\ud800",
+...     option=ormsgpack.OPT_PASSTHROUGH_INVALID_STR,
+...     default=default,
+... )
+b'\xc4\x03\xed\xa0\x80'
+>>> ormsgpack.unpackb(_)
+b'\xed\xa0\x80'
+```
+
 ##### `OPT_PASSTHROUGH_TUPLE`
 
 Enable passthrough of `tuple` instances to `default`.

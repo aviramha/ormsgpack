@@ -197,7 +197,7 @@ def test_unpackb_non_interned_kwarg() -> None:
 @pytest.mark.parametrize(
     "option",
     (
-        1 << 15,
+        1 << 16,
         True,
         -1,
         9223372036854775809,
@@ -216,6 +216,7 @@ def test_packb_invalid_option(option: int) -> None:
         ormsgpack.OPT_PASSTHROUGH_BIG_INT,
         ormsgpack.OPT_PASSTHROUGH_DATACLASS,
         ormsgpack.OPT_PASSTHROUGH_DATETIME,
+        ormsgpack.OPT_PASSTHROUGH_INVALID_STR,
         ormsgpack.OPT_PASSTHROUGH_SUBCLASS,
         ormsgpack.OPT_PASSTHROUGH_TUPLE,
         ormsgpack.OPT_SERIALIZE_NUMPY,
