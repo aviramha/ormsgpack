@@ -105,7 +105,7 @@ It raises `MsgpackEncodeError` on an unsupported type. This exception
 describes the invalid object with the error message `Type is not
 msgpack serializable: ...`.
 
-It raises `MsgpackEncodeError` if a `str` contains invalid UTF-8.
+It raises `MsgpackEncodeError` if a `str` instance contains surrogate code points.
 
 It raises `MsgpackEncodeError` if a `dict` has a key of a type other than `str` or `bytes`,
 unless [`OPT_NON_STR_KEYS`](#OPT_NON_STR_KEYS) is specified.
@@ -407,6 +407,11 @@ b'\x82\xa4type\xa5tuple\xa5value\x93\xcd#\xe9\xa4test*'
 ##### `OPT_PASSTHROUGH_UUID`
 
 Enable passthrough of `uuid.UUID` instances to `default`.
+
+##### `OPT_REPLACE_SURROGATES`
+
+Serialize `str` instances that contain surrogate code points by
+replacing the surrogates with the `?` character.
 
 ##### `OPT_SERIALIZE_NUMPY`
 
