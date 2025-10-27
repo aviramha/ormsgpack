@@ -62,7 +62,7 @@ jobs:
       - run: uv sync --frozen --no-install-project
       - run: uv pip install ormsgpack --no-index -f target/wheels
       - run: uv run --no-sync pytest
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
@@ -140,7 +140,7 @@ jobs:
               uv pip install ormsgpack --no-index -f target/wheels
               uv run --no-sync pytest
             '
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
@@ -192,7 +192,7 @@ jobs:
       - run: uv sync --frozen --no-install-project
       - run: uv pip install ormsgpack --no-index -f target/wheels
       - run: uv run --no-sync pytest
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
@@ -229,7 +229,7 @@ jobs:
       - run: uv sync --frozen --no-install-project
       - run: uv pip install ormsgpack --no-index -f target/wheels
       - run: uv run --no-sync pytest
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ormsgpack-universal-apple-darwin-${{ matrix.python-version }}
           path: target/wheels
@@ -247,7 +247,7 @@ jobs:
         with:
           command: sdist
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ormsgpack-sdist
           path: target/wheels
