@@ -67,7 +67,7 @@ impl std::fmt::Display for Error {
             Error::ExtHookFailed => f.write_str("ext_hook failed"),
             Error::ExtHookMissing => f.write_str("ext_hook missing"),
             Error::Internal => f.write_str("internal error"),
-            Error::InvalidStr => f.write_str(INVALID_STR),
+            Error::InvalidStr => f.write_str("invalid UTF-8 string"),
             Error::InvalidType(ref marker) => {
                 write!(f, "invalid type {marker:?}")
             }

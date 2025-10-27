@@ -14,6 +14,6 @@ pub fn unicode_from_str(buf: &str) -> *mut PyObject {
 }
 
 #[inline(always)]
-pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
+pub fn unicode_to_str(op: *mut PyObject) -> Result<&'static str, UnicodeError> {
     unicode_to_str_via_ffi(op)
 }

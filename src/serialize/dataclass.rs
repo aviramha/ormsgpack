@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
 use crate::serialize::serializer::*;
@@ -76,11 +75,7 @@ impl Serialize for Dataclass {
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (attr, field) in PyDictIter::from_pyobject(fields) {
-            let data = unicode_to_str(attr.as_ptr());
-            if unlikely!(data.is_none()) {
-                return Err(serde::ser::Error::custom(INVALID_STR));
-            }
-            let key_as_str = data.unwrap();
+            let key_as_str = unicode_to_str(attr.as_ptr()).map_err(serde::ser::Error::custom)?;
             if key_as_str.as_bytes()[0] == b'_' {
                 continue;
             }

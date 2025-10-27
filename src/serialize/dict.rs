@@ -76,10 +76,7 @@ impl Dict {
             )) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
-            let data = unicode_to_str(key.as_ptr());
-            if unlikely!(data.is_none()) {
-                return Err(serde::ser::Error::custom(INVALID_STR));
-            }
+            let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;
             let pyvalue = PyObject::new(
                 value.as_ptr(),
                 self.state,
@@ -88,7 +85,7 @@ impl Dict {
                 self.recursion + 1,
                 self.default,
             );
-            map.serialize_key(data.unwrap()).unwrap();
+            map.serialize_key(key_as_str).unwrap();
             map.serialize_value(&pyvalue)?;
         }
         map.end()
@@ -109,11 +106,8 @@ impl Dict {
             )) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
-            let data = unicode_to_str(key.as_ptr());
-            if unlikely!(data.is_none()) {
-                return Err(serde::ser::Error::custom(INVALID_STR));
-            }
-            items.push((data.unwrap(), value.as_ptr()));
+            let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;
+            items.push((key_as_str, value.as_ptr()));
         }
 
         items.sort_unstable_by(|a, b| a.0.cmp(b.0));
@@ -144,12 +138,9 @@ impl Dict {
         let mut map = serializer.serialize_map(Some(len)).unwrap();
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if py_is!(ob_type!(key.as_ptr()), &mut pyo3::ffi::PyUnicode_Type) {
-                let data = unicode_to_str(key.as_ptr());
-                if unlikely!(data.is_none()) {
-                    return Err(serde::ser::Error::custom(INVALID_STR));
-                }
+                let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;
                 map.serialize_entry(
-                    data.unwrap(),
+                    key_as_str,
                     &PyObject::new(
                         value.as_ptr(),
                         self.state,

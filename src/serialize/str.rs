@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::exc::*;
 use crate::ffi::*;
 
 use serde::ser::{Serialize, Serializer};
@@ -21,11 +20,8 @@ impl Serialize for Str {
     where
         S: Serializer,
     {
-        let uni = unicode_to_str(self.ptr);
-        if unlikely!(uni.is_none()) {
-            return Err(serde::ser::Error::custom(INVALID_STR));
-        }
-        serializer.serialize_str(uni.unwrap())
+        let uni = unicode_to_str(self.ptr).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(uni)
     }
 }
 
@@ -46,10 +42,7 @@ impl Serialize for StrSubclass {
     where
         S: Serializer,
     {
-        let uni = unicode_to_str_via_ffi(self.ptr);
-        if unlikely!(uni.is_none()) {
-            return Err(serde::ser::Error::custom(INVALID_STR));
-        }
-        serializer.serialize_str(uni.unwrap())
+        let uni = unicode_to_str_via_ffi(self.ptr).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(uni)
     }
 }
