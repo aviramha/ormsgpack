@@ -138,7 +138,7 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
 }
 
 #[inline]
-pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
+pub fn unicode_to_str(op: *mut PyObject) -> Result<&'static str, UnicodeError> {
     unsafe {
         if unlikely!(!pyunicode_is_compact(op)) {
             unicode_to_str_via_ffi(op)
@@ -146,12 +146,12 @@ pub fn unicode_to_str(op: *mut PyObject) -> Option<&'static str> {
             let ptr = op.cast::<PyASCIIObject>().offset(1).cast::<u8>();
             let len = (*op.cast::<PyASCIIObject>()).length as usize;
             let slice = std::slice::from_raw_parts(ptr, len);
-            Some(std::str::from_utf8_unchecked(slice))
+            Ok(std::str::from_utf8_unchecked(slice))
         } else if (*op.cast::<PyCompactUnicodeObject>()).utf8_length != 0 {
             let ptr = (*op.cast::<PyCompactUnicodeObject>()).utf8.cast::<u8>();
             let len = (*op.cast::<PyCompactUnicodeObject>()).utf8_length as usize;
             let slice = std::slice::from_raw_parts(ptr, len);
-            Some(std::str::from_utf8_unchecked(slice))
+            Ok(std::str::from_utf8_unchecked(slice))
         } else {
             unicode_to_str_via_ffi(op)
         }

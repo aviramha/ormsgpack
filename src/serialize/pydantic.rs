@@ -81,11 +81,7 @@ impl Serialize for PydanticModel {
             )) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
-            let data = unicode_to_str(key.as_ptr());
-            if unlikely!(data.is_none()) {
-                return Err(serde::ser::Error::custom(INVALID_STR));
-            }
-            let key_as_str = data.unwrap();
+            let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;
             if unlikely!(key_as_str.as_bytes()[0] == b'_') {
                 continue;
             }
