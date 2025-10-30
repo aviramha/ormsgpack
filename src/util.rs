@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-macro_rules! py_is {
-    ($x:expr, $y:expr) => {
-        unsafe { $x == $y }
-    };
-}
-
 macro_rules! ob_type {
     ($obj:expr) => {
         unsafe { (*$obj.cast::<pyo3::ffi::PyObject>()).ob_type }

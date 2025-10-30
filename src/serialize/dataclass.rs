@@ -42,10 +42,7 @@ impl Dataclass {
 fn is_pseudo_field(field: *mut pyo3::ffi::PyObject, state: *mut State) -> bool {
     let field_type = unsafe { pyo3::ffi::PyObject_GetAttr(field, (*state).field_type_str) };
     unsafe { pyo3::ffi::Py_DECREF(field_type) };
-    !py_is!(
-        field_type.cast::<pyo3::ffi::PyTypeObject>(),
-        (*state).dataclass_field_type
-    )
+    field_type.cast::<pyo3::ffi::PyTypeObject>() != unsafe { (*state).dataclass_field_type }
 }
 
 impl Serialize for Dataclass {

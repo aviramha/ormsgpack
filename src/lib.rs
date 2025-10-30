@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 #![cfg_attr(feature = "unstable-simd", feature(core_intrinsics))]
 #![allow(internal_features)]
-#![allow(static_mut_refs)]
 #![allow(unused_unsafe)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::ptr_eq)]
@@ -184,7 +183,7 @@ fn raise_packb_exception(state: *mut state::State, msg: &str) -> *mut PyObject {
 }
 
 unsafe fn parse_option_arg(opts: *mut PyObject, mask: i32) -> Result<i32, ()> {
-    if Py_TYPE(opts) == &mut PyLong_Type {
+    if Py_TYPE(opts) == &raw mut PyLong_Type {
         let val = PyLong_AsLong(opts) as i32;
         if val & !mask == 0 {
             Ok(val)
