@@ -75,10 +75,7 @@ impl Serialize for PydanticModel {
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
-            if unlikely!(!py_is!(
-                ob_type!(key.as_ptr()),
-                &mut pyo3::ffi::PyUnicode_Type
-            )) {
+            if unlikely!(ob_type!(key.as_ptr()) != &raw mut pyo3::ffi::PyUnicode_Type) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;

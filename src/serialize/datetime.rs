@@ -66,7 +66,7 @@ pub struct Time {
 impl Time {
     pub fn new(ptr: *mut pyo3::ffi::PyObject, opts: Opt) -> Result<Self, TimeError> {
         let tzinfo = unsafe { pyo3::ffi::PyDateTime_TIME_GET_TZINFO(ptr) };
-        if !py_is!(tzinfo, pyo3::ffi::Py_None()) {
+        if tzinfo != unsafe { pyo3::ffi::Py_None() } {
             return Err(TimeError::HasTimezone);
         }
         Ok(Time {
@@ -125,7 +125,7 @@ unsafe fn utcoffset(
     state: *mut State,
 ) -> Result<Option<i32>, DateTimeError> {
     let tzinfo = pyo3::ffi::PyDateTime_DATE_GET_TZINFO(ptr);
-    if py_is!(tzinfo, pyo3::ffi::Py_None()) {
+    if tzinfo == unsafe { pyo3::ffi::Py_None() } {
         return Ok(None);
     }
     let py_offset: *mut pyo3::ffi::PyObject;
