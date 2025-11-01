@@ -128,8 +128,8 @@ impl State {
                 slots_str: PyUnicode_InternFromString(c"__slots__".as_ptr()),
                 utcoffset_str: PyUnicode_InternFromString(c"utcoffset".as_ptr()),
                 value_str: PyUnicode_InternFromString(c"value".as_ptr()),
-                MsgpackEncodeError: compat::Py_NewRef(PyExc_TypeError),
-                MsgpackDecodeError: compat::Py_NewRef(PyExc_ValueError),
+                MsgpackEncodeError: Py_NewRef(PyExc_TypeError),
+                MsgpackDecodeError: Py_NewRef(PyExc_ValueError),
                 key_map: KeyMap::new(),
             }
         }
