@@ -1,19 +1,20 @@
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 __version__: str
 
 def packb(
     obj: Any,
     /,
-    default: Optional[Callable[[Any], Any]] = ...,
-    option: Optional[int] = None,
+    default: Callable[[Any], Any] | None = ...,
+    option: int | None = None,
 ) -> bytes: ...
 def unpackb(
-    obj: Union[bytes, bytearray, memoryview],
+    obj: bytes | bytearray | memoryview,
     /,
     *,
-    ext_hook: Optional[Callable[[int, bytes], Any]] = ...,
-    option: Optional[int] = ...,
+    ext_hook: Callable[[int, bytes], Any] | None = ...,
+    option: int | None = ...,
 ) -> Any: ...
 
 class MsgpackDecodeError(ValueError): ...

@@ -2,7 +2,7 @@
 
 import datetime
 import zoneinfo
-from typing import Callable
+from collections.abc import Callable
 
 import msgpack
 import pytest
