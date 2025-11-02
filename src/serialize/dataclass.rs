@@ -10,6 +10,23 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
 use std::ptr::NonNull;
 
+#[inline]
+fn has_slots(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut State) -> bool {
+    unsafe {
+        let tp_dict = (*ob_type).tp_dict;
+        pyo3::ffi::PyDict_Contains(tp_dict, (*state).slots_str) == 1
+    }
+}
+
+#[inline]
+pub fn is_dataclass(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut State) -> bool {
+    unsafe {
+        let tp_dict = (*ob_type).tp_dict;
+        !tp_dict.is_null()
+            && pyo3::ffi::PyDict_Contains(tp_dict, (*state).dataclass_fields_str) == 1
+    }
+}
+
 pub struct Dataclass {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
@@ -60,7 +77,7 @@ impl Serialize for Dataclass {
 
         let dict = {
             let ob_type = ob_type!(self.ptr);
-            if pydict_contains!(ob_type, (*self.state).slots_str) {
+            if has_slots(ob_type, self.state) {
                 std::ptr::null_mut()
             } else {
                 let dict = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, (*self.state).dict_str) };
