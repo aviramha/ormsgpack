@@ -11,6 +11,16 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
 use std::ptr::NonNull;
 
+#[inline]
+pub fn is_pydantic_model(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut State) -> bool {
+    unsafe {
+        let tp_dict = (*ob_type).tp_dict;
+        !tp_dict.is_null()
+            && (pyo3::ffi::PyDict_Contains(tp_dict, (*state).fields_str) == 1
+                || pyo3::ffi::PyDict_Contains(tp_dict, (*state).pydantic_validator_str) == 1)
+    }
+}
+
 pub enum PydanticModelError {
     DictMissing,
 }

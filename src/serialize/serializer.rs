@@ -698,9 +698,7 @@ impl PyObject {
             return Ext::new(self.ptr).serialize(serializer);
         }
 
-        if self.opts & PASSTHROUGH_DATACLASS == 0
-            && pydict_contains!(ob_type, (*self.state).dataclass_fields_str)
-        {
+        if self.opts & PASSTHROUGH_DATACLASS == 0 && is_dataclass(ob_type, self.state) {
             if unlikely!(self.recursion == RECURSION_LIMIT) {
                 return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
             }
@@ -715,10 +713,7 @@ impl PyObject {
             .serialize(serializer);
         }
 
-        if self.opts & SERIALIZE_PYDANTIC != 0
-            && (pydict_contains!(ob_type, (*self.state).fields_str)
-                || pydict_contains!(ob_type, (*self.state).pydantic_validator_str))
-        {
+        if self.opts & SERIALIZE_PYDANTIC != 0 && is_pydantic_model(ob_type, self.state) {
             if unlikely!(self.recursion == RECURSION_LIMIT) {
                 return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
             }
