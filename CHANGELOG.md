@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.12.0
+
+### Changed
+
+- Drop support for Python 3.9
+- Add `packb` option `OPT_REPLACE_SURROGATES` to serialize strings that contain
+  surrogate code points
+
+### Fixed
+
+- Serialize mutable objects inside a critical section in free threading
+
 ## 1.11.0 08/10/2025
 
 ### Changed
