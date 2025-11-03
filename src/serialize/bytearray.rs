@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-use crate::ffi::pybytearray_as_bytes;
+use crate::ffi::{pybytearray_as_bytes, CriticalSection};
 use serde::ser::{Serialize, Serializer};
 
 #[repr(transparent)]
@@ -19,6 +19,8 @@ impl Serialize for ByteArray {
     where
         S: Serializer,
     {
+        let mut critical_section = CriticalSection::new();
+        critical_section.begin(self.ptr);
         let contents = unsafe { pybytearray_as_bytes(self.ptr) };
         serializer.serialize_bytes(contents)
     }

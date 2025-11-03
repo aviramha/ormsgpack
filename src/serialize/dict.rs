@@ -44,6 +44,8 @@ impl Serialize for Dict {
     where
         S: Serializer,
     {
+        let mut critical_section = CriticalSection::new();
+        critical_section.begin(self.ptr);
         if unlikely!(unsafe { pydict_size(self.ptr) } == 0) {
             serializer.serialize_map(Some(0)).unwrap().end()
         } else if self.opts & (NON_STR_KEYS | SORT_KEYS) == 0 {
