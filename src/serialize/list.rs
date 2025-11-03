@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+use crate::ffi::CriticalSection;
 use crate::opt::*;
 use crate::serialize::serializer::*;
 use crate::state::State;
@@ -41,6 +42,8 @@ impl Serialize for List {
     where
         S: Serializer,
     {
+        let mut critical_section = CriticalSection::new();
+        critical_section.begin(self.ptr);
         let len = unsafe { pyo3::ffi::PyList_GET_SIZE(self.ptr) } as usize;
         let mut seq = serializer.serialize_seq(Some(len)).unwrap();
         for i in 0..len {
