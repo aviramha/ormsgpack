@@ -26,6 +26,13 @@ authors = [
     {name = "Aviram Hassan", email = "aviramyhassan@gmail.com"},
     {name = "Emanuele Giaquinta", email = "emanuele.giaquinta@gmail.com"},
 ]
+description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
+readme = "README.md"
+license = "Apache-2.0 OR MIT"
+keywords = ["fast", "msgpack", "dataclass", "dataclasses", "datetime"]
+
+[project.urls]
+Homepage = "https://github.com/aviramha/ormsgpack"
 
 [dependency-groups]
 dev = [

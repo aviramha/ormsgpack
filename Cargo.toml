@@ -1,14 +1,8 @@
 [package]
 name = "ormsgpack"
 version = "1.12.0"
-description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
 edition = "2021"
 rust-version = "1.81"
-license = "Apache-2.0 OR MIT"
-repository = "https://github.com/aviramha/ormsgpack"
-homepage = "https://github.com/aviramha/ormsgpack"
-readme = "README.md"
-keywords = ["fast", "msgpack", "dataclass", "dataclasses", "datetime"]
 include = [
     "/build.rs",
     "/CHANGELOG.md",
