@@ -1,0 +1,3 @@
+>>> import ormsgpack
+>>> ormsgpack.packb({"a": 1, "ä": 2, "A": 3}, option=ormsgpack.OPT_SORT_KEYS)
+b'\x83\xa1A\x03\xa1a\x01\xa2\xc3\xa4\x02'

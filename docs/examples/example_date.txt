@@ -1,0 +1,5 @@
+>>> import ormsgpack, datetime
+>>> ormsgpack.packb(datetime.date(1900, 1, 2))
+b'\xaa1900-01-02'
+>>> ormsgpack.unpackb(_)
+'1900-01-02'

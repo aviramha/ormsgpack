@@ -1,0 +1,12 @@
+>>> import ormsgpack, decimal
+>>> def default(obj):
+...     if isinstance(obj, decimal.Decimal):
+...         return ormsgpack.Ext(0, str(obj).encode())
+...     raise TypeError
+...
+>>> ormsgpack.packb(decimal.Decimal("3.14"))
+TypeError: Type is not msgpack serializable: decimal.Decimal
+>>> ormsgpack.packb(decimal.Decimal("3.14"), default=default)
+b'\xd6\x003.14'
+>>> ormsgpack.packb({1, 2}, default=default)
+TypeError: Type is not msgpack serializable: set

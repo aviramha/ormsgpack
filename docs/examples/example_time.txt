@@ -1,0 +1,5 @@
+>>> import ormsgpack, datetime
+>>> ormsgpack.packb(datetime.time(12, 0, 15, 290))
+b'\xaf12:00:15.000290'
+>>> ormsgpack.unpackb(_)
+'12:00:15.000290'

@@ -1,0 +1,14 @@
+>>> import ormsgpack, datetime
+>>> ormsgpack.packb(
+...     datetime.datetime(1970, 1, 1, 0, 0, 0),
+... )
+b'\xb31970-01-01T00:00:00'
+>>> ormsgpack.unpackb(_)
+'1970-01-01T00:00:00'
+>>> ormsgpack.packb(
+...     datetime.datetime(1970, 1, 1, 0, 0, 0),
+...     option=ormsgpack.OPT_NAIVE_UTC,
+... )
+b'\xb91970-01-01T00:00:00+00:00'
+>>> ormsgpack.unpackb(_)
+'1970-01-01T00:00:00+00:00'
