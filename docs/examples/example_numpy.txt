@@ -1,0 +1,8 @@
+>>> import ormsgpack, numpy
+>>> ormsgpack.packb(
+...     numpy.array([[1, 2, 3], [4, 5, 6]]),
+...     option=ormsgpack.OPT_SERIALIZE_NUMPY,
+... )
+b'\x92\x93\x01\x02\x03\x93\x04\x05\x06'
+>>> ormsgpack.unpackb(_)
+[[1, 2, 3], [4, 5, 6]]

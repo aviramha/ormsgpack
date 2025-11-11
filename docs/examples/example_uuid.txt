@@ -1,0 +1,5 @@
+>>> import ormsgpack, uuid
+>>> ormsgpack.packb(uuid.uuid5(uuid.NAMESPACE_DNS, "python.org"))
+b'\xd9$886313e1-3b8a-5372-9b90-0c9aee199e5d'
+>>> ormsgpack.unpackb(_)
+'886313e1-3b8a-5372-9b90-0c9aee199e5d'

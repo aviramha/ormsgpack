@@ -1,0 +1,9 @@
+>>> import ormsgpack, enum
+>>> class Action(enum.Enum):
+...     ALLOW = 1
+...     DENY = 2
+...
+>>> ormsgpack.packb(Action.ALLOW)
+b'\x01'
+>>> ormsgpack.unpackb(_)
+1

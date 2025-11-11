@@ -1,0 +1,18 @@
+>>> import ormsgpack, pydantic
+>>> class Group(pydantic.BaseModel):
+...     name: str
+...     uid: int
+...
+>>> class User(pydantic.BaseModel):
+...     name: str
+...     uid: int
+...     groups: list[Group]
+...     active: bool = True
+...
+>>> ormsgpack.packb(
+...     User(name="a", uid=0, groups=[Group(name="b", uid=1)]),
+...     option=ormsgpack.OPT_SERIALIZE_PYDANTIC,
+... )
+b'\x84\xa4name\xa1a\xa3uid\x00\xa6groups\x91\x82\xa4name\xa1b\xa3uid\x01\xa6active\xc3'
+>>> ormsgpack.unpackb(_)
+{'name': 'a', 'uid': 0, 'groups': [{'name': 'b', 'uid': 1}], 'active': True}

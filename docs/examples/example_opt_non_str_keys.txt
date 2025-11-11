@@ -1,0 +1,13 @@
+>>> import ormsgpack
+>>>
+>>> ormsgpack.packb(
+...     {0: [1, 2], 1.0: [3, 4]},
+... )
+TypeError: Dict key must be str
+>>> ormsgpack.packb(
+...     {0: [1, 2], 1.0: [3, 4]},
+...     option=ormsgpack.OPT_NON_STR_KEYS,
+... )
+b'\x82\x00\x92\x01\x02\xcb?\xf0\x00\x00\x00\x00\x00\x00\x92\x03\x04'
+>>> ormsgpack.unpackb(_, option=ormsgpack.OPT_NON_STR_KEYS)
+{0: [1, 2], 1.0: [3, 4]}

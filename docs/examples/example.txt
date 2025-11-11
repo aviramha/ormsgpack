@@ -1,0 +1,11 @@
+>>> import ormsgpack, datetime, numpy
+>>> event = {
+...     "type": "put",
+...     "time": datetime.datetime(1970, 1, 1),
+...     "uid": 1,
+...     "data": numpy.array([1, 2]),
+... }
+>>> ormsgpack.packb(event, option=ormsgpack.OPT_SERIALIZE_NUMPY)
+b'\x84\xa4type\xa3put\xa4time\xb31970-01-01T00:00:00\xa3uid\x01\xa4data\x92\x01\x02'
+>>> ormsgpack.unpackb(_)
+{'type': 'put', 'time': '1970-01-01T00:00:00', 'uid': 1, 'data': [1, 2]}

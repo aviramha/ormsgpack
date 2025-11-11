@@ -1,0 +1,20 @@
+>>> import ormsgpack, datetime, zoneinfo
+>>> tzinfo = zoneinfo.ZoneInfo("Asia/Tokyo")
+>>>
+>>> ormsgpack.packb(datetime.datetime(2018, 12, 1, 2, 3))
+b'\xb32018-12-01T02:03:00'
+>>> ormsgpack.unpackb(_)
+'2018-12-01T02:03:00'
+>>>
+>>> ormsgpack.packb(datetime.datetime(2018, 12, 1, 2, 3, tzinfo=tzinfo))
+b'\xb92018-12-01T02:03:00+09:00'
+>>> ormsgpack.unpackb(_)
+'2018-12-01T02:03:00+09:00'
+>>>
+>>> ormsgpack.packb(
+...     datetime.datetime(2018, 12, 1, 2, 3, tzinfo=tzinfo),
+...     option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT,
+... )
+b'\xd6\xff\\\x01mD'
+>>> ormsgpack.unpackb(_, option=ormsgpack.OPT_DATETIME_AS_TIMESTAMP_EXT)
+datetime.datetime(2018, 11, 30, 17, 3, tzinfo=datetime.timezone.utc)

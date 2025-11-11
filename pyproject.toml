@@ -50,6 +50,12 @@ dev = [
     "types-pytz",
     "tzdata",
 ]
+
+docs = [
+    "furo",
+    "sphinx",
+]
+
 numpy = [
     "numpy; platform_python_implementation != 'GraalVM'",
 ]
@@ -73,6 +79,7 @@ ignore_missing_imports = true
 line-length = 88
 src = ["python"]
 target-version = "py310"
+extend-exclude = ["docs/examples"]
 
 [tool.ruff.lint]
 select = [
@@ -97,7 +104,7 @@ cache-keys = [
     { file = "Cargo.toml" },
     { file = "pyproject.toml" },
 ]
-default-groups = "all"
+default-groups = ["dev", "numpy"]
 
 [project.entry-points.pyinstaller40]
 hook-dirs = "ormsgpack._pyinstaller:get_hook_dirs"
