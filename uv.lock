@@ -318,9 +318,7 @@ source = { editable = "." }
 dev = [
     { name = "msgpack" },
     { name = "mypy" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'" },
-    { name = "numpy", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' and platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'" },
-    { name = "pendulum", marker = "platform_machine != 'armv7l'" },
+    { name = "pendulum" },
     { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -330,6 +328,10 @@ dev = [
     { name = "types-python-dateutil" },
     { name = "types-pytz" },
     { name = "tzdata" },
+]
+numpy = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and platform_python_implementation != 'GraalVM'" },
+    { name = "numpy", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' and platform_python_implementation != 'GraalVM'" },
 ]
 
 [package.metadata]
@@ -338,8 +340,7 @@ dev = [
 dev = [
     { name = "msgpack" },
     { name = "mypy" },
-    { name = "numpy", marker = "platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'" },
-    { name = "pendulum", marker = "platform_machine != 'armv7l'" },
+    { name = "pendulum" },
     { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -350,6 +351,7 @@ dev = [
     { name = "types-pytz" },
     { name = "tzdata" },
 ]
+numpy = [{ name = "numpy", marker = "platform_python_implementation != 'GraalVM'" }]
 
 [[package]]
 name = "packaging"
