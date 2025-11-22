@@ -39,8 +39,7 @@ Homepage = "https://github.com/aviramha/ormsgpack"
 dev = [
     "msgpack",
     "mypy",
-    "numpy; platform_machine != 'armv7l' and platform_python_implementation != 'GraalVM'",
-    "pendulum; platform_machine != 'armv7l'",
+    "pendulum",
     "pydantic",
     "pytest",
     "pytest-benchmark",
@@ -50,6 +49,9 @@ dev = [
     "types-python-dateutil",
     "types-pytz",
     "tzdata",
+]
+numpy = [
+    "numpy; platform_python_implementation != 'GraalVM'",
 ]
 
 [build-system]
@@ -95,6 +97,7 @@ cache-keys = [
   { file = "Cargo.toml" },
   { file = "pyproject.toml" },
 ]
+default-groups = "all"
 
 [project.entry-points.pyinstaller40]
 hook-dirs = "ormsgpack._pyinstaller:get_hook_dirs"
