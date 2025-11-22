@@ -80,3 +80,30 @@ def test_pydantic_model_sort_keys() -> None:
         ("b", 1),
         ("c", 2),
     ]
+
+
+def test_pydantic_model_with_extra() -> None:
+    class Model(pydantic.BaseModel):
+        model_config = pydantic.ConfigDict(extra="allow")
+
+        b: int
+        c: int
+
+    obj = Model(b=1, c=2, a=3)  # type: ignore[call-arg]
+    packed = ormsgpack.packb(obj, option=ormsgpack.OPT_SERIALIZE_PYDANTIC)
+    assert packed == ormsgpack.packb(obj.model_dump(serialize_as_any=True))
+    assert ormsgpack.unpackb(packed) == {
+        "b": 1,
+        "c": 2,
+        "a": 3,
+    }
+
+    packed = ormsgpack.packb(
+        obj,
+        option=ormsgpack.OPT_SERIALIZE_PYDANTIC | ormsgpack.OPT_SORT_KEYS,
+    )
+    assert list(ormsgpack.unpackb(packed).items()) == [
+        ("a", 3),
+        ("b", 1),
+        ("c", 2),
+    ]

@@ -717,17 +717,15 @@ impl PyObject {
             if unlikely!(self.recursion == RECURSION_LIMIT) {
                 return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
             }
-            match PydanticModel::new(
+            return PydanticModel::new(
                 self.ptr,
                 self.state,
                 self.opts,
                 self.default_calls,
                 self.recursion,
                 self.default,
-            ) {
-                Ok(val) => return val.serialize(serializer),
-                Err(err) => return Err(serde::ser::Error::custom(err)),
-            };
+            )
+            .serialize(serializer);
         }
 
         if self.opts & SERIALIZE_NUMPY != 0 {
