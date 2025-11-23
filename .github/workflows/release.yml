@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 env:
   RUST_TOOLCHAIN: nightly-2025-09-18
-  UV_VERSION: 0.8.24
+  UV_VERSION: 0.9.10
 jobs:
   build-linux:
     name: Build Linux wheel
