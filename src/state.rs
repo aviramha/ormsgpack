@@ -91,6 +91,7 @@ pub struct State {
     pub int_str: *mut PyObject,
     pub normalize_str: *mut PyObject,
     pub option_str: *mut PyObject,
+    pub pydantic_extra_str: *mut PyObject,
     pub pydantic_validator_str: *mut PyObject,
     pub slots_str: *mut PyObject,
     pub utcoffset_str: *mut PyObject,
@@ -122,6 +123,7 @@ impl State {
                 int_str: PyUnicode_InternFromString(c"int".as_ptr()),
                 normalize_str: PyUnicode_InternFromString(c"normalize".as_ptr()),
                 option_str: PyUnicode_InternFromString(c"option".as_ptr()),
+                pydantic_extra_str: PyUnicode_InternFromString(c"__pydantic_extra__".as_ptr()),
                 pydantic_validator_str: PyUnicode_InternFromString(
                     c"__pydantic_validator__".as_ptr(),
                 ),
