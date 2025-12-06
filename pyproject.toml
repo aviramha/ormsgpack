@@ -24,8 +24,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 authors = [
-    {name = "Aviram Hassan", email = "aviramyhassan@gmail.com"},
-    {name = "Emanuele Giaquinta", email = "emanuele.giaquinta@gmail.com"},
+    { name = "Aviram Hassan", email = "aviramyhassan@gmail.com" },
+    { name = "Emanuele Giaquinta", email = "emanuele.giaquinta@gmail.com" },
 ]
 description = "Fast, correct Python msgpack library supporting dataclasses, datetimes, and numpy"
 readme = "README.md"
@@ -76,15 +76,15 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-  "F",
-  "E",
-  "I",
-  "RUF",
+    "F",
+    "E",
+    "I",
+    "RUF",
 ]
 ignore = [
-  "E501",
-  "RUF022",
-  "RUF023",
+    "E501",
+    "RUF022",
+    "RUF023",
 ]
 
 [tool.ruff.lint.isort]
@@ -92,10 +92,10 @@ known-first-party = ["ormsgpack"]
 
 [tool.uv]
 cache-keys = [
-  { file = "**/*.rs" },
-  { file = "Cargo.lock" },
-  { file = "Cargo.toml" },
-  { file = "pyproject.toml" },
+    { file = "**/*.rs" },
+    { file = "Cargo.lock" },
+    { file = "Cargo.toml" },
+    { file = "pyproject.toml" },
 ]
 default-groups = "all"
 
