@@ -15,7 +15,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      minor-and-patch:
+      github-actions:
         update-types:
           - "patch"
           - "minor"
@@ -25,7 +25,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      minor-and-patch:
+      uv:
         update-types:
           - "patch"
           - "minor"

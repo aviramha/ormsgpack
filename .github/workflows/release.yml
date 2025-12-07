@@ -6,6 +6,7 @@ on:
       - master
     paths-ignore:
       - '**.md'
+      - '.github/dependabot.yml'
       - '.gitignore'
   workflow_dispatch:
   push:
