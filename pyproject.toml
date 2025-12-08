@@ -38,7 +38,7 @@ Homepage = "https://github.com/aviramha/ormsgpack"
 [dependency-groups]
 dev = [
     "msgpack",
-    "mypy",
+    "mypy; platform_python_implementation == 'CPython'",
     "pendulum",
     "pydantic",
     "pytest",
