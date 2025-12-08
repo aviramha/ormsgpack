@@ -673,7 +673,7 @@ source = { editable = "." }
 [package.dev-dependencies]
 dev = [
     { name = "msgpack" },
-    { name = "mypy" },
+    { name = "mypy", marker = "platform_python_implementation == 'CPython'" },
     { name = "pendulum" },
     { name = "pydantic" },
     { name = "pytest" },
@@ -700,7 +700,7 @@ numpy = [
 [package.metadata.requires-dev]
 dev = [
     { name = "msgpack" },
-    { name = "mypy" },
+    { name = "mypy", marker = "platform_python_implementation == 'CPython'" },
     { name = "pendulum" },
     { name = "pydantic" },
     { name = "pytest" },
