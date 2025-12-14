@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RUST_TOOLCHAIN: nightly-2025-09-18
+  RUST_TOOLCHAIN: nightly-2025-11-28
   UV_VERSION: 0.9.10
 
 jobs:
