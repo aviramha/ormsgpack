@@ -667,7 +667,7 @@ wheels = [
 
 [[package]]
 name = "ormsgpack"
-version = "1.12.0"
+version = "1.12.1"
 source = { editable = "." }
 
 [package.dev-dependencies]
