@@ -1,6 +1,20 @@
 Changelog
 =========
 
+1.12.1 - 2025-12-14
+-------------------
+
+Changed
+~~~~~~~
+
+- Revamp the documentation. The documentation is now generated with
+  Sphinx and is available at https://ormsgpack.readthedocs.io
+
+Fixed
+~~~~~
+
+- Fix serialization of pydantic models with extra fields (:issue:`472`)
+
 1.12.0 - 2025-11-04
 -------------------
 
