@@ -78,7 +78,7 @@ jobs:
       - run: uv sync --frozen --no-install-project
       - run: uv pip install ormsgpack --no-index -f target/wheels
       - run: uv run --no-sync pytest
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
@@ -151,7 +151,7 @@ jobs:
               python:${{ matrix.python-version }}-${{ matrix.os }} \
               ${{ matrix.platform }} \
               ${{ github.workspace }}
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ormsgpack-${{ matrix.target }}-${{ matrix.python-version }}
           path: target/wheels
@@ -170,7 +170,7 @@ jobs:
         with:
           command: sdist
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ormsgpack-sdist
           path: target/wheels
