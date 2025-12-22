@@ -95,7 +95,7 @@ impl Serialize for NumpyArrayData {
     where
         S: Serializer,
     {
-        let mut seq = serializer.serialize_seq(Some(self.len)).unwrap();
+        let mut seq = serializer.serialize_seq(Some(self.len))?;
         match self.kind {
             ItemType::BOOL => {
                 let slice: &[u8] =
@@ -210,7 +210,7 @@ impl Serialize for NumpyArrayNode {
     {
         match self {
             Self::Internal(children) => {
-                let mut seq = serializer.serialize_seq(Some(children.len())).unwrap();
+                let mut seq = serializer.serialize_seq(Some(children.len()))?;
                 for child in children {
                     seq.serialize_element(child).unwrap();
                 }

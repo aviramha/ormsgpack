@@ -19,12 +19,11 @@ use crate::serialize::str::*;
 use crate::serialize::tuple::*;
 use crate::serialize::uuid::*;
 use crate::serialize::writer::*;
+use crate::serialize::RECURSION_LIMIT;
 use crate::state::State;
 use serde::ser::{Impossible, Serialize, SerializeMap, SerializeSeq, Serializer};
 use std::os::raw::c_ulong;
 use std::ptr::NonNull;
-
-pub const RECURSION_LIMIT: u8 = 255;
 
 #[derive(Debug)]
 pub enum Error {
@@ -254,6 +253,7 @@ where
 
 pub struct MessagePackSerializer<W> {
     writer: W,
+    recursion: u8,
 }
 
 impl<W> MessagePackSerializer<W>
@@ -262,7 +262,10 @@ where
 {
     #[inline]
     pub fn new(writer: W) -> Self {
-        MessagePackSerializer { writer }
+        MessagePackSerializer {
+            writer,
+            recursion: 0,
+        }
     }
 }
 
@@ -285,6 +288,7 @@ where
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
+        self.se.recursion -= 1;
         Ok(())
     }
 }
@@ -311,6 +315,7 @@ where
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
+        self.se.recursion -= 1;
         Ok(())
     }
 }
@@ -458,6 +463,11 @@ where
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Error> {
         match len {
             Some(len) => {
+                if unlikely!(self.recursion == RECURSION_LIMIT) {
+                    return Err(Error::Custom(RECURSION_LIMIT_REACHED.to_string()));
+                }
+
+                self.recursion += 1;
                 msgpack::write_array_len(&mut self.writer, len)?;
                 Ok(Compound { se: self })
             }
@@ -490,6 +500,11 @@ where
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Error> {
         match len {
             Some(len) => {
+                if unlikely!(self.recursion == RECURSION_LIMIT) {
+                    return Err(Error::Custom(RECURSION_LIMIT_REACHED.to_string()));
+                }
+
+                self.recursion += 1;
                 msgpack::write_map_len(&mut self.writer, len)?;
                 Ok(Compound { se: self })
             }
@@ -523,7 +538,8 @@ pub fn serialize(
     opts: Opt,
 ) -> Result<NonNull<pyo3::ffi::PyObject>, String> {
     let mut buf = BytesWriter::default();
-    let obj = PyObject::new(ptr, state, opts, 0, 0, default);
+    let default_hook = DefaultHook::new(default);
+    let obj = PyObject::new(ptr, state, opts, &default_hook);
     let mut ser = MessagePackSerializer::new(&mut buf);
     let res = obj.serialize(&mut ser);
     match res {
@@ -540,32 +556,40 @@ fn is_subclass(op: *mut pyo3::ffi::PyTypeObject, feature: c_ulong) -> bool {
     unsafe { pyo3::ffi::PyType_HasFeature(op, feature) != 0 }
 }
 
-pub struct PyObject {
+pub struct PyObject<'a> {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
     opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
+    default: &'a DefaultHook,
 }
 
-impl PyObject {
+impl<'a> PyObject<'a> {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         state: *mut State,
         opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
+        default: &'a DefaultHook,
     ) -> Self {
         PyObject {
             ptr: ptr,
             state: state,
             opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
             default: default,
         }
+    }
+
+    fn serialize_with_default_hook<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let obj = self
+            .default
+            .enter_call(self.ptr)
+            .map_err(serde::ser::Error::custom)?;
+        let res = PyObject::new(obj, self.state, self.opts, self.default).serialize(serializer);
+        self.default.leave_call();
+        unsafe { pyo3::ffi::Py_DECREF(obj) };
+        res
     }
 
     #[inline(never)]
@@ -595,18 +619,7 @@ impl PyObject {
         }
 
         if self.opts & PASSTHROUGH_TUPLE == 0 && ob_type == &raw mut pyo3::ffi::PyTuple_Type {
-            if unlikely!(self.recursion == RECURSION_LIMIT) {
-                return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-            }
-            return Tuple::new(
-                self.ptr,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer);
+            return Tuple::new(self.ptr, self.state, self.opts, self.default).serialize(serializer);
         }
 
         if self.opts & PASSTHROUGH_UUID == 0 && ob_type == unsafe { (*self.state).uuid_type } {
@@ -618,25 +631,10 @@ impl PyObject {
                 let value =
                     unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, (*self.state).value_str) };
                 unsafe { pyo3::ffi::Py_DECREF(value) };
-                return PyObject::new(
-                    value,
-                    self.state,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion,
-                    self.default,
-                )
-                .serialize(serializer);
+                return PyObject::new(value, self.state, self.opts, self.default)
+                    .serialize(serializer);
             } else {
-                return Default::new(
-                    self.ptr,
-                    self.state,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion,
-                    self.default,
-                )
-                .serialize(serializer);
+                return self.serialize_with_default_hook(serializer);
             }
         }
 
@@ -649,15 +647,7 @@ impl PyObject {
                     Ok(val) => return val.serialize(serializer),
                     Err(err) => {
                         if self.opts & PASSTHROUGH_BIG_INT != 0 {
-                            return Default::new(
-                                self.ptr,
-                                self.state,
-                                self.opts,
-                                self.default_calls,
-                                self.recursion,
-                                self.default,
-                            )
-                            .serialize(serializer);
+                            return self.serialize_with_default_hook(serializer);
                         } else {
                             return Err(serde::ser::Error::custom(err));
                         }
@@ -665,32 +655,12 @@ impl PyObject {
                 }
             }
             if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_LIST_SUBCLASS) {
-                if unlikely!(self.recursion == RECURSION_LIMIT) {
-                    return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-                }
-                return List::new(
-                    self.ptr,
-                    self.state,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion,
-                    self.default,
-                )
-                .serialize(serializer);
+                return List::new(self.ptr, self.state, self.opts, self.default)
+                    .serialize(serializer);
             }
             if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_DICT_SUBCLASS) {
-                if unlikely!(self.recursion == RECURSION_LIMIT) {
-                    return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-                }
-                return Dict::new(
-                    self.ptr,
-                    self.state,
-                    self.opts,
-                    self.default_calls,
-                    self.recursion,
-                    self.default,
-                )
-                .serialize(serializer);
+                return Dict::new(self.ptr, self.state, self.opts, self.default)
+                    .serialize(serializer);
             }
         }
 
@@ -699,33 +669,13 @@ impl PyObject {
         }
 
         if self.opts & PASSTHROUGH_DATACLASS == 0 && is_dataclass(ob_type, self.state) {
-            if unlikely!(self.recursion == RECURSION_LIMIT) {
-                return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-            }
-            return Dataclass::new(
-                self.ptr,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer);
+            return Dataclass::new(self.ptr, self.state, self.opts, self.default)
+                .serialize(serializer);
         }
 
         if self.opts & SERIALIZE_PYDANTIC != 0 && is_pydantic_model(ob_type, self.state) {
-            if unlikely!(self.recursion == RECURSION_LIMIT) {
-                return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-            }
-            return PydanticModel::new(
-                self.ptr,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer);
+            return PydanticModel::new(self.ptr, self.state, self.opts, self.default)
+                .serialize(serializer);
         }
 
         if self.opts & SERIALIZE_NUMPY != 0 {
@@ -778,7 +728,7 @@ impl PyObject {
                         }
                         Err(PyArrayError::NotContiguous)
                         | Err(PyArrayError::UnsupportedDataType) => {
-                            if self.default.is_none() {
+                            if self.default.inner.is_none() {
                                 return Err(serde::ser::Error::custom("numpy array is not C contiguous; use ndarray.tolist() in default"));
                             }
                         }
@@ -794,19 +744,11 @@ impl PyObject {
             return MemoryView::new(self.ptr).serialize(serializer);
         }
 
-        Default::new(
-            self.ptr,
-            self.state,
-            self.opts,
-            self.default_calls,
-            self.recursion,
-            self.default,
-        )
-        .serialize(serializer)
+        self.serialize_with_default_hook(serializer)
     }
 }
 
-impl Serialize for PyObject {
+impl Serialize for PyObject<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -821,15 +763,7 @@ impl Serialize for PyObject {
                 Ok(val) => val.serialize(serializer),
                 Err(err) => {
                     if self.opts & PASSTHROUGH_BIG_INT != 0 {
-                        Default::new(
-                            self.ptr,
-                            self.state,
-                            self.opts,
-                            self.default_calls,
-                            self.recursion,
-                            self.default,
-                        )
-                        .serialize(serializer)
+                        self.serialize_with_default_hook(serializer)
                     } else {
                         Err(serde::ser::Error::custom(err))
                     }
@@ -842,31 +776,9 @@ impl Serialize for PyObject {
         } else if ob_type == &raw mut pyo3::ffi::PyFloat_Type {
             serializer.serialize_f64(unsafe { pyo3::ffi::PyFloat_AS_DOUBLE(self.ptr) })
         } else if ob_type == &raw mut pyo3::ffi::PyList_Type {
-            if unlikely!(self.recursion == RECURSION_LIMIT) {
-                return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-            }
-            List::new(
-                self.ptr,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer)
+            List::new(self.ptr, self.state, self.opts, self.default).serialize(serializer)
         } else if ob_type == &raw mut pyo3::ffi::PyDict_Type {
-            if unlikely!(self.recursion == RECURSION_LIMIT) {
-                return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-            }
-            Dict::new(
-                self.ptr,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion,
-                self.default,
-            )
-            .serialize(serializer)
+            Dict::new(self.ptr, self.state, self.opts, self.default).serialize(serializer)
         } else {
             self.serialize_unlikely(serializer)
         }
@@ -877,16 +789,14 @@ pub struct DictTupleKey {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
     opts: Opt,
-    recursion: u8,
 }
 
 impl DictTupleKey {
-    pub fn new(ptr: *mut pyo3::ffi::PyObject, state: *mut State, opts: Opt, recursion: u8) -> Self {
+    pub fn new(ptr: *mut pyo3::ffi::PyObject, state: *mut State, opts: Opt) -> Self {
         DictTupleKey {
             ptr: ptr,
             state: state,
             opts: opts,
-            recursion: recursion,
         }
     }
 }
@@ -898,10 +808,10 @@ impl Serialize for DictTupleKey {
         S: Serializer,
     {
         let len = unsafe { pyo3::ffi::Py_SIZE(self.ptr) } as usize;
-        let mut seq = serializer.serialize_seq(Some(len)).unwrap();
+        let mut seq = serializer.serialize_seq(Some(len))?;
         for i in 0..len {
             let item = unsafe { pytuple_get_item(self.ptr, i as isize) };
-            let value = DictKey::new(item, self.state, self.opts, self.recursion + 1);
+            let value = DictKey::new(item, self.state, self.opts);
             seq.serialize_element(&value)?;
         }
         seq.end()
@@ -912,16 +822,14 @@ pub struct DictKey {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
     opts: Opt,
-    recursion: u8,
 }
 
 impl DictKey {
-    pub fn new(ptr: *mut pyo3::ffi::PyObject, state: *mut State, opts: Opt, recursion: u8) -> Self {
+    pub fn new(ptr: *mut pyo3::ffi::PyObject, state: *mut State, opts: Opt) -> Self {
         DictKey {
             ptr: ptr,
             state: state,
             opts: opts,
-            recursion: recursion,
         }
     }
 
@@ -950,11 +858,7 @@ impl DictKey {
         }
 
         if ob_type == &raw mut pyo3::ffi::PyTuple_Type {
-            if unlikely!(self.recursion == RECURSION_LIMIT) {
-                return Err(serde::ser::Error::custom(RECURSION_LIMIT_REACHED));
-            }
-            return DictTupleKey::new(self.ptr, self.state, self.opts, self.recursion)
-                .serialize(serializer);
+            return DictTupleKey::new(self.ptr, self.state, self.opts).serialize(serializer);
         }
 
         if ob_type == unsafe { (*self.state).uuid_type } {
@@ -964,8 +868,7 @@ impl DictKey {
         if ob_type!(ob_type) == unsafe { (*self.state).enum_type } {
             let value = unsafe { pyo3::ffi::PyObject_GetAttr(self.ptr, (*self.state).value_str) };
             unsafe { pyo3::ffi::Py_DECREF(value) };
-            return DictKey::new(value, self.state, self.opts, self.recursion)
-                .serialize(serializer);
+            return DictKey::new(value, self.state, self.opts).serialize(serializer);
         }
 
         if is_subclass(ob_type, pyo3::ffi::Py_TPFLAGS_UNICODE_SUBCLASS) {

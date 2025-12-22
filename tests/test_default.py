@@ -14,7 +14,7 @@ def test_default_not_callable() -> None:
     """
     with pytest.raises(ormsgpack.MsgpackEncodeError) as exc_info:
         ormsgpack.packb(object(), default=NotImplementedError)
-    assert str(exc_info.value) == "default serializer exceeds recursion limit"
+    assert str(exc_info.value) == "Recursion limit for default hook reached"
 
 
 def test_default_function() -> None:
