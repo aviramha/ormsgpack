@@ -7,7 +7,7 @@ PYPROJECT = nox.project.load_toml("pyproject.toml")
 PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT)
 
 
-@nox.session(python="3.12")
+@nox.session(python="3.13")
 def lint(session: nox.Session) -> None:
     session.run_install(
         "uv",
