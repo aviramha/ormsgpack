@@ -3,13 +3,13 @@
 use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
+use crate::serialize::default::DefaultHook;
 use crate::serialize::serializer::*;
 use crate::state::State;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
 use smallvec::SmallVec;
-use std::ptr::NonNull;
 
 #[inline]
 pub fn is_pydantic_model(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut State) -> bool {
@@ -21,36 +21,30 @@ pub fn is_pydantic_model(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut Stat
     }
 }
 
-pub struct PydanticModel {
+pub struct PydanticModel<'a> {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
     opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
+    default: &'a DefaultHook,
 }
 
-impl PydanticModel {
+impl<'a> PydanticModel<'a> {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         state: *mut State,
         opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
+        default: &'a DefaultHook,
     ) -> Self {
         PydanticModel {
             ptr: ptr,
             state: state,
             opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
             default: default,
         }
     }
 }
 
-impl Serialize for PydanticModel {
+impl Serialize for PydanticModel<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -85,7 +79,7 @@ impl Serialize for PydanticModel {
     }
 }
 
-impl PydanticModel {
+impl PydanticModel<'_> {
     fn serialize_with_no_extra<S>(
         &self,
         serializer: S,
@@ -96,7 +90,7 @@ impl PydanticModel {
     {
         let len = unsafe { pydict_size(dict) } as usize;
         if unlikely!(len == 0) {
-            return serializer.serialize_map(Some(0)).unwrap().end();
+            return serializer.serialize_map(Some(0))?.end();
         }
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
@@ -115,16 +109,9 @@ impl PydanticModel {
             items.sort_unstable_by(|a, b| a.0.cmp(b.0));
         }
 
-        let mut map = serializer.serialize_map(Some(items.len())).unwrap();
+        let mut map = serializer.serialize_map(Some(items.len()))?;
         for (key, value) in items.iter() {
-            let pyvalue = PyObject::new(
-                *value,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion + 1,
-                self.default,
-            );
+            let pyvalue = PyObject::new(*value, self.state, self.opts, self.default);
             map.serialize_key(key).unwrap();
             map.serialize_value(&pyvalue)?;
         }
@@ -143,7 +130,7 @@ impl PydanticModel {
         let iter = PyDictIter::from_pyobject(dict).chain(PyDictIter::from_pyobject(extra_dict));
         let len = iter.size_hint().0;
         if unlikely!(len == 0) {
-            return serializer.serialize_map(Some(0)).unwrap().end();
+            return serializer.serialize_map(Some(0))?.end();
         }
         let mut items: SmallVec<[(&str, *mut pyo3::ffi::PyObject); 8]> =
             SmallVec::with_capacity(len);
@@ -162,16 +149,9 @@ impl PydanticModel {
             items.sort_unstable_by(|a, b| a.0.cmp(b.0));
         }
 
-        let mut map = serializer.serialize_map(Some(items.len())).unwrap();
+        let mut map = serializer.serialize_map(Some(items.len()))?;
         for (key, value) in items.iter() {
-            let pyvalue = PyObject::new(
-                *value,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion + 1,
-                self.default,
-            );
+            let pyvalue = PyObject::new(*value, self.state, self.opts, self.default);
             map.serialize_key(key).unwrap();
             map.serialize_value(&pyvalue)?;
         }

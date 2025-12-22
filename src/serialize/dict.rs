@@ -3,42 +3,36 @@
 use crate::exc::*;
 use crate::ffi::*;
 use crate::opt::*;
+use crate::serialize::default::DefaultHook;
 use crate::serialize::serializer::*;
 use crate::state::State;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 use smallvec::SmallVec;
-use std::ptr::NonNull;
 
-pub struct Dict {
+pub struct Dict<'a> {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
     opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
+    default: &'a DefaultHook,
 }
 
-impl Dict {
+impl<'a> Dict<'a> {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         state: *mut State,
         opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
+        default: &'a DefaultHook,
     ) -> Self {
         Dict {
             state: state,
             ptr: ptr,
             opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
             default: default,
         }
     }
 }
 
-impl Serialize for Dict {
+impl Serialize for Dict<'_> {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -47,7 +41,7 @@ impl Serialize for Dict {
         let mut critical_section = CriticalSection::new();
         critical_section.begin(self.ptr);
         if unlikely!(unsafe { pydict_size(self.ptr) } == 0) {
-            serializer.serialize_map(Some(0)).unwrap().end()
+            serializer.serialize_map(Some(0))?.end()
         } else if self.opts & (NON_STR_KEYS | SORT_KEYS) == 0 {
             self.serialize_with_str_keys(serializer)
         } else if self.opts & NON_STR_KEYS != 0 {
@@ -63,27 +57,20 @@ impl Serialize for Dict {
     }
 }
 
-impl Dict {
+impl Dict<'_> {
     #[inline(always)]
     fn serialize_with_str_keys<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let len = unsafe { pydict_size(self.ptr) } as usize;
-        let mut map = serializer.serialize_map(Some(len)).unwrap();
+        let mut map = serializer.serialize_map(Some(len))?;
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if unlikely!(ob_type!(key.as_ptr()) != &raw mut pyo3::ffi::PyUnicode_Type) {
                 return Err(serde::ser::Error::custom(KEY_MUST_BE_STR));
             }
             let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;
-            let pyvalue = PyObject::new(
-                value.as_ptr(),
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion + 1,
-                self.default,
-            );
+            let pyvalue = PyObject::new(value.as_ptr(), self.state, self.opts, self.default);
             map.serialize_key(key_as_str).unwrap();
             map.serialize_value(&pyvalue)?;
         }
@@ -108,16 +95,9 @@ impl Dict {
 
         items.sort_unstable_by(|a, b| a.0.cmp(b.0));
 
-        let mut map = serializer.serialize_map(Some(len)).unwrap();
+        let mut map = serializer.serialize_map(Some(len))?;
         for (key, val) in items.iter() {
-            let pyvalue = PyObject::new(
-                *val,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion + 1,
-                self.default,
-            );
+            let pyvalue = PyObject::new(*val, self.state, self.opts, self.default);
             map.serialize_key(key).unwrap();
             map.serialize_value(&pyvalue)?;
         }
@@ -131,32 +111,18 @@ impl Dict {
     {
         let opts = self.opts & NOT_PASSTHROUGH;
         let len = unsafe { pydict_size(self.ptr) } as usize;
-        let mut map = serializer.serialize_map(Some(len)).unwrap();
+        let mut map = serializer.serialize_map(Some(len))?;
         for (key, value) in PyDictIter::from_pyobject(self.ptr) {
             if ob_type!(key.as_ptr()) == &raw mut pyo3::ffi::PyUnicode_Type {
                 let key_as_str = unicode_to_str(key.as_ptr()).map_err(serde::ser::Error::custom)?;
                 map.serialize_entry(
                     key_as_str,
-                    &PyObject::new(
-                        value.as_ptr(),
-                        self.state,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion + 1,
-                        self.default,
-                    ),
+                    &PyObject::new(value.as_ptr(), self.state, self.opts, self.default),
                 )?;
             } else {
                 map.serialize_entry(
-                    &DictKey::new(key.as_ptr(), self.state, opts, self.recursion + 1),
-                    &PyObject::new(
-                        value.as_ptr(),
-                        self.state,
-                        self.opts,
-                        self.default_calls,
-                        self.recursion + 1,
-                        self.default,
-                    ),
+                    &DictKey::new(key.as_ptr(), self.state, opts),
+                    &PyObject::new(value.as_ptr(), self.state, self.opts, self.default),
                 )?;
             }
         }

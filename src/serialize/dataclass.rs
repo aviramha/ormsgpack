@@ -2,13 +2,13 @@
 
 use crate::ffi::*;
 use crate::opt::*;
+use crate::serialize::default::DefaultHook;
 use crate::serialize::serializer::*;
 use crate::state::State;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
 use smallvec::SmallVec;
-use std::ptr::NonNull;
 
 #[inline]
 fn has_slots(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut State) -> bool {
@@ -27,30 +27,24 @@ pub fn is_dataclass(ob_type: *mut pyo3::ffi::PyTypeObject, state: *mut State) ->
     }
 }
 
-pub struct Dataclass {
+pub struct Dataclass<'a> {
     ptr: *mut pyo3::ffi::PyObject,
     state: *mut State,
     opts: Opt,
-    default_calls: u8,
-    recursion: u8,
-    default: Option<NonNull<pyo3::ffi::PyObject>>,
+    default: &'a DefaultHook,
 }
 
-impl Dataclass {
+impl<'a> Dataclass<'a> {
     pub fn new(
         ptr: *mut pyo3::ffi::PyObject,
         state: *mut State,
         opts: Opt,
-        default_calls: u8,
-        recursion: u8,
-        default: Option<NonNull<pyo3::ffi::PyObject>>,
+        default: &'a DefaultHook,
     ) -> Self {
         Dataclass {
             ptr: ptr,
             state: state,
             opts: opts,
-            default_calls: default_calls,
-            recursion: recursion,
             default: default,
         }
     }
@@ -62,7 +56,7 @@ fn is_pseudo_field(field: *mut pyo3::ffi::PyObject, state: *mut State) -> bool {
     field_type.cast::<pyo3::ffi::PyTypeObject>() != unsafe { (*state).dataclass_field_type }
 }
 
-impl Serialize for Dataclass {
+impl Serialize for Dataclass<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -72,7 +66,7 @@ impl Serialize for Dataclass {
         unsafe { pyo3::ffi::Py_DECREF(fields) };
         let len = unsafe { pydict_size(fields) } as usize;
         if unlikely!(len == 0) {
-            return serializer.serialize_map(Some(0)).unwrap().end();
+            return serializer.serialize_map(Some(0))?.end();
         }
 
         let dict = {
@@ -112,16 +106,9 @@ impl Serialize for Dataclass {
             }
         }
 
-        let mut map = serializer.serialize_map(Some(items.len())).unwrap();
+        let mut map = serializer.serialize_map(Some(items.len()))?;
         for (key, value) in items.iter() {
-            let pyvalue = PyObject::new(
-                *value,
-                self.state,
-                self.opts,
-                self.default_calls,
-                self.recursion + 1,
-                self.default,
-            );
+            let pyvalue = PyObject::new(*value, self.state, self.opts, self.default);
             map.serialize_key(key).unwrap();
             map.serialize_value(&pyvalue)?
         }
