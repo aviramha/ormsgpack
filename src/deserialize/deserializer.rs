@@ -6,10 +6,10 @@ use crate::ffi::*;
 use crate::msgpack::Marker;
 use crate::opt::*;
 use crate::state::State;
-use byteorder::{BigEndian, ReadBytesExt};
 use chrono::{Datelike, Timelike};
 use simdutf8::basic::{from_utf8, Utf8Error};
 use std::borrow::Cow;
+use std::io::Read;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 
@@ -120,68 +120,92 @@ impl<'de> Deserializer<'de> {
 
     #[inline(always)]
     fn read_f32(&mut self) -> Result<f32, Error> {
+        let mut buf = [0; 4];
         self.data
-            .read_f32::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(f32::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_f64(&mut self) -> Result<f64, Error> {
+        let mut buf = [0; 8];
         self.data
-            .read_f64::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(f64::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_i8(&mut self) -> Result<i8, Error> {
-        self.data.read_i8().map_err(|_| Error::UnexpectedEof)
+        let mut buf = [0; 1];
+        self.data
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(buf[0] as i8)
     }
 
     #[inline(always)]
     fn read_i16(&mut self) -> Result<i16, Error> {
+        let mut buf = [0; 2];
         self.data
-            .read_i16::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(i16::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_i32(&mut self) -> Result<i32, Error> {
+        let mut buf = [0; 4];
         self.data
-            .read_i32::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(i32::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_i64(&mut self) -> Result<i64, Error> {
+        let mut buf = [0; 8];
         self.data
-            .read_i64::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(i64::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, Error> {
-        self.data.read_u8().map_err(|_| Error::UnexpectedEof)
+        let mut buf = [0; 1];
+        self.data
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(buf[0])
     }
 
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, Error> {
+        let mut buf = [0; 2];
         self.data
-            .read_u16::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(u16::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, Error> {
+        let mut buf = [0; 4];
         self.data
-            .read_u32::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(u32::from_be_bytes(buf))
     }
 
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, Error> {
+        let mut buf = [0; 8];
         self.data
-            .read_u64::<BigEndian>()
-            .map_err(|_| Error::UnexpectedEof)
+            .read_exact(&mut buf)
+            .map_err(|_| Error::UnexpectedEof)?;
+        Ok(u64::from_be_bytes(buf))
     }
 
     #[inline(always)]
