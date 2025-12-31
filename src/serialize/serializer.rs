@@ -2,6 +2,7 @@
 
 use crate::exc::*;
 use crate::ffi::*;
+use crate::io::WriteSlices;
 use crate::msgpack;
 use crate::opt::*;
 use crate::serialize::bytearray::*;
@@ -67,7 +68,7 @@ struct ExtSerializer<'a, W> {
 
 impl<'a, W> ExtSerializer<'a, W>
 where
-    W: std::io::Write,
+    W: WriteSlices,
 {
     #[inline]
     fn new(tag: i8, writer: &'a mut W) -> Self {
@@ -80,7 +81,7 @@ where
 
 impl<W> Serializer for &mut ExtSerializer<'_, W>
 where
-    W: std::io::Write,
+    W: WriteSlices,
 {
     type Ok = ();
     type Error = Error;
@@ -258,7 +259,7 @@ pub struct MessagePackSerializer<W> {
 
 impl<W> MessagePackSerializer<W>
 where
-    W: std::io::Write,
+    W: WriteSlices,
 {
     #[inline]
     pub fn new(writer: W) -> Self {
@@ -275,7 +276,7 @@ pub struct Compound<'a, W> {
 
 impl<W> SerializeSeq for Compound<'_, W>
 where
-    W: std::io::Write,
+    W: WriteSlices,
 {
     type Ok = ();
     type Error = Error;
@@ -295,7 +296,7 @@ where
 
 impl<W> SerializeMap for Compound<'_, W>
 where
-    W: std::io::Write,
+    W: WriteSlices,
 {
     type Ok = ();
     type Error = Error;
@@ -322,7 +323,7 @@ where
 
 impl<'a, W> Serializer for &'a mut MessagePackSerializer<W>
 where
-    W: std::io::Write,
+    W: WriteSlices,
 {
     type Ok = ();
     type Error = Error;
