@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::state::State;
-use byteorder::WriteBytesExt;
 use serde::ser::{Serialize, Serializer};
 use std::os::raw::c_uchar;
 
@@ -19,8 +18,10 @@ where
     W: std::io::Write,
 {
     for i in 0..group.len() {
-        writer.write_u8(HEX[(group[i] >> 4) as usize])?;
-        writer.write_u8(HEX[(group[i] & 0x0f) as usize])?;
+        writer.write_all(&[
+            HEX[(group[i] >> 4) as usize],
+            HEX[(group[i] & 0x0f) as usize],
+        ])?;
     }
     Ok(())
 }
@@ -50,13 +51,13 @@ impl UUID {
         };
 
         write_group(writer, &buffer[..4])?;
-        writer.write_u8(b'-')?;
+        writer.write_all(b"-")?;
         write_group(writer, &buffer[4..6])?;
-        writer.write_u8(b'-')?;
+        writer.write_all(b"-")?;
         write_group(writer, &buffer[6..8])?;
-        writer.write_u8(b'-')?;
+        writer.write_all(b"-")?;
         write_group(writer, &buffer[8..10])?;
-        writer.write_u8(b'-')?;
+        writer.write_all(b"-")?;
         write_group(writer, &buffer[10..])?;
         Ok(())
     }
