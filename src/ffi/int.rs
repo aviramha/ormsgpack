@@ -2,11 +2,17 @@
 
 use pyo3::ffi::*;
 use serde::ser::{Serialize, Serializer};
+use std::ffi::{c_long, c_ulong};
 
 #[inline(always)]
 pub fn pylong_to_i64(op: *mut PyObject) -> Option<i64> {
     unsafe {
-        let value = PyLong_AsLongLong(op);
+        let value: i64 = if std::mem::size_of::<c_long>() == 8 {
+            #[allow(clippy::useless_conversion)]
+            PyLong_AsLong(op).into()
+        } else {
+            PyLong_AsLongLong(op)
+        };
         if unlikely!(value == -1 && !PyErr_Occurred().is_null()) {
             PyErr_Clear();
             None
@@ -19,7 +25,12 @@ pub fn pylong_to_i64(op: *mut PyObject) -> Option<i64> {
 #[inline(always)]
 pub fn pylong_to_u64(op: *mut PyObject) -> Option<u64> {
     unsafe {
-        let value = PyLong_AsUnsignedLongLong(op);
+        let value: u64 = if std::mem::size_of::<c_ulong>() == 8 {
+            #[allow(clippy::useless_conversion)]
+            PyLong_AsUnsignedLong(op).into()
+        } else {
+            PyLong_AsUnsignedLongLong(op)
+        };
         if unlikely!(value == u64::MAX && !PyErr_Occurred().is_null()) {
             PyErr_Clear();
             None
