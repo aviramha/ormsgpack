@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 use crate::opt::*;
-use byteorder::{BigEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike};
 use serde::ser::{Serialize, Serializer};
 
@@ -12,7 +11,7 @@ where
     let mut itoa_buf = itoa::Buffer::new();
     let formatted = itoa_buf.format(value);
     for _ in 0..width - formatted.len() {
-        writer.write_u8(b'0')?;
+        writer.write_all(b"0")?;
     }
     let len = writer.write(formatted.as_bytes())?;
     debug_assert!(len == formatted.len());
@@ -29,9 +28,9 @@ pub trait DateLike {
         W: std::io::Write,
     {
         write_integer(writer, self.year(), 4)?;
-        writer.write_u8(b'-')?;
+        writer.write_all(b"-")?;
         write_integer(writer, self.month(), 2)?;
-        writer.write_u8(b'-')?;
+        writer.write_all(b"-")?;
         write_integer(writer, self.day(), 2)?;
         Ok(())
     }
@@ -48,14 +47,14 @@ pub trait TimeLike {
         W: std::io::Write,
     {
         write_integer(writer, self.hour(), 2)?;
-        writer.write_u8(b':')?;
+        writer.write_all(b":")?;
         write_integer(writer, self.minute(), 2)?;
-        writer.write_u8(b':')?;
+        writer.write_all(b":")?;
         write_integer(writer, self.second(), 2)?;
         if opts & OMIT_MICROSECONDS == 0 {
             let microsecond = self.microsecond();
             if microsecond != 0 {
-                writer.write_u8(b'.')?;
+                writer.write_all(b".")?;
                 write_integer(writer, microsecond, 6)?;
             }
         }
@@ -72,13 +71,13 @@ pub trait DateTimeLike: DateLike + TimeLike {
         W: std::io::Write,
     {
         DateLike::write_rfc3339(self, writer)?;
-        writer.write_u8(b'T')?;
+        writer.write_all(b"T")?;
         TimeLike::write_rfc3339(self, writer, opts)?;
         if self.offset().is_some() || opts & NAIVE_UTC != 0 {
             let offset = self.offset().unwrap_or_default();
             if offset == 0 {
                 if opts & UTC_Z != 0 {
-                    writer.write_u8(b'Z')?;
+                    writer.write_all(b"Z")?;
                 } else {
                     let tz = b"+00:00";
                     let len = writer.write(tz)?;
@@ -89,10 +88,10 @@ pub trait DateTimeLike: DateLike + TimeLike {
                 let mut offset_minute: i32;
                 let mut offset_second: i32;
                 if offset < 0 {
-                    writer.write_u8(b'-')?;
+                    writer.write_all(b"-")?;
                     offset_second = -offset;
                 } else {
-                    writer.write_u8(b'+')?;
+                    writer.write_all(b"+")?;
                     offset_second = offset;
                 }
                 (offset_minute, offset_second) = (offset_second / 60, offset_second % 60);
@@ -105,7 +104,7 @@ pub trait DateTimeLike: DateLike + TimeLike {
                     offset_minute += 1;
                 }
                 write_integer(writer, offset_hour, 2)?;
-                writer.write_u8(b':')?;
+                writer.write_all(b":")?;
                 write_integer(writer, offset_minute, 2)?;
             }
         }
@@ -120,13 +119,13 @@ pub trait DateTimeLike: DateLike + TimeLike {
         if seconds >> 34 == 0 {
             let value = (i64::from(nanoseconds) << 34) | seconds;
             if value <= 4294967295 {
-                writer.write_u32::<BigEndian>(value as u32)?;
+                writer.write_all(&(value as u32).to_be_bytes())?;
             } else {
-                writer.write_u64::<BigEndian>(value as u64)?;
+                writer.write_all(&(value as u64).to_be_bytes())?;
             }
         } else {
-            writer.write_u32::<BigEndian>(nanoseconds)?;
-            writer.write_i64::<BigEndian>(seconds)?;
+            writer.write_all(&nanoseconds.to_be_bytes())?;
+            writer.write_all(&seconds.to_be_bytes())?;
         }
         Ok(())
     }
