@@ -3,6 +3,7 @@
 use crate::ffi::unicode::*;
 use core::ffi::c_void;
 use pyo3::ffi::*;
+use crate::ffi;
 
 #[cfg(all(Py_3_14, Py_GIL_DISABLED))]
 const STATE_KIND_MASK: u32 = u32::from_le(0b0_0_111_00000000);
@@ -119,6 +120,7 @@ fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut PyObject {
     }
 }
 
+#[cfg(not(target_arch = "s390x"))]
 #[inline]
 pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
     unsafe {
@@ -136,6 +138,46 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
         hash
     }
 }
+
+// ------------------------------------------------------------------------------------
+// s390x: add safe fallback for non-compact unicode, still using fast path when compact.
+// ------------------------------------------------------------------------------------
+#[cfg(target_arch = "s390x")]
+#[inline]
+pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
+    unsafe {
+        if ffi::PyUnicode_READY(op) == -1 {
+            // Match existing style: print and panic on real errors
+            ffi::PyErr_Print();
+            panic!("PyUnicode_READY failed in hash_str");
+        }
+
+        if pyunicode_is_compact(op) {
+            // Original fast path for compact strings
+            let ptr: *mut c_void = if pyunicode_is_ascii(op) {
+                op.cast::<PyASCIIObject>().offset(1).cast::<c_void>()
+            } else {
+                op.cast::<PyCompactUnicodeObject>()
+                    .offset(1)
+                    .cast::<c_void>()
+            };
+            let len =
+                (*op.cast::<PyASCIIObject>()).length * pyunicode_kind(op) as Py_ssize_t;
+            let hash = compat::Py_HashBuffer(ptr, len);
+            (*op.cast::<PyASCIIObject>()).hash = hash;
+            hash
+        } else {
+            // safe fallback for non-compact unicode on s390x
+            let hash = ffi::PyObject_Hash(op);
+            if hash == -1 {
+                ffi::PyErr_Print();
+                panic!("PyObject_Hash failed in hash_str");
+            }
+            hash
+        }
+    }
+}
+
 
 #[inline]
 pub fn unicode_to_str(op: *mut PyObject) -> Result<&'static str, UnicodeError> {
