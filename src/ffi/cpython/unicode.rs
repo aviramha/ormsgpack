@@ -1,50 +1,9 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+#[cfg(unicode_state)]
+use crate::ffi::impl_::unicode_state::*;
 use crate::ffi::unicode::*;
-use core::ffi::c_void;
 use pyo3::ffi::*;
-
-#[cfg(all(Py_3_14, Py_GIL_DISABLED))]
-const STATE_KIND_MASK: u32 = u32::from_le(0b0_0_111_00000000);
-
-#[cfg(all(Py_3_14, Py_GIL_DISABLED))]
-const STATE_KIND_INDEX: usize = 8;
-
-#[cfg(not(all(Py_3_14, Py_GIL_DISABLED)))]
-const STATE_KIND_MASK: u32 = u32::from_le(0b0_0_111_00);
-
-#[cfg(not(all(Py_3_14, Py_GIL_DISABLED)))]
-const STATE_KIND_INDEX: usize = 2;
-
-#[inline(always)]
-unsafe fn pyunicode_kind(op: *mut PyObject) -> u32 {
-    let state = (*op.cast::<PyASCIIObject>()).state;
-    (state & STATE_KIND_MASK) >> STATE_KIND_INDEX
-}
-
-#[cfg(all(Py_3_14, Py_GIL_DISABLED))]
-const STATE_COMPACT_MASK: u32 = u32::from_le(0b0_1_000_00000000);
-
-#[cfg(not(all(Py_3_14, Py_GIL_DISABLED)))]
-const STATE_COMPACT_MASK: u32 = u32::from_le(0b0_1_000_00);
-
-#[inline(always)]
-unsafe fn pyunicode_is_compact(op: *mut PyObject) -> bool {
-    let state = (*op.cast::<PyASCIIObject>()).state;
-    state & STATE_COMPACT_MASK != 0
-}
-
-#[cfg(all(Py_3_14, Py_GIL_DISABLED))]
-const STATE_ASCII_MASK: u32 = u32::from_le(0b1_0_000_00000000);
-
-#[cfg(not(all(Py_3_14, Py_GIL_DISABLED)))]
-const STATE_ASCII_MASK: u32 = u32::from_le(0b1_0_000_00);
-
-#[inline(always)]
-unsafe fn pyunicode_is_ascii(op: *mut PyObject) -> bool {
-    let state = (*op.cast::<PyASCIIObject>()).state;
-    state & STATE_ASCII_MASK != 0
-}
 
 // see unicodeobject.h for documentation
 
@@ -119,17 +78,11 @@ fn pyunicode_fourbyte(buf: &str, num_chars: usize) -> *mut PyObject {
     }
 }
 
+#[cfg(unicode_state)]
 #[inline]
 pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
     unsafe {
-        debug_assert!(pyunicode_is_compact(op));
-        let ptr: *mut c_void = if pyunicode_is_ascii(op) {
-            op.cast::<PyASCIIObject>().offset(1).cast::<c_void>()
-        } else {
-            op.cast::<PyCompactUnicodeObject>()
-                .offset(1)
-                .cast::<c_void>()
-        };
+        let ptr = pyunicode_compact_data(op);
         let len = (*op.cast::<PyASCIIObject>()).length * pyunicode_kind(op) as Py_ssize_t;
         let hash = compat::Py_HashBuffer(ptr, len);
         (*op.cast::<PyASCIIObject>()).hash = hash;
@@ -137,6 +90,19 @@ pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
     }
 }
 
+#[cfg(not(unicode_state))]
+#[inline]
+pub fn hash_str(op: *mut PyObject) -> Py_hash_t {
+    unsafe {
+        let ptr = PyUnicode_DATA(op);
+        let len = (*op.cast::<PyASCIIObject>()).length * PyUnicode_KIND(op) as Py_ssize_t;
+        let hash = compat::Py_HashBuffer(ptr, len);
+        (*op.cast::<PyASCIIObject>()).hash = hash;
+        hash
+    }
+}
+
+#[cfg(unicode_state)]
 #[inline]
 pub fn unicode_to_str(op: *mut PyObject) -> Result<&'static str, UnicodeError> {
     unsafe {
@@ -156,4 +122,10 @@ pub fn unicode_to_str(op: *mut PyObject) -> Result<&'static str, UnicodeError> {
             unicode_to_str_via_ffi(op)
         }
     }
+}
+
+#[cfg(not(unicode_state))]
+#[inline]
+pub fn unicode_to_str(op: *mut PyObject) -> Result<&'static str, UnicodeError> {
+    unicode_to_str_via_ffi(op)
 }
